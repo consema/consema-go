@@ -247,8 +247,9 @@ func TestBatchPlanCrossConstraintsAreEnforced(t *testing.T) {
 		BaseDigest:   baseDigest,
 		TargetDigest: targetDigest,
 		Encoding: EncodingFacts{
-			BomPolicy: "DetectUnicode",
-			Selected:  &SourceEncoding{Kind: "Utf8"},
+			ProfileDefault: &SourceEncoding{Kind: "Utf8"},
+			BomPolicy:      "DetectUnicode",
+			Selected:       &SourceEncoding{Kind: "Utf8"},
 		},
 		Metadata: map[string]string{},
 	}
@@ -318,13 +319,16 @@ func TestBatchPlanCrossConstraintsAreEnforced(t *testing.T) {
 	if protocolErr == nil || protocolErr.Path != "$.command" {
 		t.Errorf("command fixed: got %v", err)
 	}
-	// The value-level codec rejects byte-bearing patches (doc.go).
+	// The value-level codec carries byte-bearing patches with full
+	// fidelity (the cli-v1 vectors decode the plan records through
+	// canonical JSON into the value model).
 	patchWithReplacement := &SourcePatch{
 		BaseDigest:   baseDigest,
 		TargetDigest: targetDigest,
 		Encoding: EncodingFacts{
-			BomPolicy: "DetectUnicode",
-			Selected:  &SourceEncoding{Kind: "Utf8"},
+			ProfileDefault: &SourceEncoding{Kind: "Utf8"},
+			BomPolicy:      "DetectUnicode",
+			Selected:       &SourceEncoding{Kind: "Utf8"},
 		},
 		Replacements: []SourceReplacement{{OldStart: 16, OldEnd: 19, Original: []byte("old"), Replacement: []byte("new")}},
 		Metadata:     map[string]string{},
@@ -334,10 +338,20 @@ func TestBatchPlanCrossConstraintsAreEnforced(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := planEntryValue(entry, 0); err == nil {
-		t.Error("value codec accepted a byte-bearing patch")
+	entryValue, err := planEntryValue(entry, 0)
+	if err != nil {
+		t.Fatalf("value codec rejected a byte-bearing patch: %v", err)
 	}
-	// ... while the JSON tree codec round-trips it.
+	redecoded, err := parsePlanEntry(entryValue, 0, registry, DefaultSourcePatchLimits())
+	if err != nil {
+		t.Fatalf("value codec lost a byte-bearing patch: %v", err)
+	}
+	if len(redecoded.SourcePatch().Replacements) != 1 ||
+		redecoded.SourcePatch().Replacements[0].OldStart != 16 ||
+		string(redecoded.SourcePatch().Replacements[0].Original) != "old" {
+		t.Error("value round-trip lost replacement facts")
+	}
+	// ... and the JSON tree codec round-trips it.
 	planWithPatch, err := NewBatchPlanMessage("0.12.0", []*BatchPlanFileEntry{entry})
 	if err != nil {
 		t.Fatal(err)

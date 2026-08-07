@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"math"
 	"math/big"
 
 	"consema.dev/consema/core"
@@ -115,6 +116,25 @@ func unsigned64(value core.Value, path string) (uint64, error) {
 // integerValue builds the Integer record for a u64 (crate::schema::integer_u64).
 func integerValue(value uint64) core.Value {
 	return core.NewInteger(new(big.Int).SetUint64(value))
+}
+
+// bigInt32 builds the Integer record for an i32 (crate::schema::signed_i32).
+func bigInt32(value int32) *big.Int {
+	return big.NewInt(int64(value))
+}
+
+// signed32 reads an Integer field that must fit a signed 32-bit range
+// (crate::schema::signed_i32).
+func signed32(value core.Value, path string) (int32, error) {
+	integer, ok := value.(core.Integer)
+	if !ok {
+		return 0, protocolError(KindWrongType, path, "expected Integer")
+	}
+	number := integer.Int()
+	if !number.IsInt64() || number.Int64() < math.MinInt32 || number.Int64() > math.MaxInt32 {
+		return 0, protocolError(KindInvalidValue, path, "expected a signed 32-bit Integer")
+	}
+	return int32(number.Int64()), nil
 }
 
 // nullableString encodes an optional string as String or Null

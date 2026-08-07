@@ -133,3 +133,96 @@ Both are also the shared conformance vector expectations
 The Rust side is the authority for the bytes (roadmap §16.1 hard gate: "Rust
 与 Go 的 PVCE/PGCE bytes 完全一致"); any change must land in both languages
 together.
+
+## Fuzz targets
+
+Go native fuzzing (`go test -fuzz`) covering the 0.14.0 capability surface
+(milestone G0.5; roadmap §16.1 "Go fuzz targets"). Discipline mirrors the
+Rust fuzz targets of 0.13.0 (docs/fuzz-evidence-0.13.0.md §2): resource
+limits are fixed at the production defaults
+(`core.DefaultDecodeLimits` / `graph.DefaultPGCELimits` /
+`protocol.DefaultProtocolLimits`), limit failures are passes, and property
+assertions detect encode/decode asymmetry. The round-trip targets use
+deterministic per-package fifteen-kind value-space / graph generators
+(`core/fuzzgen_test.go`, `graph/fuzzgen_test.go`, and the transport
+generator inside `protocol/json_fuzz_test.go` — each lives in its own test
+package because a shared generator would create an import cycle, the same
+reason the Rust fuzz drivers live per crate).
+
+| Target | Package | Asserted property |
+|---|---|---|
+| `FuzzPVCE` | `core/` | arbitrary bytes → `DecodePVCE`: never panic; limit semantics never bypassed; decode→encode fixed point (successful decode re-encodes to exactly the input bytes) |
+| `FuzzPVCEEncodeDecode` | `core/` | `decode(encode(x)) == x` for generated fifteen-kind values, `Equal` holds, re-encode byte-stable |
+| `FuzzPGCE` | `graph/` | arbitrary bytes → `DecodePGCE`: never panic; limit semantics never bypassed; decode→encode fixed point |
+| `FuzzPGCEEncodeDecode` | `graph/` | `decode(encode(g))` is `Equal` to g (sharing and cycles included), re-encode byte-stable |
+| `FuzzCanonicalJSON` | `protocol/` | arbitrary bytes → `DecodeJSON`: never panic; limit semantics never bypassed; decode→encode fixed point |
+| `FuzzJSONEncodeDecode` | `protocol/` | canonical transport `decode(encode(x)) == x`, `Equal` holds, re-encode byte-stable |
+
+Run one target (the anchored regex is required: `-fuzz=FuzzPVCE` alone
+matches both `FuzzPVCE` and `FuzzPVCEEncodeDecode` and refuses to run):
+
+```
+cd go
+go test -fuzz='^FuzzPVCE$' -fuzztime=30s ./core/
+go test -fuzz='^FuzzPVCEEncodeDecode$' -fuzztime=30s ./core/
+go test -fuzz='^FuzzPGCE$' -fuzztime=30s ./graph/
+go test -fuzz='^FuzzPGCEEncodeDecode$' -fuzztime=30s ./graph/
+go test -fuzz='^FuzzCanonicalJSON$' -fuzztime=30s ./protocol/
+go test -fuzz='^FuzzJSONEncodeDecode$' -fuzztime=30s ./protocol/
+```
+
+Measured 2026-08-07 (go 1.26.5, Windows 11): every target ran 30s of
+fuzzing with no panic, no hang, and no limit bypass:
+
+| Target | execs in 30s | result |
+|---|---|---|
+| `FuzzPVCE` | 16,868,081 | PASS |
+| `FuzzPVCEEncodeDecode` | 9,033,088 | PASS |
+| `FuzzPGCE` | 10,446,192 | PASS |
+| `FuzzPGCEEncodeDecode` | 10,970,351 | PASS |
+| `FuzzCanonicalJSON` | 15,530,209 | PASS |
+| `FuzzJSONEncodeDecode` | 6,637,952 | PASS |
+
+The long-running release-candidate fuzz clean-run (the 72h-class soak of
+roadmap §22.4) is a 0.19.0 milestone item (plan §2.6 G5.4), not part of
+0.14.0.
+
+## Cross-language byte parity
+
+The 0.14.0 hard gate "Rust 与 Go 的 PVCE/PGCE bytes 完全一致" (roadmap
+§16.1; plan §4.4) is verified by a bidirectional byte-equality harness.
+Beyond the shared vectors — whose `pvce.*`/`pgce.*` hex fields are covered by
+the Go conformance runner (G0.4) — this harness compares the encoders of
+both languages byte-for-byte on a data-driven case set, plus the
+bidirectional direction (Rust bytes → Go decode → Go re-encode).
+
+Go never imports or calls Rust (RFC 0016 §1.1 cgo ban): both sides encode
+the same checked-in case set, and the Rust encoder's bytes are compared as
+files.
+
+- `go/conformance/differential/cases.json` — the shared input set: 68 cases
+  (51 PVCE transport values + 17 PGCE graphs) covering all fifteen kinds,
+  golden vectors, integer/varint/container boundaries, nesting, sharing, and
+  cycles (≥ 40 required by the milestone; the integrity test fails if the
+  file drifts below that or loses kind coverage).
+- `go/conformance/differential/differential_test.go` — the Go side: parses
+  `cases.json` (embedded), encodes each case, compares byte-for-byte with
+  the Rust hex files, decodes the Rust bytes and re-encodes them. Without
+  `CONSEMA_DIFFERENTIAL_RUST_DIR` the byte-parity test skips (documented
+  skip, never silent) and the case-file integrity test still runs.
+- `crates/consema-conformance/examples/emit_parity_bytes.rs` — the minimal
+  Rust encoder driver (justification: no existing Rust entry point encodes
+  arbitrary values to PVCE/PGCE and prints bytes; it reuses the published
+  codecs only, no new encoding logic).
+- `scripts/go-verify-byte-parity.ps1` — the orchestrator: builds the Rust
+  example, runs it over the case set, then runs the Go test with the byte
+  directory provisioned.
+
+Run it (PowerShell 5.1, no third-party dependencies):
+
+```
+powershell -File scripts/go-verify-byte-parity.ps1
+```
+
+Measured 2026-08-07: **byte parity 68/68 equal (51 pvce, 17 pgce), zero
+byte differences**, bidirectional decode/re-encode stable on every case.

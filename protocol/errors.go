@@ -107,6 +107,12 @@ func (e *ProtocolError) Code() string {
 	return codeInvalidValue
 }
 
+// ResourceLimitCode returns the frozen resource-limit protocol code
+// (RFC 0015 §5.2: `core.protocol.resource-limit@1` classifies as exit 3).
+func ResourceLimitCode() string {
+	return codeResourceLimit
+}
+
 // IsProtocolError reports whether err is (or wraps) a *ProtocolError of the
 // given kind.
 func IsProtocolError(err error, kind ProtocolErrorKind) bool {

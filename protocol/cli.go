@@ -469,16 +469,25 @@ func (m *BatchPlanMessage) ToValue() (core.Value, error) {
 // FromValue strictly decodes core.batch-plan@1 under the semantic-model v7
 // error registry (cli.rs:610-640).
 func (m *BatchPlanMessage) FromValue(value core.Value) (*BatchPlanMessage, error) {
-	return m.fromValueWithRegistry(value, NewErrorCodeRegistry(ErrorRegistryV7))
+	return m.fromValueWithRegistry(value, NewErrorCodeRegistry(ErrorRegistryV7), DefaultSourcePatchLimits())
 }
 
 // FromValueWithRegistry strictly decodes the manifest and re-verifies every
 // cross constraint under one explicit registry.
 func (m *BatchPlanMessage) FromValueWithRegistry(value core.Value, registry ErrorCodeRegistry) (*BatchPlanMessage, error) {
-	return m.fromValueWithRegistry(value, registry)
+	return m.fromValueWithRegistry(value, registry, DefaultSourcePatchLimits())
 }
 
-func (m *BatchPlanMessage) fromValueWithRegistry(value core.Value, registry ErrorCodeRegistry) (*BatchPlanMessage, error) {
+// FromValueWithRegistryAndPatchLimits strictly decodes the manifest under
+// one explicit registry and one explicit source-patch replacement budget
+// (the cli.rs from_value_with_registry patch_limits parameter).
+func (m *BatchPlanMessage) FromValueWithRegistryAndPatchLimits(value core.Value,
+	registry ErrorCodeRegistry, patchLimits SourcePatchLimits) (*BatchPlanMessage, error) {
+	return m.fromValueWithRegistry(value, registry, patchLimits)
+}
+
+func (m *BatchPlanMessage) fromValueWithRegistry(value core.Value, registry ErrorCodeRegistry,
+	patchLimits SourcePatchLimits) (*BatchPlanMessage, error) {
 	fields, err := schemaFields(value, "core.batch-plan@1",
 		[]string{"schema", "product_version", "command", "files"}, "$")
 	if err != nil {
@@ -497,7 +506,7 @@ func (m *BatchPlanMessage) fromValueWithRegistry(value core.Value, registry Erro
 	}
 	files := make([]*BatchPlanFileEntry, 0, len(fileValues))
 	for index, item := range fileValues {
-		entry, err := parsePlanEntry(item, index, registry)
+		entry, err := parsePlanEntry(item, index, registry, patchLimits)
 		if err != nil {
 			return nil, err
 		}
@@ -1112,10 +1121,6 @@ func planEntryValue(entry *BatchPlanFileEntry, index int) (core.Value, error) {
 	}
 	var sourcePatch core.Value = core.NullValue()
 	if entry.sourcePatch != nil {
-		if len(entry.sourcePatch.Replacements) > 0 {
-			return nil, invalid("$.files["+uint32String(uint32(index))+".source_patch",
-				"patch replacements are outside the value-level source-patch subset")
-		}
 		encoded, err := sourcePatchValue(entry.sourcePatch)
 		if err != nil {
 			protocolError := asProtocolError(err)
@@ -1156,7 +1161,8 @@ func planEntryValue(entry *BatchPlanFileEntry, index int) (core.Value, error) {
 
 // parsePlanEntry strictly decodes one plan entry at the value level
 // (cli.rs:1022-1135).
-func parsePlanEntry(value core.Value, index int, registry ErrorCodeRegistry) (*BatchPlanFileEntry, error) {
+func parsePlanEntry(value core.Value, index int, registry ErrorCodeRegistry,
+	patchLimits SourcePatchLimits) (*BatchPlanFileEntry, error) {
 	path := "$.files[" + uint32String(uint32(index)) + "]"
 	fields, err := exactFields(value,
 		[]string{"path", "status", "profile", "source_digest", "operations",
@@ -1210,6 +1216,10 @@ func parsePlanEntry(value core.Value, index int, registry ErrorCodeRegistry) (*B
 		patch, err := parseSourcePatchValue(fields[5], path+".source_patch")
 		if err != nil {
 			return nil, err
+		}
+		if len(patch.Replacements) > patchLimits.MaxReplacements {
+			return nil, resource(path+".source_patch.replacements",
+				"replacement count exceeds configured limit")
 		}
 		sourcePatch = patch
 		if _, isNull := fields[6].(core.Null); !isNull {
@@ -1418,8 +1428,8 @@ func parseOperationSummary(value core.Value, path string) (*EditOperationSummary
 }
 
 // sourcePatchValue encodes the core.source-patch@2 record at the value
-// level (protocol/src/source.rs:323-371). Replacement records are
-// fall outside the value-level subset (doc.go).
+// level with full replacement fidelity (protocol/src/source.rs:323-371;
+// the 15-kind value model carries Bytes leaves).
 func sourcePatchValue(patch *SourcePatch) (core.Value, error) {
 	encoding, err := encodingFactsValue(&patch.Encoding)
 	if err != nil {
@@ -1433,19 +1443,34 @@ func sourcePatchValue(patch *SourcePatch) (core.Value, error) {
 	if err != nil {
 		return nil, err
 	}
+	replacements := make([]core.Value, 0, len(patch.Replacements))
+	for _, replacement := range patch.Replacements {
+		record, err := core.NewObject(
+			core.Entry{Key: "old_start", Value: integerValue(replacement.OldStart)},
+			core.Entry{Key: "old_end", Value: integerValue(replacement.OldEnd)},
+			core.Entry{Key: "original", Value: core.NewBytes(replacement.Original)},
+			core.Entry{Key: "replacement", Value: core.NewBytes(replacement.Replacement)},
+			core.Entry{Key: "redact_original", Value: core.Boolean(replacement.RedactOriginal)},
+			core.Entry{Key: "redact_replacement", Value: core.Boolean(replacement.RedactReplacement)},
+		)
+		if err != nil {
+			return nil, err
+		}
+		replacements = append(replacements, record)
+	}
 	return core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.source-patch@2")},
 		core.Entry{Key: "base_digest", Value: digestValue(patch.BaseDigest)},
 		core.Entry{Key: "target_digest", Value: digestValue(patch.TargetDigest)},
 		core.Entry{Key: "encoding", Value: encoding},
-		core.Entry{Key: "replacements", Value: core.NewArray()},
+		core.Entry{Key: "replacements", Value: core.NewArray(replacements...)},
 		core.Entry{Key: "metadata", Value: metadataObject},
 	)
 }
 
 // parseSourcePatchValue strictly decodes the core.source-patch@2 record at
-// the value level. Replacement records (Bytes leaves) are rejected with a
-// documented error (doc.go).
+// the value level with full replacement fidelity
+// (protocol/src/source.rs:373-...).
 func parseSourcePatchValue(value core.Value, path string) (*SourcePatch, error) {
 	fields, err := schemaFields(value, "core.source-patch@2",
 		[]string{"schema", "base_digest", "target_digest", "encoding",
@@ -1469,9 +1494,50 @@ func parseSourcePatchValue(value core.Value, path string) (*SourcePatch, error) 
 	if err != nil {
 		return nil, err
 	}
-	if len(replacementValues) > 0 {
-		return nil, invalid(path+".replacements",
-			"patch replacements are outside the value-level source-patch subset")
+	replacements := make([]SourceReplacement, 0, len(replacementValues))
+	for index, replacementValue := range replacementValues {
+		replacementPath := path + ".replacements[" + uint32String(uint32(index)) + "]"
+		replacementFields, err := exactFields(replacementValue,
+			[]string{"old_start", "old_end", "original", "replacement",
+				"redact_original", "redact_replacement"}, replacementPath)
+		if err != nil {
+			return nil, err
+		}
+		oldStart, err := unsigned64(replacementFields[0], replacementPath+".old_start")
+		if err != nil {
+			return nil, err
+		}
+		oldEnd, err := unsigned64(replacementFields[1], replacementPath+".old_end")
+		if err != nil {
+			return nil, err
+		}
+		original, ok := replacementFields[2].(core.Bytes)
+		if !ok {
+			return nil, protocolError(KindWrongType, replacementPath+".original", "expected Bytes")
+		}
+		replacement, ok := replacementFields[3].(core.Bytes)
+		if !ok {
+			return nil, protocolError(KindWrongType, replacementPath+".replacement", "expected Bytes")
+		}
+		redactOriginal, err := booleanOf(replacementFields[4], replacementPath+".redact_original")
+		if err != nil {
+			return nil, err
+		}
+		redactReplacement, err := booleanOf(replacementFields[5], replacementPath+".redact_replacement")
+		if err != nil {
+			return nil, err
+		}
+		if oldStart > oldEnd || len(original) != int(oldEnd-oldStart) {
+			return nil, invalid(replacementPath, "invalid replacement range or original length")
+		}
+		replacements = append(replacements, SourceReplacement{
+			OldStart:          oldStart,
+			OldEnd:            oldEnd,
+			Original:          original,
+			Replacement:       replacement,
+			RedactOriginal:    redactOriginal,
+			RedactReplacement: redactReplacement,
+		})
 	}
 	metadata, err := stringMapFromObject(fields[5], path+".metadata")
 	if err != nil {
@@ -1481,7 +1547,7 @@ func parseSourcePatchValue(value core.Value, path string) (*SourcePatch, error) 
 		BaseDigest:   baseDigest,
 		TargetDigest: targetDigest,
 		Encoding:     *encoding,
-		Replacements: nil,
+		Replacements: replacements,
 		Metadata:     metadata,
 	}, nil
 }
@@ -1605,6 +1671,21 @@ func parseSourceEncodingValue(value core.Value, path string) (*SourceEncoding, e
 			return nil, err
 		}
 		codePage = &number
+	}
+	switch kind {
+	case "Binary", "Utf8", "Utf16Le", "Utf16Be", "Latin1":
+		if codePage != nil {
+			return nil, invalid(path+".windows_code_page", "non-Windows encoding requires null")
+		}
+	case "WindowsCodePage":
+		if codePage == nil {
+			return nil, invalid(path+".windows_code_page", "Windows code page requires a number")
+		}
+		if _, ok := WindowsCodePageFromNumber(*codePage); !ok {
+			return nil, invalid(path+".windows_code_page", "unsupported Windows code page")
+		}
+	default:
+		return nil, invalid(path+".kind", "unknown source encoding kind")
 	}
 	return &SourceEncoding{Kind: kind, WindowsCodePage: codePage}, nil
 }

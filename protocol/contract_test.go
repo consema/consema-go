@@ -135,14 +135,11 @@ func TestContractIdentifierStrictness(t *testing.T) {
 }
 
 func completionPayload() (core.Value, error) {
-	return core.NewObject(
-		core.Entry{Key: "schema", Value: core.String("core.completion@1")},
-		core.Entry{Key: "status", Value: core.String("Success")},
-		core.Entry{Key: "read_operations", Value: integerValue(1)},
-		core.Entry{Key: "write_operations", Value: integerValue(1)},
-		core.Entry{Key: "failure_code", Value: core.NullValue()},
-		core.Entry{Key: "diagnostics", Value: core.NewArray()},
-	)
+	completion, err := NewCompletion(CompletionSuccess, 1, 1, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return completion.ToValue()
 }
 
 func TestProtocolMessageEnvelopeRoundTripsBothTransports(t *testing.T) {
