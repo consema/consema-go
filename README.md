@@ -142,6 +142,40 @@ materialization requests, and verifiable source patches).
     scalar and structural operations), atomic `Commit`/`DryRun` with
     `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
     `UntouchedByteProof`, and the seven-operation `FormatOperationRegistry`.
+- `yaml/` — the YAML family surface (0.16.0 G2.1; RFC 0007, RFC 0016 §5),
+  mirroring the capability face of crates/consema-yaml:
+  - `yaml.go` — `YamlProfile` (Yaml12CoreV1 / Yaml11CompatV1, explicit
+    selection never dialect guessing), `YamlSyntaxKind` (the closed
+    twenty-five-kind lossless vocabulary with the stable query spellings),
+    `YamlNodeKind`/`YamlScalarKind`/`YamlScalarStyle`, `Document` (render,
+    formation status, diagnostics, lossless index, syntax kinds),
+    `YamlDocument`/`YamlNode`/`YamlScalar`/`YamlSequenceItem`/
+    `YamlMappingEntry`/`YamlAlias` handles, `FormationFailure` with the
+    frozen registered codes;
+  - `parser.go`/`resolve.go` — `Parse` over the YAML 1.2.2 presentation
+    grammar with the two profiles: byte-exact tokenizer/parser with
+    token/trivia coverage, block/flow collections, compact notation,
+    block scalars with chomping/folding, anchors/aliases with the
+    most-recent-preceding rule, the Core and frozen 1.1 scalar schemas,
+    tag directives and explicit-tag validation (never custom tag
+    constructors), UTF-8/UTF-16 BOM sources, and the parse limits;
+  - `syntax.go` — the lossless syntax tokenizer producing the exact piece
+    layout (anchor/alias lexemes for the native composition);
+  - `query.go` — `ExecuteYamlQuery`/`ExecuteYamlSyntaxQuery` over
+    validated `protocol.ExecutableQuery` definitions, with step/result
+    budgets and context cancellation;
+  - `projection.go` — `ProjectGraph` (best-exact graph with provenance)
+    and `ProjectValue` (sharing/tag/mapping policies, fidelity, report,
+    provenance) with the frozen failure codes;
+  - `materialization.go` — `MaterializeGraph`/`MaterializeValue`
+    (canonical-block/canonical-flow styles, `&gN` anchors for sharing and
+    cycles, canonical byte-closure verification, UTF-16 output, mapping
+    policy) with the frozen failure codes;
+  - `edit.go`/`operation_registry.go`/`untouched.go` —
+    `EditTransaction` (+ builder, the eight frozen operations with the
+    anchor-safe rules), atomic `Commit`/`DryRun` with `ChangeSet`,
+    `SourcePatch` derivation, `UntouchedByteProof`, and the eight-
+    operation `FormatOperationRegistry`.
 - `consema` (the package root, `*.go` directly in `go/`) — the facade
   surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
   - `document.go` — the `Document` union over the implemented format
