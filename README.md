@@ -88,6 +88,60 @@ materialization requests, and verifiable source patches).
     `ProfileId`, `MaterializationStyleId`, `NewlinePolicy`, `MappingPolicy`,
     `RepresentabilityPolicy`, `ParseLimits`, `MaterializationLimits`,
     `MaterializationRequest`;
+- `json/` — the JSON family surface (0.15.0 G1.2; RFC 0016 §5), mirroring
+  the capability face of crates/consema-json:
+  - `profile.go` — `JsonProfile` (StrictV1/JsoncBoundedV1/Json5StandardV1)
+    and `JsonSyntaxKind` (the closed lossless kind vocabulary with the
+    stable query spellings);
+  - `formation.go` — `Parse` (context-cancellable, typed
+    `FormationFailure` with the frozen registered codes);
+  - `parser.go` — the lossless JSON/JSONC/JSON5 lexer and parser:
+    token/trivia/error-region coverage, recovery diagnostics, the JSON5
+    lexical extensions (identifiers, single-quoted strings, hex and
+    non-finite numbers, extended whitespace);
+  - `document.go`/`semantic.go` — `Document` (render, formation status,
+    diagnostics, lossless index, syntax kinds), `JsonValue`
+    (kind/boolean/integer/decimal/binary64/string/array/object views with
+    `SemanticAvailability`), `JsonObjectMember`/`JsonArrayElement`;
+  - `query.go` — `ExecuteJSONQuery`/`ExecuteJSONSyntaxQuery` (+ cursors)
+    over validated `protocol.ExecutableQuery` definitions, with result and
+    step budgets and context cancellation;
+  - `projection.go` — `ProjectionRequest` (+ builder with duplicate
+    policies), `Project` with fidelity/report/provenance records and the
+    frozen failure codes;
+  - `materialization.go` — `Materialize` (canonical compact/pretty, JSON5
+    non-finite literals, two-phase formation, provenance map) with the
+    frozen failure codes;
+  - `edit.go`/`placement.go`/`change_set.go`/`untouched.go` —
+    `EditTransaction` (+ builder, seven operations), atomic `Commit`/
+    `DryRun` with `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
+    `UntouchedByteProof`, and `FormatOperationRegistry`.
+- `toml/` — the TOML family surface (0.15.0 G1.3; RFC 0001, RFC 0016 §5),
+  mirroring the capability face of crates/consema-toml:
+  - `toml.go` — `TomlProfile` (Toml10V1), `TomlSyntaxKind` (the closed
+    twelve-kind lossless vocabulary with the stable query spellings),
+    `TomlItemKind` (the fifteen native item categories incl. table/
+    inline-table/dotted-table/array-of-tables — never JSON object/member
+    types), `Document` (render, formation status, diagnostics, lossless
+    index, syntax kinds), `TomlItem`/`TomlEntry`/`TomlArrayElement`
+    handles, `FormationFailure` with the frozen registered codes;
+  - `parser.go` — `Parse` over the full TOML 1.0 grammar: byte-exact
+    tokenizer with token/trivia coverage, tables, arrays-of-tables,
+    dotted keys, inline tables, all scalar forms, the toml_edit-equivalent
+    duplicate/implicit/dotted table semantics, and the four parse limits;
+  - `query.go` — `ExecuteTomlQuery`/`ExecuteTomlSyntaxQuery` over
+    validated `protocol.ExecutableQuery` definitions, with step/result
+    budgets and context cancellation;
+  - `projection.go` — `ProjectionRequest`, `Project` with
+    fidelity/report/provenance records and the frozen failure codes
+    (incl. `toml.projection.unrepresentable-datetime@1`);
+  - `materialization.go` — `Materialize` (canonical-document style,
+    canonical byte-closure verification, mapping policy, provenance map)
+    with the frozen failure codes;
+  - `edit.go`/`operation_registry.go` — `EditTransaction` (+ builder,
+    scalar and structural operations), atomic `Commit`/`DryRun` with
+    `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
+    `UntouchedByteProof`, and the seven-operation `FormatOperationRegistry`.
 
 The RFC 0016 §4.1 mapping (the language-neutral fifteen-kind contract,
 配置内容统一处理标准与 Rust 参考实现.md §10): Object → `*core.Object`

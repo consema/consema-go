@@ -42,20 +42,21 @@ func runV1(_ *Runner, data *suiteData) *SuiteReport {
 		case "parse.strict-exact-roundtrip", "parse.jsonc-comments-trailing-comma",
 			"parse.recovery-missing-close", "parse.duplicate-members",
 			"parse.lossless-byte-coverage":
-			skipJSONFamily(vector, report)
-		case "query.json-duplicate-order", "query.root-result-limit",
-			"query.cursor-failure-terminal":
+			RunV1JSONFace(vector, report)
+		case "query.json-duplicate-order":
+			RunV1JSONFace(vector, report)
+		case "query.root-result-limit", "query.cursor-failure-terminal":
 			skipQueryExecution(vector, report)
 		case "projection.best-exact-duplicate-mapping", "projection.object-reject-duplicates",
 			"projection.object-last-wins", "projection.object-key-provenance":
-			skipJSONProjection(vector, report)
+			RunV1JSONFace(vector, report)
 		case "edit.scalar-minimal", "edit.preserve-decimal-scale",
 			"edit.preserve-exponent-style", "edit.canonical-for-profile",
 			"edit.preserve-else-canonical", "edit.preserve-incompatible-rejected",
 			"edit.wrong-snapshot":
-			skipJSONEdit(vector, report)
+			RunV1JSONFace(vector, report)
 		case "resource.parse-token-limit":
-			skipJSONFamily(vector, report)
+			RunV1JSONFace(vector, report)
 		default:
 			report.Failed = append(report.Failed, CaseFailure{
 				ID:      vector.ID,

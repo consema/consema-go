@@ -55,22 +55,22 @@ func TestRunIsConformant(t *testing.T) {
 }
 
 // TestApplicableSuiteCounts pins the per-suite applicable surface of the
-// current milestone (0.15.0 G1.1 flips the whole source-v1 suite to
-// executed; docs/go-implementation-plan.md §4.2).
+// current milestone (0.15.0 G1.1 flips source-v1, G1.2 flips the JSON
+// faces, G1.3 flips the TOML faces; docs/go-implementation-plan.md §4.2).
 func TestApplicableSuiteCounts(t *testing.T) {
 	report, err := repositoryRunner(t).Run()
 	if err != nil {
 		t.Fatal(err)
 	}
 	expected := map[string][3]int{
-		"consema.conformance@1":                   {10, 20, 0},
-		"consema.toml.conformance@1":              {0, 18, 0},
+		"consema.conformance@1":                   {28, 2, 0},
+		"consema.toml.conformance@1":              {18, 0, 0},
 		"consema.protocol.conformance@1":          {31, 1, 0},
 		"consema.source.conformance@1":            {28, 0, 0},
-		"consema.syntax-query.conformance@1":      {0, 19, 0},
+		"consema.syntax-query.conformance@1":      {16, 3, 0},
 		"consema.protocol.conformance@2":          {11, 0, 0},
-		"consema.operations.conformance@1":        {0, 35, 0},
-		"consema.json-family.conformance@2":       {0, 33, 0},
+		"consema.operations.conformance@1":        {29, 6, 0},
+		"consema.json-family.conformance@2":       {30, 3, 0},
 		"consema.portable-graph.conformance@1":    {10, 0, 0},
 		"consema.semantic-model-v5.conformance@1": {22, 0, 0},
 		"consema.yaml.conformance@1":              {0, 27, 0},

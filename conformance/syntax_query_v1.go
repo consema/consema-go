@@ -1,10 +1,28 @@
 package conformance
 
-// The `consema.syntax-query.conformance@1` suite runner. The suite's capability
-// surface lands with a later format milestone; every case is a documented
-// skip that names the capability and the reason (RFC 0016 §7: documented
-// skip = success, never silent), and the frozen case-count assertion still
-// applies.
+import "strings"
+
+// The `consema.syntax-query.conformance@1` suite runner. The JSON face
+// (syntax.json.*) executes since 0.15.0 G1.2 (go/json) and the TOML face
+// (syntax.toml.*) since 0.15.0 G1.3 (go/toml); the cursor-terminal cases
+// (syntax.cursor.*) stay documented skips until the protocol-layer cursor
+// capability lands (RFC 0016 §7: documented skip = success, never silent).
 func runSyntaxQueryV1(_ *Runner, data *suiteData) *SuiteReport {
-	return runDeferred(nil, data)
+	report := &SuiteReport{}
+	for index := range data.Cases {
+		vector := &data.Cases[index]
+		switch {
+		case strings.HasPrefix(vector.ID, "syntax.json."):
+			RunSyntaxQueryJSONFace(vector, report)
+		case strings.HasPrefix(vector.ID, "syntax.toml."):
+			RunSyntaxQueryTomlFace(vector, report)
+		default:
+			report.Skipped = append(report.Skipped, SkipRecord{
+				ID:         vector.ID,
+				Capability: vector.Capability,
+				Reason:     "cursor-terminal capability is protocol-layer (core.query.ordered-results@1); lands after 0.15.0",
+			})
+		}
+	}
+	return report
 }
