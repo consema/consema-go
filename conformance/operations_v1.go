@@ -10,7 +10,7 @@ func runOperationsV1(_ *Runner, data *suiteData) *SuiteReport {
 	for index := range data.Cases {
 		vector := &data.Cases[index]
 		switch vector.ID {
-		case "registry-v3", "protocol-v3-dual-transport":
+		case "operations.v1.registry-v3", "operations.v1.protocol-v3-dual-transport":
 			report.Skipped = append(report.Skipped, SkipRecord{
 				ID:         vector.ID,
 				Capability: vector.Capability,
@@ -53,10 +53,9 @@ func runOperationsV1(_ *Runner, data *suiteData) *SuiteReport {
 			"operations.v1.convert-transformed-report":
 			RunOperationsConvertFace(vector, report)
 		default:
-			report.Skipped = append(report.Skipped, SkipRecord{
-				ID:         vector.ID,
-				Capability: vector.Capability,
-				Reason:     "convert face belongs to the root package (0.15.0 G1.4)",
+			report.Failed = append(report.Failed, CaseFailure{
+				ID:      vector.ID,
+				Message: "runner does not recognize published operations v1 case",
 			})
 		}
 	}

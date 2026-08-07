@@ -16,11 +16,10 @@ package consema
 // (json.FormatOperationRegistryFor, toml.NewFormatOperationRegistry); the
 // query domains come from the protocol package's frozen domain
 // constructors. The inventory entries of the not-yet-implemented families
-// (yaml/ini/properties/xml/plist/hcl) are declared capability facts only:
-// no Go package exists to derive their registry content from, and the
-// drift-guard tests assert every derivable fact against the backend
-// packages so a backend change fails this package's own tests (Rust
-// facade `registry` tests precedent).
+// (yaml/ini/properties/xml/plist/hcl) are written out as declared
+// capability facts with drift-guard tests asserting equality with backend
+// facts, so a backend change fails this package's own tests (Rust facade
+// `registry` tests precedent).
 
 import (
 	"context"

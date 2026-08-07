@@ -6,9 +6,9 @@
 // The harness compares the language-neutral normalized results of the same
 // data-driven input set (`cases.json`, this directory) executed by the Rust
 // SDK (crates/consema-conformance/examples/emit_normalized_results.rs) and
-// by this Go package. Go never imports or calls Rust (RFC 0016 §1.1 cgo
-// ban): the Rust side emits one `<case-id>.txt` evidence file per case, and
-// the Go test computes the same normalized facts and compares them field by
+// by this package. Go never imports or calls Rust (RFC 0016 §1.1 cgo ban):
+// the Rust side emits one `<case-id>.txt` evidence file per case, and the
+// Go test computes the same normalized facts and compares them field by
 // field. Orchestration: scripts/go-verify-normalized-differential.ps1.
 //
 // The compared facts are exactly the language-neutral behavior surface of
@@ -23,11 +23,12 @@ package normalized
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
+	stdjson "encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"consema.dev/consema/core"
 	"consema.dev/consema/document"
@@ -52,18 +53,19 @@ const RustDirEnv = "CONSEMA_DIFFERENTIAL_NORMALIZED_RUST_DIR"
 
 // fileCase is one entry of cases.json.
 type fileCase struct {
-	ID            string               `json:"id"`
-	Kind          string               `json:"kind"` // "document" or "source"
-	Format        string               `json:"format,omitempty"`
-	Profile       string               `json:"profile,omitempty"`
-	Source        string               `json:"source,omitempty"`
-	ForeignSource string               `json:"foreign_source,omitempty"`
-	ParseLimits   *parseLimitsDesc     `json:"parse_limits,omitempty"`
-	Steps         []stepDesc           `json:"steps,omitempty"`
-	Input         *sourceInputDesc     `json:"input,omitempty"`
-	Request       *encodingRequestDesc `json:"request,omitempty"`
-	Positions     []int                `json:"positions,omitempty"`
-	Patch         *patchDesc           `json:"patch,omitempty"`
+	ID               string               `json:"id"`
+	Kind             string               `json:"kind"` // "document" or "source"
+	Format           string               `json:"format,omitempty"`
+	Profile          string               `json:"profile,omitempty"`
+	Source           string               `json:"source,omitempty"`
+	ForeignSource    string               `json:"foreign_source,omitempty"`
+	ForeignSourceHex string               `json:"foreign_source_hex,omitempty"`
+	ParseLimits      *parseLimitsDesc     `json:"parse_limits,omitempty"`
+	Steps            []stepDesc           `json:"steps,omitempty"`
+	Input            *sourceInputDesc     `json:"input,omitempty"`
+	Request          *encodingRequestDesc `json:"request,omitempty"`
+	Positions        []int                `json:"positions,omitempty"`
+	Patch            *patchDesc           `json:"patch,omitempty"`
 }
 
 // parseLimitsDesc overrides the frozen parse limits.
@@ -80,25 +82,25 @@ type stepDesc struct {
 	Op string `json:"op"`
 
 	// query-native / query-syntax
-	Domain        string         `json:"domain,omitempty"`
-	DomainVersion int            `json:"domain_version,omitempty"`
-	Filters       []filterDesc   `json:"filters,omitempty"`
-	Combine       string         `json:"combine,omitempty"`
-	Selection     string         `json:"selection,omitempty"`
-	QueryLimits   *queryLimits   `json:"limits,omitempty"`
+	Domain        string       `json:"domain,omitempty"`
+	DomainVersion int          `json:"domain_version,omitempty"`
+	Filters       []filterDesc `json:"filters,omitempty"`
+	Combine       string       `json:"combine,omitempty"`
+	Selection     string       `json:"selection,omitempty"`
+	QueryLimits   *queryLimits `json:"query_limits,omitempty"`
 
 	// project
-	Target         string `json:"target,omitempty"`
+	Target          string `json:"target,omitempty"`
 	DuplicatePolicy string `json:"duplicate_policy,omitempty"`
 
 	// materialize
-	Input         string               `json:"input,omitempty"`
-	ValueJSON     string               `json:"value_json,omitempty"`
-	EntryMapping  *entryMappingDesc    `json:"entry_mapping,omitempty"`
-	TargetProfile string               `json:"target_profile,omitempty"`
-	Style         string               `json:"style,omitempty"`
-	Newline       string               `json:"newline,omitempty"`
-	MatLimits     *materializeLimits   `json:"limits,omitempty"`
+	Input         string             `json:"input,omitempty"`
+	ValueJSON     string             `json:"value_json,omitempty"`
+	EntryMapping  *entryMappingDesc  `json:"entry_mapping,omitempty"`
+	TargetProfile string             `json:"target_profile,omitempty"`
+	Style         string             `json:"style,omitempty"`
+	Newline       string             `json:"newline,omitempty"`
+	MatLimits     *materializeLimits `json:"limits,omitempty"`
 
 	// edit
 	Operations []editOpDesc `json:"operations,omitempty"`
@@ -106,8 +108,8 @@ type stepDesc struct {
 
 // filterDesc is one query filter: an operator call on the current input.
 type filterDesc struct {
-	Operator string          `json:"operator"`
-	Argument json.RawMessage `json:"argument,omitempty"`
+	Operator string             `json:"operator"`
+	Argument stdjson.RawMessage `json:"argument,omitempty"`
 }
 
 // queryLimits overrides the frozen query limits.
@@ -116,7 +118,8 @@ type queryLimits struct {
 	MaxSteps   *int `json:"max_steps,omitempty"`
 }
 
-// entryMappingDesc is a direct EntryMapping input for materialization.
+// entryMappingDesc is a direct EntryMapping input for materialization; the
+// key and value are canonical transport JSON envelopes (RFC 0015 §3.2).
 type entryMappingDesc struct {
 	KeyJSON   string `json:"key_json"`
 	ValueJSON string `json:"value_json"`
@@ -132,22 +135,22 @@ type materializeLimits struct {
 
 // editOpDesc is one edit operation of one transaction.
 type editOpDesc struct {
-	Operation string       `json:"operation"`
-	Target    *targetDesc  `json:"target"`
-	Value     *valueDesc   `json:"value,omitempty"`
-	LiteralHex string     `json:"literal_hex,omitempty"`
-	Name       string      `json:"name,omitempty"`
-	Policy     string      `json:"policy,omitempty"`
+	Operation  string         `json:"operation"`
+	Target     *targetDesc    `json:"target"`
+	Value      *valueDesc     `json:"value,omitempty"`
+	LiteralHex string         `json:"literal_hex,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Policy     string         `json:"policy,omitempty"`
 	Placement  *placementDesc `json:"placement,omitempty"`
 }
 
 // targetDesc identifies one structural node of the current document.
 type targetDesc struct {
-	Kind    string `json:"kind"` // root | member | member-value | member-key |
-	// entry | entry-item | array-element | array-element-value |
-	// array-element-item
-	Ordinal int  `json:"ordinal,omitempty"`
-	Foreign bool `json:"foreign,omitempty"`
+	// Kind: root | member | member-value | member-key | entry | entry-item |
+	// entry-key | array-element | array-element-value | array-element-item.
+	Kind    string `json:"kind"`
+	Ordinal int    `json:"ordinal,omitempty"`
+	Foreign bool   `json:"foreign,omitempty"`
 }
 
 // valueDesc is a scalar PortableValue descriptor for edit values.
@@ -162,9 +165,9 @@ type valueDesc struct {
 
 // placementDesc is one association placement.
 type placementDesc struct {
-	At             string `json:"at,omitempty"` // "start" | "end"
-	BeforeOrdinal  *int   `json:"before_ordinal,omitempty"`
-	AfterOrdinal   *int   `json:"after_ordinal,omitempty"`
+	At            string `json:"at,omitempty"` // "start" | "end"
+	BeforeOrdinal *int   `json:"before_ordinal,omitempty"`
+	AfterOrdinal  *int   `json:"after_ordinal,omitempty"`
 }
 
 // sourceInputDesc is the raw input of a source-face case.
@@ -189,8 +192,8 @@ type patchDesc struct {
 
 // patchReplacementDesc is one raw-byte replacement.
 type patchReplacementDesc struct {
-	OldStart      int    `json:"old_start"`
-	OldEnd        int    `json:"old_end"`
+	OldStart       int    `json:"old_start"`
+	OldEnd         int    `json:"old_end"`
 	ReplacementHex string `json:"replacement_hex"`
 }
 
@@ -198,9 +201,9 @@ type patchReplacementDesc struct {
 // Normalized fact emission
 // ---------------------------------------------------------------------------
 
-// facts is the ordered key=value fact set of one case. The key set is fixed:
-// every document case emits exactly the same keys in the same order, so a
-// missing or extra key is itself a differential failure.
+// facts is the ordered key=value fact set of one case. The key set is
+// fixed: every document case emits exactly the same keys in the same order,
+// so a missing or extra key is itself a differential failure.
 type facts struct {
 	lines []string
 }
@@ -215,27 +218,62 @@ func (f *facts) set(key, value string) {
 // Rust example implements the identical function.
 func escape(text string) string {
 	var output strings.Builder
-	for _, character := range text {
-		switch character {
-		case '"':
-			output.WriteString(`\"`)
-		case '\\':
-			output.WriteString(`\\`)
-		case '\b':
-			output.WriteString(`\b`)
-		case '\f':
-			output.WriteString(`\f`)
-		case '\n':
-			output.WriteString(`\n`)
-		case '\r':
-			output.WriteString(`\r`)
-		case '\t':
-			output.WriteString(`\t`)
-		default:
-			if character < 0x20 {
-				output.WriteString(fmt.Sprintf(`\u%04x`, character))
-			} else {
-				output.WriteRune(character)
+	for index := 0; index < len(text); {
+		character, size := utf8.DecodeRuneInString(text[index:])
+		if character != utf8.RuneError || text[index:index+size] == "�" {
+			switch character {
+			case '"':
+				output.WriteString(`\"`)
+			case '\\':
+				output.WriteString(`\\`)
+			case '\b':
+				output.WriteString(`\b`)
+			case '\f':
+				output.WriteString(`\f`)
+			case '\n':
+				output.WriteString(`\n`)
+			case '\r':
+				output.WriteString(`\r`)
+			case '\t':
+				output.WriteString(`\t`)
+			default:
+				if character < 0x20 {
+					output.WriteString(fmt.Sprintf(`\u%04x`, character))
+				} else {
+					output.WriteRune(character)
+				}
+			}
+			index += size
+			continue
+		}
+		// One invalid UTF-8 sequence: emit a single U+FFFD for the longest
+		// invalid run (the standard lossy semantics, mirrored byte for byte by
+		// Rust's from_utf8_lossy). DecodeRuneInString already groups truncated
+		// sequences (size 2/3 at the end of the string); an invalid starter
+		// byte's following continuation bytes cannot begin a new sequence, so
+		// they belong to the same run, unless the full expected width is
+		// present, in which case the sequence is complete-but-invalid and each
+		// byte is its own error (both sides emit per-byte replacements).
+		output.WriteString("�")
+		index += size
+		if size == 1 {
+			starter := text[index-1]
+			if 0xC2 <= starter && starter <= 0xF4 {
+				width := 2
+				if starter >= 0xE0 {
+					width = 3
+				}
+				if starter >= 0xF0 {
+					width = 4
+				}
+				continuations := 0
+				for index+continuations < len(text) &&
+					0x80 <= text[index+continuations] && text[index+continuations] <= 0xBF {
+					continuations++
+				}
+				if continuations < width-1 {
+					index += continuations
+				}
 			}
 		}
 	}
@@ -249,94 +287,115 @@ func join(items []string) string { return strings.Join(items, "|") }
 // Document face
 // ---------------------------------------------------------------------------
 
-// runDocumentCase executes one document-face case and returns its facts.
-func runDocumentCase(c *fileCase) ([]string, error) {
-	profile, profileName, err := parseDocumentProfile(c)
-	if err != nil {
-		return nil, err
-	}
-	limits := document.DefaultParseLimits()
-	applyParseLimits(&limits, c.ParseLimits)
-
-	facts := &facts{}
-	state := &docState{}
-
-	// --- parse ---
-	parseDoc, failure := parseDocumentSource(c, profile, limits)
-	if failure != nil {
-		facts.set("parse.formation", "Fatal")
-		facts.set("parse.fatal_code", formationFailureCode(failure))
-		facts.set("parse.diagnostic_codes", "")
-		facts.set("parse.root_kind", "")
-		facts.set("parse.native", "")
-		emitBlocked(facts)
-		return facts.lines, nil
-	}
-	state.doc = parseDoc
-	state.profile = profileName
-	facts.set("parse.formation", parseDoc.FormationStatus().String())
-	facts.set("parse.fatal_code", "")
-	facts.set("parse.diagnostic_codes", diagnosticCodes(parseDoc.Diagnostics()))
-	facts.set("parse.root_kind", documentRootKind(parseDoc))
-	facts.set("parse.native", documentNativeSummary(parseDoc))
-
-	// --- query steps ---
-	for _, step := range c.Steps {
-		switch step.Op {
-		case "parse":
-			// already handled
-		case "query-native":
-			runNativeQuery(facts, state, &step)
-		case "query-syntax":
-			runSyntaxQuery(facts, state, &step)
-		case "project":
-			runProject(facts, state, &step)
-		case "materialize":
-			runMaterialize(facts, state, &step)
-		case "edit":
-			runEdit(facts, state, &step)
-		default:
-			return nil, fmt.Errorf("case %s: unknown step op %q", c.ID, step.Op)
-		}
-	}
-	return facts.lines, nil
-}
-
-// emitBlocked fills the fixed fact keys after a fatal parse; every dependent
-// step reports Blocked on both sides.
-func emitBlocked(facts *facts) {
-	for _, key := range []string{
-		"query.native.status", "query.native.failure", "query.native.count", "query.native.matches",
-		"query.syntax.status", "query.syntax.failure", "query.syntax.count", "query.syntax.matches",
-		"project.status", "project.failure", "project.fidelity", "project.value_kind",
-		"project.report", "project.provenance_entries",
-		"materialize.status", "materialize.failure", "materialize.output", "materialize.fidelity",
-		"edit.status", "edit.failure", "edit.output", "edit.source_edit_count",
-	} {
-		facts.set(key, "")
-	}
-	// The dependency rule is expressed on the live keys below; the blocked
-	// keys are filled there too, so this helper only runs on the fatal path.
-	facts.set("query.native.status", "Blocked")
-	facts.set("query.syntax.status", "Blocked")
-	facts.set("project.status", "Blocked")
-	facts.set("materialize.status", "Blocked")
-	facts.set("edit.status", "Blocked")
-}
-
 // docState is the execution state of one document case.
 type docState struct {
-	doc       *json.Document
-	tomlDoc   *toml.Document
-	profile   string
-	foreign   *json.Document
+	doc         *json.Document
+	tomlDoc     *toml.Document
+	foreign     *json.Document
 	foreignToml *toml.Document
+
+	format           string
+	profile          interface{}
+	foreignSource    string
+	foreignSourceHex string
+	parseLimits      document.ParseLimits
+
+	// parse facts
+	fatalCode       string
+	formation       string
+	diagnosticCodes string
+	rootKind        string
+	native          string
+
+	// step run flags (each key set is emitted exactly once)
+	queryNativeRun bool
+	querySyntaxRun bool
+	projectRun     bool
+	materializeRun bool
+	editRun        bool
+
+	// projection result
 	value     core.Value
 	projected bool
 }
 
-// parseDocumentSource parses the case source with the selected profile.
-func parseDocumentSource(c *fileCase, profile interface{}, limits document.ParseLimits) (interface{}, interface{}) {
+// documentParsed reports whether the parse step succeeded.
+func (s *docState) documentParsed() bool { return s.doc != nil || s.tomlDoc != nil }
+
+// runDocumentCase executes one document-face case and returns its ordered
+// normalized facts.
+func runDocumentCase(c *fileCase) ([]string, error) {
+	profile, err := parseDocumentProfile(c)
+	if err != nil {
+		return nil, err
+	}
+	state := &docState{
+		format:           c.Format,
+		profile:          profile,
+		foreignSource:    c.ForeignSource,
+		foreignSourceHex: c.ForeignSourceHex,
+		parseLimits:      document.DefaultParseLimits(),
+	}
+	applyParseLimits(&state.parseLimits, c.ParseLimits)
+
+	facts := &facts{}
+	if !parseIntoState(state, c, profile, state.parseLimits) {
+		facts.set("parse.formation", "Fatal")
+		facts.set("parse.fatal_code", state.fatalCode)
+		facts.set("parse.diagnostic_codes", "")
+		facts.set("parse.root_kind", "")
+		facts.set("parse.native", "")
+		emitStepFacts(facts, state, stepDesc{})
+		return facts.lines, nil
+	}
+	facts.set("parse.formation", state.formation)
+	facts.set("parse.fatal_code", "")
+	facts.set("parse.diagnostic_codes", state.diagnosticCodes)
+	facts.set("parse.root_kind", state.rootKind)
+	facts.set("parse.native", state.native)
+
+	for _, step := range c.Steps {
+		switch step.Op {
+		case "parse":
+			// already handled
+		case "query-native", "query-syntax", "project", "materialize", "edit":
+			emitStepFacts(facts, state, step)
+		default:
+			return nil, fmt.Errorf("case %s: unknown step op %q", c.ID, step.Op)
+		}
+	}
+	// Every group's key set is emitted exactly once: groups whose step is
+	// absent from the case report Blocked here, in the fixed order.
+	emitStepFacts(facts, state, stepDesc{})
+	return facts.lines, nil
+}
+
+// emitStepFacts emits the fixed fact keys for every dependent step. A step
+// that is not declared in the case, or whose dependency failed, reports
+// Blocked; each key set is emitted exactly once.
+func emitStepFacts(facts *facts, state *docState, step stepDesc) {
+	switch step.Op {
+	case "query-native":
+		emitNativeQuery(facts, state, &step)
+	case "query-syntax":
+		emitSyntaxQuery(facts, state, &step)
+	case "project":
+		emitProject(facts, state, &step)
+	case "materialize":
+		emitMaterialize(facts, state, &step)
+	case "edit":
+		emitEdit(facts, state, &step)
+	default:
+		emitNativeQuery(facts, state, nil)
+		emitSyntaxQuery(facts, state, nil)
+		emitProject(facts, state, nil)
+		emitMaterialize(facts, state, nil)
+		emitEdit(facts, state, nil)
+	}
+}
+
+// parseIntoState parses the case source and fills the parse facts.
+func parseIntoState(state *docState, c *fileCase, profile interface{}, limits document.ParseLimits) bool {
 	switch c.Format {
 	case "json":
 		var p json.JsonProfile
@@ -350,48 +409,49 @@ func parseDocumentSource(c *fileCase, profile interface{}, limits document.Parse
 		}
 		doc, failure := json.Parse(context.Background(), []byte(c.Source), p, limits)
 		if failure != nil {
-			return nil, failure
+			state.fatalCode = failure.Code()
+			return false
 		}
-		return doc, nil
+		state.doc = doc
+		state.formation = doc.FormationStatus().String()
+		state.diagnosticCodes = diagnosticCodes(doc.Diagnostics())
+		state.rootKind = jsonRootKind(doc)
+		state.native = jsonNativeValue(doc.Root(), 0)
+		return true
 	case "toml":
-		doc, failure := toml.Parse([]byte(c.Source), toml.TomlProfile10V1(), limits)
+		doc, failure := toml.Parse([]byte(c.Source), toml.Toml10V1, limits)
 		if failure != nil {
-			return nil, failure
+			state.fatalCode = failure.Code()
+			return false
 		}
-		return doc, nil
+		state.tomlDoc = doc
+		state.formation = doc.FormationStatus().String()
+		state.diagnosticCodes = diagnosticCodes(doc.Diagnostics())
+		state.rootKind = doc.Root().Kind().String()
+		state.native = tomlNativeItem(doc.Root(), 0)
+		return true
 	}
-	return nil, nil
-}
-
-// formationFailureCode extracts the stable code of a fatal formation.
-func formationFailureCode(failure interface{}) string {
-	switch f := failure.(type) {
-	case *json.FormationFailure:
-		return f.Code()
-	case *toml.FormationFailure:
-		return f.Code()
-	}
-	return ""
+	return false
 }
 
 // parseDocumentProfile resolves the case profile.
-func parseDocumentProfile(c *fileCase) (interface{}, string, error) {
+func parseDocumentProfile(c *fileCase) (interface{}, error) {
 	switch c.Format {
 	case "json":
 		switch c.Profile {
 		case "json.strict@1":
-			return json.JsonProfileStrictV1, "json.strict@1", nil
+			return json.JsonProfileStrictV1, nil
 		case "jsonc.bounded@1":
-			return json.JsonProfileJsoncBoundedV1, "jsonc.bounded@1", nil
+			return json.JsonProfileJsoncBoundedV1, nil
 		case "json5.standard@1":
-			return json.JsonProfileJson5StandardV1, "json5.standard@1", nil
+			return json.JsonProfileJson5StandardV1, nil
 		}
 	case "toml":
 		if c.Profile == "toml.1.0@1" {
-			return toml.TomlProfile10V1(), "toml.1.0@1", nil
+			return toml.Toml10V1, nil
 		}
 	}
-	return nil, "", fmt.Errorf("case %s: unknown format/profile %q/%q", c.ID, c.Format, c.Profile)
+	return nil, fmt.Errorf("case %s: unknown format/profile %q/%q", c.ID, c.Format, c.Profile)
 }
 
 // applyParseLimits applies the descriptor overrides.
@@ -425,30 +485,13 @@ func diagnosticCodes(diagnostics []*protocol.Diagnostic) string {
 	return join(codes)
 }
 
-// documentRootKind renders the root native kind fact.
-func documentRootKind(doc interface{}) string {
-	switch d := doc.(type) {
-	case *json.Document:
-		kind := d.Root().Kind()
-		if !kind.IsAvailable() {
-			return "Unavailable:" + kind.Reason().String()
-		}
-		return kind.Value().String()
-	case *toml.Document:
-		return d.Root().Kind().String()
+// jsonRootKind renders the root native kind fact.
+func jsonRootKind(doc *json.Document) string {
+	kind := doc.Root().Kind()
+	if !kind.IsAvailable() {
+		return "Unavailable:" + kind.Reason().String()
 	}
-	return ""
-}
-
-// documentNativeSummary renders the canonical native text of the root.
-func documentNativeSummary(doc interface{}) string {
-	switch d := doc.(type) {
-	case *json.Document:
-		return jsonNativeValue(d.Root(), 0)
-	case *toml.Document:
-		return tomlNativeItem(d.Root(), 0)
-	}
-	return ""
+	return kind.Value().String()
 }
 
 // jsonNativeValue renders one JSON native value in the canonical summary
@@ -497,9 +540,8 @@ func jsonNativeValue(value json.JsonValue, depth int) string {
 		items := members.Value()
 		parts := make([]string, 0, len(items))
 		for _, member := range items {
-			name := member.Name()
 			renderedName := "?"
-			if name.IsAvailable() {
+			if name := member.Name(); name.IsAvailable() {
 				renderedName = escape(*name.Value())
 			}
 			parts = append(parts, `"`+renderedName+`":`+jsonNativeValue(member.Value(), depth+1))
@@ -541,7 +583,11 @@ func tomlNativeItem(item toml.TomlItem, depth int) string {
 	case toml.ItemKindInlineTable, toml.ItemKindRootTable, toml.ItemKindStandardTable,
 		toml.ItemKindImplicitTable, toml.ItemKindDottedTable:
 		entries, _ := item.TableEntries()
-		return tomlTableSummary(entries, depth)
+		parts := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			parts = append(parts, `"`+escape(entry.Name())+`":`+tomlNativeItem(entry.Item(), depth+1))
+		}
+		return "{" + strings.Join(parts, ",") + "}"
 	case toml.ItemKindArrayOfTables:
 		elements, _ := item.ArrayElements()
 		parts := make([]string, 0, len(elements))
@@ -553,15 +599,6 @@ func tomlNativeItem(item toml.TomlItem, depth int) string {
 	return "?"
 }
 
-// tomlTableSummary renders one table's ordered entries.
-func tomlTableSummary(entries []toml.TomlEntry, depth int) string {
-	parts := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		parts = append(parts, `"`+escape(entry.Name())+`":`+tomlNativeItem(entry.Item(), depth+1))
-	}
-	return "{" + strings.Join(parts, ",") + "}"
-}
-
 // tomlDateTimeSummary renders one TOML date/time datum canonically.
 func tomlDateTimeSummary(item toml.TomlItem) string {
 	dateTime, _ := item.AsDateTime()
@@ -571,10 +608,10 @@ func tomlDateTimeSummary(item toml.TomlItem) string {
 		parts = append(parts, fmt.Sprintf("date=%04d-%02d-%02d", date.Year, date.Month, date.Day))
 	}
 	if dateTime.Time != nil {
-		time := dateTime.Time
-		text := fmt.Sprintf("time=%02d:%02d:%02d", time.Hour, time.Minute, time.Second)
-		if time.Nanosecond != 0 {
-			text += "." + fmt.Sprintf("%09d", time.Nanosecond)
+		value := dateTime.Time
+		text := fmt.Sprintf("time=%02d:%02d:%02d", value.Hour, value.Minute, value.Second)
+		if value.Nanosecond != 0 {
+			text += "." + fmt.Sprintf("%09d", value.Nanosecond)
 		}
 		parts = append(parts, text)
 	}
@@ -599,19 +636,24 @@ func tomlDateTimeSummary(item toml.TomlItem) string {
 // Query steps
 // ---------------------------------------------------------------------------
 
-// runNativeQuery executes the optional native query step.
-func runNativeQuery(facts *facts, state *docState, step *stepDesc) {
-	if state.doc == nil && state.tomlDoc == nil {
+// emitNativeQuery executes the optional native query step.
+func emitNativeQuery(facts *facts, state *docState, step *stepDesc) {
+	if state.queryNativeRun {
+		return
+	}
+	blocked := func() {
 		facts.set("query.native.status", "Blocked")
 		facts.set("query.native.failure", "")
 		facts.set("query.native.count", "")
 		facts.set("query.native.matches", "")
+	}
+	if step == nil || step.Op != "query-native" || !state.documentParsed() {
+		state.queryNativeRun = true
+		blocked()
 		return
 	}
-	domain, err := protocol.NewQueryDomain(step.Domain, uint32(step.DomainVersion)), error(nil)
-	if err != nil {
-		panic("unreachable")
-	}
+	state.queryNativeRun = true
+	domain := protocol.NewQueryDomain(step.Domain, uint32(step.DomainVersion))
 	executable, buildFailure := buildQueryDefinition(step, domain)
 	if buildFailure != nil {
 		facts.set("query.native.status", "Failed")
@@ -622,9 +664,8 @@ func runNativeQuery(facts *facts, state *docState, step *stepDesc) {
 	}
 	limits := protocol.DefaultQueryLimits()
 	applyQueryLimits(&limits, step.QueryLimits)
-	ctx := context.Background()
 	if state.doc != nil {
-		matches, queryFailure := json.ExecuteJSONQuery(ctx, executable, state.doc, limits)
+		matches, queryFailure := json.ExecuteJSONQuery(context.Background(), executable, state.doc, limits)
 		if queryFailure != nil {
 			facts.set("query.native.status", "Failed")
 			facts.set("query.native.failure", queryFailure.Code())
@@ -642,7 +683,7 @@ func runNativeQuery(facts *facts, state *docState, step *stepDesc) {
 		facts.set("query.native.matches", join(items))
 		return
 	}
-	matches, queryFailure := toml.ExecuteTomlQuery(ctx, executable, state.tomlDoc, limits)
+	matches, queryFailure := toml.ExecuteTomlQuery(context.Background(), executable, state.tomlDoc, limits)
 	if queryFailure != nil {
 		facts.set("query.native.status", "Failed")
 		facts.set("query.native.failure", queryFailure.Code())
@@ -658,6 +699,71 @@ func runNativeQuery(facts *facts, state *docState, step *stepDesc) {
 	facts.set("query.native.failure", "")
 	facts.set("query.native.count", strconv.Itoa(len(matches)))
 	facts.set("query.native.matches", join(items))
+}
+
+// emitSyntaxQuery executes the optional syntax query step.
+func emitSyntaxQuery(facts *facts, state *docState, step *stepDesc) {
+	if state.querySyntaxRun {
+		return
+	}
+	blocked := func() {
+		facts.set("query.syntax.status", "Blocked")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", "")
+		facts.set("query.syntax.matches", "")
+	}
+	if step == nil || step.Op != "query-syntax" || !state.documentParsed() {
+		state.querySyntaxRun = true
+		blocked()
+		return
+	}
+	state.querySyntaxRun = true
+	domain := protocol.NewQueryDomain(step.Domain, uint32(step.DomainVersion))
+	executable, buildFailure := buildQueryDefinition(step, domain)
+	if buildFailure != nil {
+		facts.set("query.syntax.status", "Failed")
+		facts.set("query.syntax.failure", buildFailure.Code())
+		facts.set("query.syntax.count", "")
+		facts.set("query.syntax.matches", "")
+		return
+	}
+	limits := protocol.DefaultQueryLimits()
+	applyQueryLimits(&limits, step.QueryLimits)
+	if state.doc != nil {
+		matches, queryFailure := json.ExecuteJSONSyntaxQuery(context.Background(), executable, state.doc, limits)
+		if queryFailure != nil {
+			facts.set("query.syntax.status", "Failed")
+			facts.set("query.syntax.failure", queryFailure.Code())
+			facts.set("query.syntax.count", "")
+			facts.set("query.syntax.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+		}
+		facts.set("query.syntax.status", "Completed")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+		facts.set("query.syntax.matches", join(items))
+		return
+	}
+	matches, queryFailure := toml.ExecuteTomlSyntaxQuery(context.Background(), executable, state.tomlDoc, limits)
+	if queryFailure != nil {
+		facts.set("query.syntax.status", "Failed")
+		facts.set("query.syntax.failure", queryFailure.Code())
+		facts.set("query.syntax.count", "")
+		facts.set("query.syntax.matches", "")
+		return
+	}
+	items := make([]string, 0, len(matches))
+	for _, match := range matches {
+		items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+	}
+	facts.set("query.syntax.status", "Completed")
+	facts.set("query.syntax.failure", "")
+	facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+	facts.set("query.syntax.matches", join(items))
 }
 
 // jsonNativeMatch renders one JSON native match identity fact.
@@ -684,75 +790,14 @@ func jsonNativeMatch(match json.JsonMatch) string {
 // tomlNativeMatch renders one TOML native match identity fact.
 func tomlNativeMatch(match toml.TomlMatch) string {
 	switch match.Kind {
-	case toml.TomlMatchKindItem:
-		return "I:" + match.ItemKind.String()
-	case toml.TomlMatchKindEntry:
+	case "Item":
+		return "I:" + match.KindName.String()
+	case "Entry":
 		return fmt.Sprintf("M:%d:%s", match.Ordinal, escape(match.Name))
-	case toml.TomlMatchKindArrayElement:
+	case "ArrayElement":
 		return fmt.Sprintf("E:%d", match.Ordinal)
 	}
 	return "?"
-}
-
-// runSyntaxQuery executes the optional syntax query step.
-func runSyntaxQuery(facts *facts, state *docState, step *stepDesc) {
-	if state.doc == nil && state.tomlDoc == nil {
-		facts.set("query.syntax.status", "Blocked")
-		facts.set("query.syntax.failure", "")
-		facts.set("query.syntax.count", "")
-		facts.set("query.syntax.matches", "")
-		return
-	}
-	domain, err := protocol.NewQueryDomain(step.Domain, uint32(step.DomainVersion)), error(nil)
-	if err != nil {
-		panic("unreachable")
-	}
-	executable, buildFailure := buildQueryDefinition(step, domain)
-	if buildFailure != nil {
-		facts.set("query.syntax.status", "Failed")
-		facts.set("query.syntax.failure", buildFailure.Code())
-		facts.set("query.syntax.count", "")
-		facts.set("query.syntax.matches", "")
-		return
-	}
-	limits := protocol.DefaultQueryLimits()
-	applyQueryLimits(&limits, step.QueryLimits)
-	ctx := context.Background()
-	if state.doc != nil {
-		matches, queryFailure := json.ExecuteJSONSyntaxQuery(ctx, executable, state.doc, limits)
-		if queryFailure != nil {
-			facts.set("query.syntax.status", "Failed")
-			facts.set("query.syntax.failure", queryFailure.Code())
-			facts.set("query.syntax.count", "")
-			facts.set("query.syntax.matches", "")
-			return
-		}
-		items := make([]string, 0, len(matches))
-		for _, match := range matches {
-			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
-		}
-		facts.set("query.syntax.status", "Completed")
-		facts.set("query.syntax.failure", "")
-		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
-		facts.set("query.syntax.matches", join(items))
-		return
-	}
-	matches, queryFailure := toml.ExecuteTomlSyntaxQuery(ctx, executable, state.tomlDoc, limits)
-	if queryFailure != nil {
-		facts.set("query.syntax.status", "Failed")
-		facts.set("query.syntax.failure", queryFailure.Code())
-		facts.set("query.syntax.count", "")
-		facts.set("query.syntax.matches", "")
-		return
-	}
-	items := make([]string, 0, len(matches))
-	for _, match := range matches {
-		items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
-	}
-	facts.set("query.syntax.status", "Completed")
-	facts.set("query.syntax.failure", "")
-	facts.set("query.syntax.count", strconv.Itoa(len(matches)))
-	facts.set("query.syntax.matches", join(items))
 }
 
 // buildQueryDefinition builds the executable from the declarative filters,
@@ -763,40 +808,47 @@ func buildQueryDefinition(step *stepDesc, domain *protocol.QueryDomain) (*protoc
 	if strings.HasPrefix(step.Domain, "toml.") {
 		format = "toml"
 	}
-	branches := make([]*protocol.QueryExpression, 0, len(step.Filters))
+	calls := make([]*protocol.OperatorCall, 0, len(step.Filters))
 	for _, filter := range step.Filters {
 		var call *protocol.OperatorCall
+		var buildFailure *protocol.QueryFailure
 		switch filter.Operator {
 		case "kind-is":
-			call = protocol.NewOperatorCall(format+".syntax-kind-is", 1).
-				WithArgument("kind", core.String(filter.argumentString()))
+			call, buildFailure = argumentCall(format+".syntax-kind-is", "kind", &filter, filter.argumentString)
 		case "text-equals":
-			call = protocol.NewOperatorCall(format+".syntax-text-equals", 1).
-				WithArgument("text", core.String(filter.argumentString()))
+			call, buildFailure = argumentCall(format+".syntax-text-equals", "text", &filter, filter.argumentString)
 		case "take":
-			call = protocol.NewOperatorCall("core.take", 1).
-				WithArgument("count", core.NewInteger(big.NewInt(int64(filter.argumentInt()))))
+			call, buildFailure = argumentCall("core.take", "count", &filter, filter.argumentInteger)
+		case "json.member-name-equals", "toml.entry-name-equals":
+			call, buildFailure = argumentCall(filter.Operator, "name", &filter, filter.argumentString)
 		default:
 			call = protocol.NewOperatorCall(filter.Operator, 1)
-			if len(filter.Argument) > 0 {
-				call = call.WithArgument("name", core.String(filter.argumentString()))
-			}
 		}
-		branches = append(branches, (&protocol.QueryExpression{Kind: protocol.ExpressionInput}).Then(call))
+		if buildFailure != nil {
+			return nil, buildFailure
+		}
+		calls = append(calls, call)
 	}
 	var expression *protocol.QueryExpression
 	switch step.Combine {
 	case "Single", "":
-		if len(branches) == 0 {
-			expression = &protocol.QueryExpression{Kind: protocol.ExpressionInput}
-		} else if len(branches) == 1 {
-			expression = branches[0]
-		} else {
-			expression = &protocol.QueryExpression{Kind: protocol.ExpressionConcat, Branches: branches}
+		// A single filter chain applies every operator to the current input
+		// in order (the vector pipeline semantics).
+		expression = &protocol.QueryExpression{Kind: protocol.ExpressionInput}
+		for _, call := range calls {
+			expression = expression.Then(call)
 		}
 	case "StructureOrderMerge":
+		branches := make([]*protocol.QueryExpression, 0, len(calls))
+		for _, call := range calls {
+			branches = append(branches, (&protocol.QueryExpression{Kind: protocol.ExpressionInput}).Then(call))
+		}
 		expression = &protocol.QueryExpression{Kind: protocol.ExpressionStructureOrderMerge, Branches: branches}
 	case "Concat":
+		branches := make([]*protocol.QueryExpression, 0, len(calls))
+		for _, call := range calls {
+			branches = append(branches, (&protocol.QueryExpression{Kind: protocol.ExpressionInput}).Then(call))
+		}
 		expression = &protocol.QueryExpression{Kind: protocol.ExpressionConcat, Branches: branches}
 	default:
 		return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
@@ -826,28 +878,52 @@ func buildQueryDefinition(step *stepDesc, domain *protocol.QueryDomain) (*protoc
 	return validated.Bind(capabilities)
 }
 
-// argumentString decodes a string filter argument.
-func (f *filterDesc) argumentString() string {
+// argumentString decodes a string filter argument; ok is false when the
+// argument is absent or not a JSON string.
+func (f *filterDesc) argumentString() (core.Value, bool) {
 	if len(f.Argument) == 0 {
-		return ""
+		return nil, false
 	}
 	var text string
-	if err := json.Unmarshal(f.Argument, &text); err == nil {
-		return text
+	if err := stdjson.Unmarshal(f.Argument, &text); err != nil {
+		return nil, false
 	}
-	return ""
+	return core.String(text), true
 }
 
-// argumentInt decodes an integer filter argument.
-func (f *filterDesc) argumentInt() int {
+// argumentInteger decodes an integer filter argument; ok is false when the
+// argument is absent or not a JSON integer.
+func (f *filterDesc) argumentInteger() (core.Value, bool) {
 	if len(f.Argument) == 0 {
-		return 0
+		return nil, false
 	}
 	var number int64
-	if err := json.Unmarshal(f.Argument, &number); err == nil {
-		return int(number)
+	if err := stdjson.Unmarshal(f.Argument, &number); err != nil {
+		return nil, false
 	}
-	return 0
+	return core.NewInteger(big.NewInt(number)), true
+}
+
+// argumentCall binds one operator argument from the filter descriptor with
+// the Rust example's build semantics: a missing argument is an
+// invalid-argument failure; a present but wrong-typed argument is bound
+// verbatim so the definition validation reports the wrong argument kind
+// (core.query.wrong-argument-type@1 on both sides).
+func argumentCall(operator, name string, filter *filterDesc,
+	decode func() (core.Value, bool)) (*protocol.OperatorCall, *protocol.QueryFailure) {
+	call := protocol.NewOperatorCall(operator, 1)
+	value, ok := decode()
+	if ok {
+		return call.WithArgument(name, value), nil
+	}
+	if len(filter.Argument) == 0 {
+		return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument, Operator: operator, Argument: name}
+	}
+	raw, err := protocol.DecodeJSON(filter.Argument, protocol.DefaultProtocolLimits())
+	if err != nil {
+		return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument, Operator: operator, Argument: name}
+	}
+	return call.WithArgument(name, raw), nil
 }
 
 // applyQueryLimits applies the descriptor overrides.
@@ -867,19 +943,27 @@ func applyQueryLimits(limits *protocol.QueryLimits, desc *queryLimits) {
 // Projection / materialization / edit steps
 // ---------------------------------------------------------------------------
 
-// runProject executes the optional projection step.
-func runProject(facts *facts, state *docState, step *stepDesc) {
-	if state.doc == nil && state.tomlDoc == nil {
+// emitProject executes the optional projection step.
+func emitProject(facts *facts, state *docState, step *stepDesc) {
+	if state.projectRun {
+		return
+	}
+	blocked := func() {
 		facts.set("project.status", "Blocked")
 		facts.set("project.failure", "")
 		facts.set("project.fidelity", "")
 		facts.set("project.value_kind", "")
 		facts.set("project.report", "")
 		facts.set("project.provenance_entries", "")
+	}
+	if step == nil || step.Op != "project" || !state.documentParsed() {
+		state.projectRun = true
+		blocked()
 		return
 	}
+	state.projectRun = true
 	if state.doc != nil {
-		request, buildFailure := buildJSONProjectionRequest(state, step)
+		request, buildFailure := buildJSONProjectionRequest(step)
 		if buildFailure != nil {
 			facts.set("project.status", "Failed")
 			facts.set("project.failure", buildFailure.Code())
@@ -895,7 +979,7 @@ func runProject(facts *facts, state *docState, step *stepDesc) {
 			facts.set("project.failure", result.Failed.Diagnostics[0].Code)
 			facts.set("project.fidelity", "")
 			facts.set("project.value_kind", "")
-			facts.set("project.report", projectionReportSummary(result.Failed.Report))
+			facts.set("project.report", jsonEventSummary(result.Failed.Report))
 			facts.set("project.provenance_entries", "")
 			return
 		}
@@ -905,7 +989,7 @@ func runProject(facts *facts, state *docState, step *stepDesc) {
 		facts.set("project.failure", "")
 		facts.set("project.fidelity", result.Complete.Fidelity.String())
 		facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
-		facts.set("project.report", projectionReportSummary(result.Complete.Report))
+		facts.set("project.report", jsonEventSummary(result.Complete.Report))
 		facts.set("project.provenance_entries", strconv.Itoa(len(result.Complete.Provenance.Entries())))
 		return
 	}
@@ -916,7 +1000,7 @@ func runProject(facts *facts, state *docState, step *stepDesc) {
 		facts.set("project.failure", result.Failed.Diagnostics[0].Code)
 		facts.set("project.fidelity", "")
 		facts.set("project.value_kind", "")
-		facts.set("project.report", projectionReportSummary(result.Failed.Report))
+		facts.set("project.report", tomlReportSummary(result.Failed.Report))
 		facts.set("project.provenance_entries", "")
 		return
 	}
@@ -924,19 +1008,17 @@ func runProject(facts *facts, state *docState, step *stepDesc) {
 	state.projected = true
 	facts.set("project.status", "Completed")
 	facts.set("project.failure", "")
-	facts.set("project.fidelity", result.Complete.Fidelity.String())
+	facts.set("project.fidelity", string(result.Complete.Fidelity))
 	facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
-	facts.set("project.report", projectionReportSummary(result.Complete.Report))
+	facts.set("project.report", tomlReportSummary(result.Complete.Report))
 	facts.set("project.provenance_entries", strconv.Itoa(len(result.Complete.Provenance.Entries())))
 }
 
 // buildJSONProjectionRequest builds the JSON projection request from the
 // descriptor.
-func buildJSONProjectionRequest(state *docState, step *stepDesc) (*json.ProjectionRequest, *json.ProjectionFailure) {
+func buildJSONProjectionRequest(step *stepDesc) (*json.ProjectionRequest, *json.ProjectionFailure) {
 	var target json.ProjectionTarget
 	switch step.Target {
-	case "BestExactCore":
-		target = json.ProjectionTargetBestExactCoreV1
 	case "ProjectAsObject":
 		target = json.ProjectionTargetProjectAsObjectV1
 	case "ProjectAsEntryMapping":
@@ -958,14 +1040,7 @@ func buildJSONProjectionRequest(state *docState, step *stepDesc) (*json.Projecti
 
 // buildTomlProjectionRequest builds the TOML projection request.
 func buildTomlProjectionRequest(step *stepDesc) toml.ProjectionRequest {
-	var target toml.ProjectionTarget
-	switch step.Target {
-	case "ProjectAsObject":
-		target = toml.ProjectionTargetProjectAsObject
-	default:
-		target = toml.ProjectionTargetBestExactCore
-	}
-	return toml.NewProjectionRequest(target)
+	return toml.NewProjectionRequest(toml.ProjectionTargetBestExactCoreV1)
 }
 
 // neutralKindName maps one core kind to the language-neutral kind
@@ -977,16 +1052,12 @@ func neutralKindName(kind core.Kind) string {
 	return kind.String()
 }
 
-// projectionReportSummary renders the report as ordered EventKind:count
-// pairs.
-func projectionReportSummary(report json.ProjectionReport) string {
-	return eventSummary(report.Events())
-}
-
-func eventSummary(events []json.ProjectionEvent) string {
+// jsonEventSummary renders the JSON projection report as ordered
+// EventKind:count pairs.
+func jsonEventSummary(report json.ProjectionReport) string {
 	order := make([]string, 0)
 	counts := make(map[string]int)
-	for _, event := range events {
+	for _, event := range report.Events() {
 		name := string(event.Kind)
 		if _, seen := counts[name]; !seen {
 			order = append(order, name)
@@ -1000,42 +1071,52 @@ func eventSummary(events []json.ProjectionEvent) string {
 	return join(parts)
 }
 
-// runMaterialize executes the optional materialization step.
-func runMaterialize(facts *facts, state *docState, step *stepDesc) {
+// tomlReportSummary renders the TOML projection report as ordered
+// diagnostic codes.
+func tomlReportSummary(report toml.ProjectionReport) string {
+	return diagnosticCodes(report.Events())
+}
+
+// emitMaterialize executes the optional materialization step.
+func emitMaterialize(facts *facts, state *docState, step *stepDesc) {
+	if state.materializeRun {
+		return
+	}
+	blocked := func() {
+		facts.set("materialize.status", "Blocked")
+		facts.set("materialize.failure", "")
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
+	}
+	if step == nil || step.Op != "materialize" || !state.documentParsed() {
+		state.materializeRun = true
+		blocked()
+		return
+	}
+	state.materializeRun = true
 	var value core.Value
 	switch step.Input {
 	case "", "project":
 		if !state.projected {
-			facts.set("materialize.status", "Blocked")
-			facts.set("materialize.failure", "")
-			facts.set("materialize.output", "")
-			facts.set("materialize.fidelity", "")
+			blocked()
 			return
 		}
 		value = state.value
 	case "value":
-		if step.EntryMapping != nil {
-			key, err := protocol.DecodeJSON([]byte(step.EntryMapping.KeyJSON), protocol.DefaultProtocolLimits())
-			if err != nil {
-				return
-			}
-			mapped, err := protocol.DecodeJSON([]byte(step.EntryMapping.ValueJSON), protocol.DefaultProtocolLimits())
-			if err != nil {
-				return
-			}
-			builder := core.NewEntryMappingBuilder()
-			if err := builder.Push(key, mapped); err != nil {
-				return
-			}
-			value = builder.Build()
-		} else {
-			decoded, err := protocol.DecodeJSON([]byte(step.ValueJSON), protocol.DefaultProtocolLimits())
-			if err != nil {
-				return
-			}
-			value = decoded
+		decoded, ok := decodeMaterializeValue(step)
+		if !ok {
+			facts.set("materialize.status", "Failed")
+			facts.set("materialize.failure", "core.protocol.invalid-value@1")
+			facts.set("materialize.output", "")
+			facts.set("materialize.fidelity", "")
+			return
 		}
+		value = decoded
 	default:
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", "core.protocol.invalid-value@1")
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
 		return
 	}
 	request, ok := buildMaterializationRequest(step)
@@ -1048,37 +1129,59 @@ func runMaterialize(facts *facts, state *docState, step *stepDesc) {
 	}
 	if state.doc != nil {
 		result := json.Materialize(value, request)
-		emitMaterializationFacts(facts, result.Complete != nil, func() (string, string) {
-			complete := result.Complete
-			return string(complete.Document.Render()), complete.Fidelity.String()
-		}, func() string {
-			return result.Failed.Failure.Code()
-		})
+		if result.Complete != nil {
+			output := string(result.Complete.Document.Render())
+			facts.set("materialize.status", "Completed")
+			facts.set("materialize.failure", "")
+			facts.set("materialize.output", escape(output))
+			facts.set("materialize.fidelity", result.Complete.Fidelity.String())
+			return
+		}
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", result.Failed.Failure.Code())
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
 		return
 	}
 	result := toml.Materialize(value, request)
-	emitMaterializationFacts(facts, result.Complete != nil, func() (string, string) {
-		complete := result.Complete
-		return string(complete.Document.Render()), complete.Fidelity.String()
-	}, func() string {
-		return result.Failed.Failure.Code()
-	})
-}
-
-// emitMaterializationFacts writes the materialization fact keys.
-func emitMaterializationFacts(facts *facts, completed bool, complete func() (string, string), failedCode func() string) {
-	if completed {
-		output, fidelity := complete()
+	if result.Complete != nil {
+		output := string(result.Complete.Document.Render())
 		facts.set("materialize.status", "Completed")
 		facts.set("materialize.failure", "")
 		facts.set("materialize.output", escape(output))
-		facts.set("materialize.fidelity", fidelity)
+		facts.set("materialize.fidelity", string(result.Complete.Fidelity))
 		return
 	}
 	facts.set("materialize.status", "Failed")
-	facts.set("materialize.failure", failedCode())
+	facts.set("materialize.failure", result.Failed.Failure.Code())
 	facts.set("materialize.output", "")
 	facts.set("materialize.fidelity", "")
+}
+
+// decodeMaterializeValue decodes the materialize input descriptor through
+// the canonical transport JSON decoder (RFC 0015 §3.2; the sanctioned
+// cross-language byte surface beside PVCE/PGCE).
+func decodeMaterializeValue(step *stepDesc) (core.Value, bool) {
+	if step.EntryMapping != nil {
+		key, err := protocol.DecodeJSON([]byte(step.EntryMapping.KeyJSON), protocol.DefaultProtocolLimits())
+		if err != nil {
+			return nil, false
+		}
+		value, err := protocol.DecodeJSON([]byte(step.EntryMapping.ValueJSON), protocol.DefaultProtocolLimits())
+		if err != nil {
+			return nil, false
+		}
+		builder := core.NewEntryMappingBuilder()
+		if err := builder.Push(key, value); err != nil {
+			return nil, false
+		}
+		return builder.Build(), true
+	}
+	decoded, err := protocol.DecodeJSON([]byte(step.ValueJSON), protocol.DefaultProtocolLimits())
+	if err != nil {
+		return nil, false
+	}
+	return decoded, true
 }
 
 // buildMaterializationRequest builds the request from the descriptor.
@@ -1086,17 +1189,19 @@ func buildMaterializationRequest(step *stepDesc) (document.MaterializationReques
 	if step.TargetProfile == "" || step.Style == "" {
 		return document.MaterializationRequest{}, false
 	}
+	targetParts := strings.SplitN(step.TargetProfile, "@", 2)
+	styleParts := strings.SplitN(step.Style, "@", 2)
 	request := document.NewMaterializationRequest(
-		document.NewProfileId(strings.SplitN(step.TargetProfile, "@", 2)[0], 1),
-		document.NewMaterializationStyleId(strings.SplitN(step.Style, "@", 2)[0], 1),
+		document.NewProfileId(targetParts[0], 1),
+		document.NewMaterializationStyleId(styleParts[0], 1),
 	)
 	switch step.Newline {
 	case "None":
 		request = request.WithNewline(document.NewlineNone)
-	case "Lf":
-		request = request.WithNewline(document.NewlineLf)
 	case "CrLf":
 		request = request.WithNewline(document.NewlineCrLf)
+	default:
+		request = request.WithNewline(document.NewlineLf)
 	}
 	if step.MatLimits != nil {
 		limits := document.DefaultMaterializationLimits()
@@ -1117,66 +1222,122 @@ func buildMaterializationRequest(step *stepDesc) (document.MaterializationReques
 	return request, true
 }
 
-// runEdit executes the optional edit step (one atomic transaction).
-func runEdit(facts *facts, state *docState, step *stepDesc) {
-	if state.doc == nil && state.tomlDoc == nil {
+// emitEdit executes the optional edit step (one atomic transaction).
+func emitEdit(facts *facts, state *docState, step *stepDesc) {
+	if state.editRun {
+		return
+	}
+	blocked := func() {
 		facts.set("edit.status", "Blocked")
 		facts.set("edit.failure", "")
 		facts.set("edit.output", "")
 		facts.set("edit.source_edit_count", "")
+	}
+	if step == nil || step.Op != "edit" || !state.documentParsed() {
+		state.editRun = true
+		blocked()
 		return
 	}
+	state.editRun = true
 	if state.doc != nil {
+		if !state.ensureForeignJSON() {
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.source.invalid-sequence@1")
+			facts.set("edit.output", "")
+			facts.set("edit.source_edit_count", "")
+			return
+		}
 		builder := json.NewEditTransactionBuilder(state.doc)
 		if !applyJSONEditOperations(builder, state, step) {
-			facts.set("edit.status", "Blocked")
-			facts.set("edit.failure", "")
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.edit.target-not-found@1")
 			facts.set("edit.output", "")
 			facts.set("edit.source_edit_count", "")
 			return
 		}
 		commit, editFailure := state.doc.Commit(builder.Build())
-		emitEditFacts(facts, commit != nil, func() (string, int) {
-			return string(commit.Document.Render()), len(commit.ChangeSet.SourceEdits())
-		}, func() string {
-			return editFailure.Code()
-		})
+		if commit != nil {
+			facts.set("edit.status", "Completed")
+			facts.set("edit.failure", "")
+			facts.set("edit.output", escape(string(commit.Document.Render())))
+			facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+			return
+		}
+		facts.set("edit.status", "Failed")
+		facts.set("edit.failure", editFailure.Code())
+		facts.set("edit.output", "")
+		facts.set("edit.source_edit_count", "")
 		return
 	}
 	builder := toml.NewEditTransactionBuilder(state.tomlDoc)
 	if !applyTomlEditOperations(builder, state, step) {
-		facts.set("edit.status", "Blocked")
-		facts.set("edit.failure", "")
+		facts.set("edit.status", "Failed")
+		facts.set("edit.failure", "core.edit.target-not-found@1")
 		facts.set("edit.output", "")
 		facts.set("edit.source_edit_count", "")
 		return
 	}
 	commit, editFailure := state.tomlDoc.Commit(builder.Build())
-	emitEditFacts(facts, commit != nil, func() (string, int) {
-		return string(commit.Document.Render()), len(commit.ChangeSet.SourceEdits())
-	}, func() string {
-		return editFailure.Code()
-	})
-}
-
-// emitEditFacts writes the edit fact keys.
-func emitEditFacts(facts *facts, completed bool, complete func() (string, int), failedCode func() string) {
-	if completed {
-		output, count := complete()
+	if commit != nil {
 		facts.set("edit.status", "Completed")
 		facts.set("edit.failure", "")
-		facts.set("edit.output", escape(output))
-		facts.set("edit.source_edit_count", strconv.Itoa(count))
+		facts.set("edit.output", escape(string(commit.Document.Render())))
+		facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
 		return
 	}
 	facts.set("edit.status", "Failed")
-	facts.set("edit.failure", failedCode())
+	facts.set("edit.failure", editFailure.Code())
 	facts.set("edit.output", "")
 	facts.set("edit.source_edit_count", "")
 }
 
+// ensureForeignJSON parses the foreign source when the case declares one
+// (the wrong-snapshot edit cases). The source is declared literally or as
+// raw hex bytes; a declared source that fails to decode or parse reports
+// edit.failure = core.source.invalid-sequence@1 (the Go-side norm that the
+// Rust example mirrors).
+func (s *docState) ensureForeignJSON() bool {
+	if s.foreign != nil || (s.foreignSource == "" && s.foreignSourceHex == "") {
+		return true
+	}
+	foreignBytes := []byte(s.foreignSource)
+	if s.foreignSourceHex != "" {
+		decoded, err := hex.DecodeString(s.foreignSourceHex)
+		if err != nil {
+			return false
+		}
+		foreignBytes = decoded
+	}
+	switch s.format {
+	case "json":
+		var p json.JsonProfile
+		switch s.profile {
+		case json.JsonProfileStrictV1:
+			p = json.JsonProfileStrictV1
+		case json.JsonProfileJsoncBoundedV1:
+			p = json.JsonProfileJsoncBoundedV1
+		case json.JsonProfileJson5StandardV1:
+			p = json.JsonProfileJson5StandardV1
+		}
+		doc, failure := json.Parse(context.Background(), foreignBytes, p, s.parseLimits)
+		if failure != nil {
+			return false
+		}
+		s.foreign = doc
+		return true
+	case "toml":
+		doc, failure := toml.Parse(foreignBytes, toml.Toml10V1, s.parseLimits)
+		if failure != nil {
+			return false
+		}
+		s.foreignToml = doc
+		return true
+	}
+	return false
+}
+
 // applyJSONEditOperations applies the declared operations to the builder;
-// false means a target could not be resolved (harness bug surface).
+// false means a descriptor could not be resolved.
 func applyJSONEditOperations(builder *json.EditTransactionBuilder, state *docState, step *stepDesc) bool {
 	for _, op := range step.Operations {
 		switch op.Operation {
@@ -1342,12 +1503,10 @@ func applyTomlEditOperations(builder *toml.EditTransactionBuilder, state *docSta
 func resolveJSONTarget(state *docState, target *targetDesc) (document.NodeRef, bool) {
 	doc := state.doc
 	if target.Foreign {
-		doc = state.foreign
-	}
-	if doc == nil {
-		if target.Foreign {
+		if state.foreign == nil {
 			return document.NodeRef{}, false
 		}
+		doc = state.foreign
 	}
 	root := doc.Root()
 	switch target.Kind {
@@ -1391,10 +1550,10 @@ func resolveJSONTarget(state *docState, target *targetDesc) (document.NodeRef, b
 func resolveTomlTarget(state *docState, target *targetDesc) (document.NodeRef, bool) {
 	doc := state.tomlDoc
 	if target.Foreign {
+		if state.foreignToml == nil {
+			return document.NodeRef{}, false
+		}
 		doc = state.foreignToml
-	}
-	if doc == nil {
-		return document.NodeRef{}, false
 	}
 	root := doc.Root()
 	switch target.Kind {
@@ -1490,8 +1649,8 @@ func resolveTomlPlacement(state *docState, placement *placementDesc) (toml.Assoc
 	return toml.PlacementEnd(), true
 }
 
-// jsonOrdinalAnchor resolves the anchor of the current container: for
-// insert-member the members, for insert-array-element the elements.
+// jsonOrdinalAnchor resolves the anchor of the current JSON container: the
+// members for insert-member, the elements for insert-array-element.
 func jsonOrdinalAnchor(state *docState, ordinal int) (document.NodeRef, bool) {
 	root := state.doc.Root()
 	members := root.ObjectMembers()
@@ -1505,7 +1664,9 @@ func jsonOrdinalAnchor(state *docState, ordinal int) (document.NodeRef, bool) {
 	return document.NodeRef{}, false
 }
 
-// tomlOrdinalAnchor resolves the anchor of the current TOML container.
+// tomlOrdinalAnchor resolves the anchor of the current TOML container: the
+// root table entries for insert-entry, the array elements for
+// insert-array-element.
 func tomlOrdinalAnchor(state *docState, ordinal int) (document.NodeRef, bool) {
 	root := state.tomlDoc.Root()
 	entries, ok := root.TableEntries()
@@ -1538,15 +1699,15 @@ func jsonRepresentationPolicy(name string) (json.RepresentationPolicy, bool) {
 func tomlRepresentationPolicy(name string) (toml.RepresentationPolicy, bool) {
 	switch name {
 	case "PreserveCompatible":
-		return toml.RepresentationPolicyPreserveCompatible, true
+		return toml.RepresentationPreserveCompatible, true
 	case "CanonicalForProfile":
-		return toml.RepresentationPolicyCanonicalForProfile, true
+		return toml.RepresentationCanonicalForProfile, true
 	case "PreserveElseCanonical":
-		return toml.RepresentationPolicyPreserveElseCanonical, true
+		return toml.RepresentationPreserveElseCanonical, true
 	case "ExactLiteral":
-		return toml.RepresentationPolicyExactLiteral, true
+		return toml.RepresentationExactLiteral, true
 	}
-	return toml.RepresentationPolicyExactLiteral, false
+	return toml.RepresentationExactLiteral, false
 }
 
 // coreValue builds one core.Value from a scalar descriptor.
