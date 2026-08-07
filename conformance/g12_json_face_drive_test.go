@@ -113,8 +113,8 @@ func TestG12JSONFamilyV2Suite(t *testing.T) {
 	if len(report.Failed) != 0 {
 		t.Fatalf("json-family-v2 failures: %v", report.Failed)
 	}
-	if len(report.Passed) != 30 || len(report.Skipped) != 3 {
-		t.Fatalf("json-family-v2 passed %d skipped %d; want 30/3",
+	if len(report.Passed) != 33 || len(report.Skipped) != 0 {
+		t.Fatalf("json-family-v2 passed %d skipped %d; want 33/0 (convert face landed with 0.15.0 G1.4)",
 			len(report.Passed), len(report.Skipped))
 	}
 }

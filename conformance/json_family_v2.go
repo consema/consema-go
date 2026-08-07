@@ -46,10 +46,7 @@ func runJsonFamilyV2(_ *Runner, data *suiteData) *SuiteReport {
 		case "materialize":
 			runJSONFamilyMaterializationCase(vector, report)
 		case "convert":
-			report.Skipped = append(report.Skipped, SkipRecord{
-				ID: vector.ID, Capability: vector.Capability,
-				Reason: "core.conversion@1 Convert* composition lands with 0.15.0 G1.4 (root package)",
-			})
+			RunOperationsConvertFace(vector, report)
 		case "move-member":
 			runJSONFamilyMoveMemberCase(vector, report)
 		case "edit-scalars":

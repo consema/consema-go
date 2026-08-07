@@ -47,6 +47,11 @@ func runOperationsV1(_ *Runner, data *suiteData) *SuiteReport {
 			"operations.v1.toml-structural-matrix",
 			"operations.v1.toml-conflict-matrix":
 			RunOperationsTOMLFace(vector, report)
+		case "operations.v1.convert-json-to-toml-exact",
+			"operations.v1.convert-toml-to-json-exact",
+			"operations.v1.convert-duplicate-json-to-toml-fails",
+			"operations.v1.convert-transformed-report":
+			RunOperationsConvertFace(vector, report)
 		default:
 			report.Skipped = append(report.Skipped, SkipRecord{
 				ID:         vector.ID,

@@ -142,6 +142,24 @@ materialization requests, and verifiable source patches).
     scalar and structural operations), atomic `Commit`/`DryRun` with
     `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
     `UntouchedByteProof`, and the seven-operation `FormatOperationRegistry`.
+- `consema` (the package root, `*.go` directly in `go/`) — the facade
+  surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
+  - `document.go` — the `Document` union over the implemented format
+    documents (currently JSON and TOML; additive as the remaining
+    families land) with typed adapters and the common immutable
+    snapshot facts;
+  - `registry.go` — `Families`/`Profiles`/`QueryDomains`/
+    `OperationRegistryFor` (8 families / 16 profiles / 21 query
+    domains / 16 operation registries, RFC 0015 §6.2), derived from
+    the implementing packages where they exist (the json/toml
+    registries never re-declare the operation surface) and declared
+    capability facts for the not-yet-implemented families, plus the
+    `ParseDocument` single parse entry by profile id;
+  - `conversion.go` — `ConvertJSON`/`ConvertTOML`, the explicit
+    two-stage projection → PortableValue → materialization composition
+    with the retained two-stage report and both provenance directions
+    (`core.conversion.*@1` failure codes; cross-family convert lives in
+    the root package only).
 
 The RFC 0016 §4.1 mapping (the language-neutral fifteen-kind contract,
 配置内容统一处理标准与 Rust 参考实现.md §10): Object → `*core.Object`
