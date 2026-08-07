@@ -35,6 +35,18 @@
 //     without an authorizing policy fails atomically
 //     (`core.conversion.unauthorized-loss@1`); a failure never returns a
 //     partial target document.
+//   - The cross-family edit surface (0.18.0 G4.3; RFC 0016 §5.3, RFC 0004):
+//     `PlanEdit`/`CommitEdit` dispatch one `EditTransaction` to the owning
+//     family's edit API and close the shared artifacts
+//     (`document.ChangeSet`, `document.EditPlan`,
+//     `document.UntouchedByteProof`, `document.SourcePatch`);
+//     `BatchPlanner`/`ApplyPlanFile` close the `core.batch-plan@1` /
+//     `core.batch-result@1` protocol records with the base-digest and
+//     original-bytes dual preconditions (RFC 0015 §8-§9);
+//     `ChangeSetMessageFromDocument` externalizes a committed change set
+//     with caller-stable locators; `OrderedCursor`/`PortableCursor`
+//     provide the language-neutral query cursor terminal semantics
+//     (Completed/Cancelled/Failed).
 //
 // # Cross-family discipline
 //

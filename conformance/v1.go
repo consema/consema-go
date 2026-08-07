@@ -46,7 +46,7 @@ func runV1(_ *Runner, data *suiteData) *SuiteReport {
 		case "query.json-duplicate-order":
 			RunV1JSONFace(vector, report)
 		case "query.root-result-limit", "query.cursor-failure-terminal":
-			skipQueryExecution(vector, report)
+			RunV1PortableQueryFace(vector, report)
 		case "projection.best-exact-duplicate-mapping", "projection.object-reject-duplicates",
 			"projection.object-last-wins", "projection.object-key-provenance":
 			RunV1JSONFace(vector, report)

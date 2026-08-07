@@ -63,11 +63,11 @@ func TestApplicableSuiteCounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := map[string][3]int{
-		"consema.conformance@1":                   {28, 2, 0},
+		"consema.conformance@1":                   {30, 0, 0},
 		"consema.toml.conformance@1":              {18, 0, 0},
-		"consema.protocol.conformance@1":          {31, 1, 0},
+		"consema.protocol.conformance@1":          {32, 0, 0},
 		"consema.source.conformance@1":            {28, 0, 0},
-		"consema.syntax-query.conformance@1":      {16, 3, 0},
+		"consema.syntax-query.conformance@1":      {19, 0, 0},
 		"consema.protocol.conformance@2":          {11, 0, 0},
 		"consema.operations.conformance@1":        {33, 2, 0},
 		"consema.json-family.conformance@2":       {33, 0, 0},

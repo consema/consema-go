@@ -16,6 +16,8 @@ func runSyntaxQueryV1(_ *Runner, data *suiteData) *SuiteReport {
 			RunSyntaxQueryJSONFace(vector, report)
 		case strings.HasPrefix(vector.ID, "syntax.toml."):
 			RunSyntaxQueryTomlFace(vector, report)
+		case strings.HasPrefix(vector.ID, "syntax.cursor."):
+			RunSyntaxCursorFace(vector, report)
 		default:
 			report.Skipped = append(report.Skipped, SkipRecord{
 				ID:         vector.ID,

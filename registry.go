@@ -27,9 +27,15 @@ import (
 	"sort"
 
 	"consema.dev/consema/document"
+	hclpkg "consema.dev/consema/hcl"
+	"consema.dev/consema/ini"
 	jsonpkg "consema.dev/consema/json"
+	"consema.dev/consema/plist"
+	"consema.dev/consema/properties"
 	"consema.dev/consema/protocol"
 	"consema.dev/consema/toml"
+	xmlpkg "consema.dev/consema/xml"
+	yamlpkg "consema.dev/consema/yaml"
 )
 
 // FormatProfile is one profile together with the format family that
@@ -193,13 +199,10 @@ type OperationArgumentDescriptor struct {
 }
 
 // OperationRegistryFor returns the per-profile operation registry of one
-// exact profile (RFC 0015 §6.2 `operations`); ok is false for profiles
-// whose operation surface is not implemented by this Go milestone (the
-// yaml/ini/properties/xml/plist/hcl profiles land with 0.16.0-0.18.0 —
-// no Go package exists to derive their registry from, and the capability
-// list is never hand-declared). For the four implemented profiles the
-// registry is derived from the family registries of go/json and go/toml
-// and never re-declared here.
+// exact profile (RFC 0015 §6.2 `operations`); ok is false only for
+// profile ids outside the sixteen-profile facade surface. Every registry
+// is derived from the family registries of the implementing packages and
+// never re-declared here.
 func OperationRegistryFor(profile document.ProfileId) (*OperationRegistry, bool) {
 	switch profile.ID() {
 	case "json.strict":
@@ -210,6 +213,30 @@ func OperationRegistryFor(profile document.ProfileId) (*OperationRegistry, bool)
 		return jsonOperationRegistry(jsonpkg.FormatOperationRegistryFor(jsonpkg.JsonProfileJson5StandardV1)), true
 	case "toml.1.0":
 		return tomlOperationRegistry(toml.NewFormatOperationRegistry(toml.Toml10V1)), true
+	case "yaml.1.2-core":
+		return yamlOperationRegistry(yamlpkg.NewFormatOperationRegistry(yamlpkg.Yaml12CoreV1)), true
+	case "yaml.1.1-compat":
+		return yamlOperationRegistry(yamlpkg.NewFormatOperationRegistry(yamlpkg.Yaml11CompatV1)), true
+	case "ini.portable":
+		return iniOperationRegistry(ini.NewFormatOperationRegistry(ini.PortableV1)), true
+	case "ini.windows":
+		return iniOperationRegistry(ini.NewFormatOperationRegistry(ini.WindowsV1)), true
+	case "ini.python-configparser":
+		return iniOperationRegistry(ini.NewFormatOperationRegistry(ini.PythonConfigParserV1)), true
+	case "java-properties.reader":
+		return propertiesOperationRegistry(properties.NewFormatOperationRegistry(properties.PropertiesReaderV1)), true
+	case "java-properties.latin1":
+		return propertiesOperationRegistry(properties.NewFormatOperationRegistry(properties.PropertiesLatin1V1)), true
+	case "xml.1.0-safe":
+		return xmlOperationRegistry(xmlpkg.FormatOperationRegistryFor(xmlpkg.XmlProfileSafeV1)), true
+	case "plist.xml":
+		return plistOperationRegistry(plist.FormatOperationRegistryFor(plist.PlistProfileXmlV1)), true
+	case "plist.binary":
+		return plistOperationRegistry(plist.FormatOperationRegistryFor(plist.PlistProfileBinaryV1)), true
+	case "hcl.native":
+		return hclOperationRegistry(hclpkg.FormatOperationRegistryFor(hclpkg.HclProfileNativeV1)), true
+	case "hcl.tfvars":
+		return hclOperationRegistry(hclpkg.FormatOperationRegistryFor(hclpkg.HclProfileTfvarsV1)), true
 	default:
 		return nil, false
 	}
@@ -259,13 +286,145 @@ func tomlOperationRegistry(registry toml.FormatOperationRegistry) *OperationRegi
 	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
 }
 
+// yamlOperationRegistry derives the root registry view from the YAML
+// family registry without re-declaring the operation surface. The YAML
+// argument descriptors carry no required flag; every argument of the
+// frozen YAML surface is required.
+func yamlOperationRegistry(registry yamlpkg.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 8)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments))
+		for _, argument := range operation.Arguments {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: string(argument.Kind), Required: true,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID.ID() + "@" + uint64String(uint64(operation.ID.Version())),
+			targetRole: operation.TargetRole,
+			arguments:  arguments,
+			support:    string(operation.Support),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
+// iniOperationRegistry derives the root registry view from the INI family
+// registry without re-declaring the operation surface. The INI argument
+// descriptors carry no required flag; every argument of the frozen INI
+// surface is required.
+func iniOperationRegistry(registry ini.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 8)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments))
+		for _, argument := range operation.Arguments {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: string(argument.Kind), Required: true,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID.ID() + "@" + uint64String(uint64(operation.ID.Version())),
+			targetRole: operation.TargetRole,
+			arguments:  arguments,
+			support:    string(operation.Support),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
+// propertiesOperationRegistry derives the root registry view from the
+// Java Properties family registry without re-declaring the operation
+// surface. The Properties argument descriptors carry no required flag;
+// every argument of the frozen surface is required.
+func propertiesOperationRegistry(registry properties.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 5)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments))
+		for _, argument := range operation.Arguments {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: string(argument.Kind), Required: true,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID.ID() + "@" + uint64String(uint64(operation.ID.Version())),
+			targetRole: operation.TargetRole,
+			arguments:  arguments,
+			support:    string(operation.Support),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
+// xmlOperationRegistry derives the root registry view from the XML family
+// registry without re-declaring the operation surface.
+func xmlOperationRegistry(registry *xmlpkg.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 8)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments()))
+		for _, argument := range operation.Arguments() {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: argument.Kind, Required: argument.Required,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID(),
+			targetRole: operation.TargetRole(),
+			arguments:  arguments,
+			support:    operation.Support(),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
+// plistOperationRegistry derives the root registry view from the plist
+// family registry without re-declaring the operation surface.
+func plistOperationRegistry(registry *plist.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 6)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments()))
+		for _, argument := range operation.Arguments() {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: argument.Kind, Required: argument.Required,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID(),
+			targetRole: operation.TargetRole(),
+			arguments:  arguments,
+			support:    operation.Support(),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
+// hclOperationRegistry derives the root registry view from the HCL family
+// registry without re-declaring the operation surface.
+func hclOperationRegistry(registry *hclpkg.FormatOperationRegistry) *OperationRegistry {
+	descriptors := make([]OperationDescriptor, 0, 6)
+	for _, operation := range registry.Operations() {
+		arguments := make([]OperationArgumentDescriptor, 0, len(operation.Arguments()))
+		for _, argument := range operation.Arguments() {
+			arguments = append(arguments, OperationArgumentDescriptor{
+				Name: argument.Name, Kind: argument.Kind, Required: argument.Required,
+			})
+		}
+		descriptors = append(descriptors, OperationDescriptor{
+			id:         operation.ID(),
+			targetRole: operation.TargetRole(),
+			arguments:  arguments,
+			support:    operation.Support(),
+		})
+	}
+	return &OperationRegistry{profile: registry.Profile(), operations: descriptors}
+}
+
 // ParseDocument parses one snapshot under an exact profile id through the
 // single facade parse entry (registry.rs parse_document; RFC 0015 §7.1
 // cli.parse-facts@1). The per-format encoding selection and limits use
-// the frozen profile defaults. Profiles of the not-yet-implemented
-// families fail with the same typed error as unknown ids (no Go package
-// exists to form their documents; the profiles land with
-// 0.16.0-0.18.0).
+// the frozen profile defaults; the properties reader profile uses an
+// explicit UTF-8 selection because its contract has no profile default.
+// Unknown profile ids fail with the typed ProfileError carrying the same
+// code as the Rust facade's unknown-profile failure.
 func ParseDocument(ctx context.Context, source []byte,
 	profile document.ProfileId) (*Document, error) {
 	switch profile.ID() {
@@ -281,9 +440,91 @@ func ParseDocument(ctx context.Context, source []byte,
 			return nil, failure
 		}
 		return document, nil
+	case "yaml.1.2-core":
+		return parseYAMLResult(source, yamlpkg.Yaml12CoreV1)
+	case "yaml.1.1-compat":
+		return parseYAMLResult(source, yamlpkg.Yaml11CompatV1)
+	case "ini.portable":
+		return parseINIResult(source, ini.PortableV1)
+	case "ini.windows":
+		return parseINIResult(source, ini.WindowsV1)
+	case "ini.python-configparser":
+		return parseINIResult(source, ini.PythonConfigParserV1)
+	case "java-properties.reader":
+		document, failure := ParseProperties(source, properties.PropertiesReaderV1,
+			properties.ReaderEncodingSelection(document.Utf8Encoding()),
+			properties.DefaultPropertiesParseLimits())
+		if failure != nil {
+			return nil, failure
+		}
+		return document, nil
+	case "java-properties.latin1":
+		document, failure := ParseProperties(source, properties.PropertiesLatin1V1,
+			properties.Latin1EncodingSelection(), properties.DefaultPropertiesParseLimits())
+		if failure != nil {
+			return nil, failure
+		}
+		return document, nil
+	case "xml.1.0-safe":
+		document, failure := ParseXML(ctx, source, xmlpkg.XmlProfileSafeV1,
+			xmlpkg.XmlEncodingProfileDefault(), xmlpkg.DefaultXmlParseLimits())
+		if failure != nil {
+			return nil, failure
+		}
+		return document, nil
+	case "plist.xml":
+		return parsePlistResult(source, plist.PlistProfileXmlV1)
+	case "plist.binary":
+		return parsePlistResult(source, plist.PlistProfileBinaryV1)
+	case "hcl.native":
+		document, failure := ParseHCL(ctx, source, hclpkg.HclProfileNativeV1,
+			hclpkg.HclEncodingSelectionProfileDefault(), hclpkg.DefaultHclParseLimits())
+		if failure != nil {
+			return nil, failure
+		}
+		return document, nil
+	case "hcl.tfvars":
+		document, failure := ParseHCL(ctx, source, hclpkg.HclProfileTfvarsV1,
+			hclpkg.HclEncodingSelectionProfileDefault(), hclpkg.DefaultHclParseLimits())
+		if failure != nil {
+			return nil, failure
+		}
+		return document, nil
 	default:
 		return nil, &ProfileError{Profile: profile}
 	}
+}
+
+// parseYAMLResult unpacks the typed formation failure so a successful
+// parse never leaks a typed-nil failure into the error interface.
+func parseYAMLResult(source []byte, profile yamlpkg.YamlProfile) (*Document, error) {
+	document, failure := ParseYAML(source, profile, document.DefaultParseLimits())
+	if failure != nil {
+		return nil, failure
+	}
+	return document, nil
+}
+
+// parseINIResult unpacks the typed formation failure so a successful
+// parse never leaks a typed-nil failure into the error interface.
+func parseINIResult(source []byte, profile ini.IniProfile) (*Document, error) {
+	document, failure := ParseINI(source, profile, ini.IniEncodingProfileDefault(),
+		ini.DefaultIniParseLimits())
+	if failure != nil {
+		return nil, failure
+	}
+	return document, nil
+}
+
+// parsePlistResult unpacks the typed formation failure so a successful
+// parse never leaks a typed-nil failure into the error interface.
+func parsePlistResult(source []byte, profile plist.PlistProfile) (*Document, error) {
+	document, failure := ParsePlist(source, profile, plist.PlistEncodingProfileDefault(),
+		plist.DefaultPlistParseLimits())
+	if failure != nil {
+		return nil, failure
+	}
+	return document, nil
 }
 
 // parseJSONResult unpacks the typed formation failure so a successful

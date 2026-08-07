@@ -81,12 +81,7 @@ func runProtocolV1(_ *Runner, data *suiteData) *SuiteReport {
 		case "protocol.provenance.externalized-roundtrip":
 			_, err = protocolV1ProvenanceRoundtrip(vector)
 		case "protocol.change-set.actual-edit-roundtrip":
-			report.Skipped = append(report.Skipped, SkipRecord{
-				ID: vector.ID, Capability: vector.Contract,
-				Reason: "actual-edit change-set requires a real JSON edit transaction; " +
-					"the Go JSON family lands with 0.15.0 (G1.2) and the ChangeSetMessage " +
-					"construction round-trip is covered by the dual-transport cases",
-			})
+			RunProtocolV1ChangeSetEditFace(vector, report)
 			continue
 		case "protocol.registry.current-roundtrip":
 			_, err = protocolV1RegistryRoundtrip(vector)
