@@ -79,7 +79,7 @@ func TestApplicableSuiteCounts(t *testing.T) {
 		"consema.java-properties.conformance@1":   {22, 0, 0},
 		"consema.xml-1-0-safe.conformance@1":      {34, 0, 0},
 		"consema.plist.conformance@1":             {45, 0, 0},
-		"consema.hcl.conformance@1":               {0, 57, 0},
+		"consema.hcl.conformance@1":               {57, 0, 0},
 		"consema.cli.conformance@1":               {40, 0, 0},
 	}
 	for _, suite := range report.Suites {

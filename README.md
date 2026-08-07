@@ -369,6 +369,64 @@ materialization requests, and verifiable source patches).
     byte-level spans, binary structural rewrites (reference blocks,
     offset table, trailer), and the six-operation `FormatOperationRegistry`.
     The shared edit records come from go/document (0.16.0 G2.4).
+- `hcl/` — the HCL family surface (0.18.0 G4.1; RFC 0014), mirroring the
+  capability face of crates/consema-hcl:
+  - `profile.go` — `HclProfile` (NativeV1/TfvarsV1), `HclEncodingSelection`
+    (profile default or explicit UTF-8; any other explicit encoding is a
+    source-contract conflict with `hcl.parse.encoding@1`), `HclParseLimits`
+    (common limits plus decoded text, body/expression/template depth,
+    per-body item counts, identifier/string/number/template/heredoc
+    lengths, constructor extents, recovery/error/piece/report counts), and
+    the closed thirty-kind `HclSyntaxKind` lossless vocabulary (RFC 0014
+    §7.2, no `Bom` kind);
+  - `formation.go`/`document.go` — `Parse` over the UTF-8-only source
+    contract (BOM Recovered with `hcl.parse.byte-order-mark@1`, invalid
+    UTF-8 fatal, lone CR Recovered), the self-owned tokenizer, the
+    body/expression grammar with deterministic recovery (bracket-aware
+    expression regions, unterminated string/heredoc bounds, the
+    duplicate-attribute exclusion), and the tfvars profile gate
+    (`hcl.tfvars.block-not-allowed@1` per top-level block, which stays a
+    native item of the Recovered document);
+  - `lexer.go`/`parser.go` — the independent tokenizer (47 token kinds,
+    template frame stack for quoted/heredoc/interpolation nesting, UAX
+    #31 identifiers, the frozen number grammar, `$${`/`%%{` escapes) and
+    the recursive-descent expression parser (full operator precedence,
+    traversals/splats, for-expressions, constructors, quoted templates
+    and heredocs with region re-lexing for interpolation and directive
+    interiors);
+  - `expression.go`/`native.go` — the unevaluated expression AST
+    (fifteen closed kinds, canonical-decimal numbers by pure decimal
+    string arithmetic, structural equality, the literal-complete
+    boundary, typed literal extraction) and the body tree
+    (`HclDocument`/`HclBody`/`HclAttribute`/`HclBlock`/`HclBlockLabel`/
+    `HclErrorRegion` with exact-span double preservation);
+  - `query.go` — `ExecuteHCLNativeQuery`/`ExecuteHCLSyntaxQuery` over
+    validated `protocol.ExecutableQuery` definitions (native body tree
+    operators including the typed literal accessor family with
+    `hcl.query.type-mismatch@1`/`hcl.query.non-literal@1`, the error-
+    region facts, and the lossless syntax kinds), with step/result
+    budgets and context cancellation;
+  - `projection.go` — `Project` under the exact `hcl.projection.body@1`
+    record (typed members, ordered interleaved items, duplicate object
+    keys preserved as ordered entries) with the explicit
+    `ProjectExpression` policy producing the authorized `hcl.expression@1`
+    record (kind family, exact text, FNV-1a structural fingerprint, and
+    the versioned payload codec), atomic `hcl.projection.*@1` failures,
+    and the transformed-event report;
+  - `materialization.go` — `Materialize` (`hcl.canonical-document@1`:
+    UTF-8 without BOM, LF line endings, two-space indentation, minimal
+    deterministic escapes, canonical decimal spellings, always-quoted
+    labels) with the standalone expression-text validation, the reparse
+    closure walk by canonical-decimal/structural equality, and the frozen
+    failure codes;
+  - `edit.go` — `EditTransaction` (+ builder, the six frozen operations:
+    set-attribute-value, insert/remove/rename-attribute,
+    insert/remove-block; tfvars publishes the four attribute operations
+    only), atomic `Commit`/`DryRun` with the sequential per-operation
+    pipeline (splice fold, reparse verification, `ChangeSet`,
+    `SourcePatch` derivation, `UntouchedByteProof`, node mappings), and
+    the `FormatOperationRegistry`. The shared edit records come from
+    go/document.
 - `consema` (the package root, `*.go` directly in `go/`) — the facade
   surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
   - `document.go` — the `Document` union over the implemented format
