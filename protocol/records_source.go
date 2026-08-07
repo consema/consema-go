@@ -48,6 +48,11 @@ const (
 	BomPolicyTreatAsContent BomPolicy = "TreatAsContent"
 )
 
+// malformedByteSentinel marks a byte that encoding_rs 0.8.35 decodes as
+// Malformed in the single-byte authority tables (wcp_tables.go); 0xFFFF is
+// not a real mapping of any of the nine pages.
+const malformedByteSentinel = 0xFFFF
+
 // BomKind is one recognized Unicode byte-order mark
 // (document source.rs:168-181).
 type BomKind string
@@ -592,7 +597,7 @@ func decodeWindowsCodePage(bytes []byte, encoding *SourceEncoding, limits Source
 				scalar = r
 				offset += size
 			}
-		case 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258:
+		case 874, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258:
 			r, ok := windowsSingleByteDecode(page, bytes[offset])
 			if !ok {
 				return "", nil, &SourceError{Kind: SourceErrorInvalidSequence, ByteOffset: start}
@@ -643,34 +648,46 @@ func cp932Lookup(code uint16) (rune, bool) {
 }
 
 // windowsSingleByteDecode resolves one single-byte Windows code page
-// character. 1252 maps 0x80-0x9F through the frozen table; 1250-1258
-// non-ASCII bytes are currently resolved structurally (accepted) with
-// byte-identity fallback; the full tables land with the source milestone.
+// character through the frozen encoding_rs 0.8.35 authority tables
+// (wcp_tables.go). The sentinel 0xFFFF marks a byte whose decode is
+// Malformed in encoding_rs; the caller reports it as
+// SourceErrorInvalidSequence, exactly as the Rust protocol layer re-verifies
+// snapshots through consema-document's decode_to_string_without_replacement
+// path.
 func windowsSingleByteDecode(page uint32, byte byte) (rune, bool) {
+	var table [128]uint16
 	switch page {
+	case 874:
+		table = cp874Table
+	case 1250:
+		table = cp1250Table
+	case 1251:
+		table = cp1251Table
 	case 1252:
-		if byte >= 0x80 && byte <= 0x9F {
-			return rune(cp1252High[byte-0x80]), true
-		}
-		return rune(byte), true
-	case 1250, 1251, 1253, 1254, 1255, 1256, 1257, 1258:
-		if byte < 0x80 {
-			return rune(byte), true
-		}
-		// The frozen single-byte tables for these pages land with the
-		// document milestone; the shared vectors only round-trip the
-		// encoding records for these pages, never their decoded text.
+		table = cp1252Table
+	case 1253:
+		table = cp1253Table
+	case 1254:
+		table = cp1254Table
+	case 1255:
+		table = cp1255Table
+	case 1256:
+		table = cp1256Table
+	case 1257:
+		table = cp1257Table
+	case 1258:
+		table = cp1258Table
+	default:
 		return 0, false
 	}
-	return 0, false
-}
-
-// cp1252High is the frozen 0x80-0x9F CP1252 mapping.
-var cp1252High = [32]rune{
-	0x20AC, 0xFFFD, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
-	0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0xFFFD, 0x017D, 0xFFFD,
-	0xFFFD, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
-	0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0xFFFD, 0x017E, 0x0178,
+	if byte < 0x80 {
+		return rune(byte), true
+	}
+	scalar := table[byte-0x80]
+	if scalar == malformedByteSentinel {
+		return 0, false
+	}
+	return rune(scalar), true
 }
 
 // Bytes returns the exact retained source bytes.
@@ -1139,10 +1156,12 @@ func DefaultSourcePatchLimits() SourcePatchLimits {
 }
 
 // SourcePatchApplyError is a typed source-patch application failure with
-// the frozen registered code.
+// the frozen registered code (source_patch.rs:387-467). Every branch's code
+// is registered in the semantic-model v7 registry, mirroring the Rust
+// SourcePatchError::code mapping.
 type SourcePatchApplyError struct {
-	// Code is the stable registered failure code.
-	Code string
+	// code is the stable registered failure code.
+	code string
 	// Index is the offending replacement ordinal, when applicable.
 	Index int
 	// Limit is the exceeded limit name, when applicable.
@@ -1150,7 +1169,31 @@ type SourcePatchApplyError struct {
 }
 
 // Error implements error.
-func (e *SourcePatchApplyError) Error() string { return "source patch: " + e.Code }
+func (e *SourcePatchApplyError) Error() string { return "source patch: " + e.code }
+
+// Code returns the frozen registered failure code (RFC 0016 §6).
+func (e *SourcePatchApplyError) Code() string { return e.code }
+
+// sourcePatchSourceCode maps a source construction failure to the registered
+// code of its wrapped SourceError, exactly as the Rust document layer does
+// (source_patch.rs:442-452).
+func sourcePatchSourceCode(err error) string {
+	sourceError, ok := err.(*SourceError)
+	if !ok {
+		return "core.protocol.invalid-value@1"
+	}
+	switch sourceError.Kind {
+	case SourceErrorInvalidSequence:
+		return "core.source.invalid-sequence@1"
+	case SourceErrorEncodingConflict:
+		return "core.source.encoding-conflict@1"
+	case SourceErrorUnsupportedBom:
+		return "core.source.unsupported-bom@1"
+	case SourceErrorResourceLimit:
+		return "core.source.resource-limit@1"
+	}
+	return "core.protocol.invalid-value@1"
+}
 
 // NewSourcePatch validates replacements against one base snapshot and
 // computes the target facts (document source_patch.rs:227-...).
@@ -1168,7 +1211,7 @@ func NewSourcePatch(base *SourceSnapshot, replacements []SourceReplacement,
 		return nil, err
 	}
 	if !target.encoding.Equal(base.encoding) {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-encoding-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: "core.source.encoding-conflict@1"}
 	}
 	return &SourcePatch{
 		BaseDigest:   base.Digest(),
@@ -1193,11 +1236,11 @@ func ApplySourcePatch(patch *SourcePatch, base *SourceSnapshot, limits SourcePat
 		return nil, err
 	}
 	if base.Digest() != patch.BaseDigest {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-base-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: "core.source.patch-base-mismatch@1"}
 	}
 	claimedFacts, err := factsFromWire(patch.Encoding)
 	if err != nil || !base.encoding.Equal(claimedFacts) {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-encoding-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: "core.source.encoding-conflict@1"}
 	}
 	targetBytes, err := applyPatchReplacements(base.bytes, patch.Replacements)
 	if err != nil {
@@ -1205,13 +1248,13 @@ func ApplySourcePatch(patch *SourcePatch, base *SourceSnapshot, limits SourcePat
 	}
 	target, err := NewSourceSnapshotFromRaw(targetBytes, base.encoding.resolutionRequest(), limits.Source)
 	if err != nil {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-encoding-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: sourcePatchSourceCode(err)}
 	}
 	if !target.encoding.Equal(base.encoding) {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-encoding-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: "core.source.encoding-conflict@1"}
 	}
 	if target.Digest() != patch.TargetDigest {
-		return nil, &SourcePatchApplyError{Code: "core.source.patch-target-mismatch@1"}
+		return nil, &SourcePatchApplyError{code: "core.source.patch-target-mismatch@1"}
 	}
 	return targetBytes, nil
 }
@@ -1241,30 +1284,30 @@ func factsFromWire(facts EncodingFacts) (SourceEncodingFacts, error) {
 // budget rules (document source_patch.rs:469-...).
 func validatePatchReplacements(replacements []SourceReplacement, limits SourcePatchLimits) error {
 	if len(replacements) > limits.MaxReplacements {
-		return &SourcePatchApplyError{Code: "core.source.patch-resource-limit@1", Limit: "patch-replacements"}
+		return &SourcePatchApplyError{code: "core.source.resource-limit@1", Limit: "patch-replacements"}
 	}
 	patchBytes := 0
 	for index, replacement := range replacements {
 		if replacement.OldStart > replacement.OldEnd ||
 			len(replacement.Original) != int(replacement.OldEnd-replacement.OldStart) {
-			return &SourcePatchApplyError{Code: "core.source.patch-invalid-replacement@1", Index: index}
+			return &SourcePatchApplyError{code: "core.protocol.invalid-value@1", Index: index}
 		}
 		if index > 0 {
 			previous := replacements[index-1]
 			if replacement.OldStart == replacement.OldEnd &&
 				previous.OldStart == previous.OldEnd &&
 				replacement.OldStart == previous.OldStart {
-				return &SourcePatchApplyError{Code: "core.source.patch-duplicate-insertion@1", Index: index}
+				return &SourcePatchApplyError{code: "core.protocol.invalid-value@1", Index: index}
 			}
 			if (replacement.OldStart < previous.OldStart ||
 				(replacement.OldStart == previous.OldStart && replacement.OldEnd <= previous.OldEnd)) ||
 				replacement.OldStart < previous.OldEnd {
-				return &SourcePatchApplyError{Code: "core.source.patch-replacement-order@1", Index: index}
+				return &SourcePatchApplyError{code: "core.protocol.invalid-value@1", Index: index}
 			}
 		}
 		patchBytes += len(replacement.Original) + len(replacement.Replacement)
 		if patchBytes > limits.MaxPatchBytes {
-			return &SourcePatchApplyError{Code: "core.source.patch-resource-limit@1", Limit: "patch-bytes"}
+			return &SourcePatchApplyError{code: "core.source.resource-limit@1", Limit: "patch-bytes"}
 		}
 	}
 	return nil
@@ -1278,15 +1321,18 @@ func applyPatchReplacements(base []byte, replacements []SourceReplacement) ([]by
 	cursor := 0
 	for index, replacement := range replacements {
 		if replacement.OldStart > uint64(len(base)) || replacement.OldEnd > uint64(len(base)) {
-			return nil, &SourcePatchApplyError{Code: "core.source.patch-invalid-replacement@1", Index: index}
+			// An out-of-range old span is an original-byte precondition
+			// failure, exactly as the Rust document layer maps it
+			// (source_patch.rs:521-525).
+			return nil, &SourcePatchApplyError{code: "core.source.patch-original-mismatch@1", Index: index}
 		}
 		start, end := int(replacement.OldStart), int(replacement.OldEnd)
 		if start < cursor {
-			return nil, &SourcePatchApplyError{Code: "core.source.patch-replacement-order@1", Index: index}
+			return nil, &SourcePatchApplyError{code: "core.protocol.invalid-value@1", Index: index}
 		}
 		output = append(output, base[cursor:start]...)
 		if string(base[start:end]) != string(replacement.Original) {
-			return nil, &SourcePatchApplyError{Code: "core.source.patch-original-mismatch@1", Index: index}
+			return nil, &SourcePatchApplyError{code: "core.source.patch-original-mismatch@1", Index: index}
 		}
 		output = append(output, replacement.Replacement...)
 		cursor = end

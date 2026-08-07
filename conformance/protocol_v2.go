@@ -583,7 +583,7 @@ func protocolV2PatchStaleAfterWire(vector *caseData) (bool, error) {
 	}
 	expectedCode, _ := stringField(vector.Expected, "code")
 	applyError, ok := err.(*protocol.SourcePatchApplyError)
-	if !ok || applyError.Code != expectedCode {
+	if !ok || applyError.Code() != expectedCode {
 		return false, fmt.Errorf("apply error %v != %s", err, expectedCode)
 	}
 	return true, nil

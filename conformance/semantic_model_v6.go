@@ -509,7 +509,7 @@ func semanticModelV6SourcePatch(vector *caseData) (bool, error) {
 		return false, fmt.Errorf("wrong base must be rejected")
 	}
 	applyError, ok := err.(*protocol.SourcePatchApplyError)
-	if !ok || applyError.Code != wrongBaseCode {
+	if !ok || applyError.Code() != wrongBaseCode {
 		return false, fmt.Errorf("wrong-base code %v != %s", err, wrongBaseCode)
 	}
 	return true, nil

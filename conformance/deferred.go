@@ -6,6 +6,8 @@ package conformance
 // success, never silent). The case-count assertion still applies: the
 // frozen 508-case inventory is pinned per suite by the framework, and the
 // aggregate digest check re-pins the whole inventory against the manifest.
+// The source-v1 suite is executed by its own runner since 0.15.0 G1.1 and
+// no longer appears here.
 
 // runDeferred executes one suite whose capability surface is not yet
 // implemented by the Go SDK.
@@ -27,8 +29,6 @@ func deferredReason(suite, capability string) string {
 	switch suite {
 	case "consema.toml.conformance@1":
 		return "TOML family surface lands with 0.15.0 (G1.3)"
-	case "consema.source.conformance@1":
-		return "document source surface lands with 0.15.0 (G1.1)"
 	case "consema.syntax-query.conformance@1":
 		return "syntax-query family surface lands with 0.15.0+"
 	case "consema.operations.conformance@1":

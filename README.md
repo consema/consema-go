@@ -3,7 +3,9 @@
 The Go implementation of the language-neutral Consema contracts (RFC 0016;
 `docs/go-implementation-plan.md`). Milestone 0.14.0 G0.1 delivers the
 scaffold and the `core` package; G0.2 delivers the `graph` package; G0.3
-delivers the `protocol` package.
+delivers the `protocol` package; 0.15.0 G1.1 delivers the `document`
+package (source snapshots, structural locations, formation status, limits,
+materialization requests, and verifiable source patches).
 
 ## Layout
 
@@ -57,6 +59,35 @@ delivers the `protocol` package.
     `PGCELimits`;
   - `errors.go` — `GraphError` (`core.graph.*@1` codes) and `PGCEError`
     (`core.pgce.*@1` codes), both with the RFC 0016 §6 `Code()` contract.
+- `document/` — the source-snapshot and patch surface (0.15.0 G1.1; RFC
+  0016 §3.2), mirroring the capability face of crates/consema-document:
+  - `source.go` — `SourceSnapshot` (immutable raw bytes, SHA-256
+    `ContentDigest`, resolved `EncodingFacts`, decoded text, checkpointed
+    `DecodedPosition`/`DecodedOffset` coordinate conversion), `SourceLimits`,
+    `SourceError` (`core.source.*@1` codes);
+  - `encoding.go` — `SourceEncoding` (closed set: binary/utf-8/utf-16le/
+    utf-16be/latin-1/versioned Windows code pages), `BomPolicy`/`BomKind`,
+    `EncodingRequest`, `EncodingFacts`;
+  - `cp874_table.go`/`cp1250_table.go`…`cp1258_table.go`/`cp932_table.go`
+    — the frozen Python-stdlib code-page data shared with
+    `protocol/cp932_table.go`; 874 and 1250-1258 decode completely, CP932
+    decodes exactly like go/protocol (CP936/CP949/CP950 are recognized but
+    not yet decoded);
+  - `location.go` — `SnapshotIdentity`, `NodeRef`, `Span` (snapshot-bound
+    byte offsets), `NodeRole`, `DocumentAuthority`, `LocationError`;
+  - `structural.go` — `BinaryRegion`/`BinaryStructuralIndex` (exact
+    binary coverage);
+  - `source_patch.go` — `SourcePatch` (atomic create/apply with
+    original-byte preconditions and digest verification),
+    `SourceReplacement`, `SourcePatchLimits`, `SourcePatchError`
+    (document-layer codes; structural failures carry
+    `core.protocol.invalid-value@1` exactly like the Rust document layer);
+  - `formation.go` — `FormationStatus` (closed two-value
+    Complete/Recovered, RFC 0016 §5.1 F10);
+  - `ids.go`/`limits.go`/`materialization.go` — `FormatFamilyId`,
+    `ProfileId`, `MaterializationStyleId`, `NewlinePolicy`, `MappingPolicy`,
+    `RepresentabilityPolicy`, `ParseLimits`, `MaterializationLimits`,
+    `MaterializationRequest`;
 
 The RFC 0016 §4.1 mapping (the language-neutral fifteen-kind contract,
 配置内容统一处理标准与 Rust 参考实现.md §10): Object → `*core.Object`
@@ -88,7 +119,8 @@ test`, and `gofmt -l` (plan §6).
 
 `go.mod` declares zero third-party dependencies (no `require` lines); the
 module uses only the Go standard library (`math/big`, `hash/fnv`,
-`encoding/binary`). Policy: plan §1.3; RFC 0016 §10 rejected alternatives.
+`encoding/binary`, `crypto/sha256`, `unicode/utf8`). Policy: plan §1.3;
+RFC 0016 §10 rejected alternatives.
 
 ## Golden-bytes provenance
 

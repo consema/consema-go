@@ -55,7 +55,8 @@ func TestRunIsConformant(t *testing.T) {
 }
 
 // TestApplicableSuiteCounts pins the per-suite applicable surface of the
-// 0.14.0 milestone (docs/go-implementation-plan.md §4.2).
+// current milestone (0.15.0 G1.1 flips the whole source-v1 suite to
+// executed; docs/go-implementation-plan.md §4.2).
 func TestApplicableSuiteCounts(t *testing.T) {
 	report, err := repositoryRunner(t).Run()
 	if err != nil {
@@ -65,7 +66,7 @@ func TestApplicableSuiteCounts(t *testing.T) {
 		"consema.conformance@1":                   {10, 20, 0},
 		"consema.toml.conformance@1":              {0, 18, 0},
 		"consema.protocol.conformance@1":          {31, 1, 0},
-		"consema.source.conformance@1":            {0, 28, 0},
+		"consema.source.conformance@1":            {28, 0, 0},
 		"consema.syntax-query.conformance@1":      {0, 19, 0},
 		"consema.protocol.conformance@2":          {11, 0, 0},
 		"consema.operations.conformance@1":        {0, 35, 0},
