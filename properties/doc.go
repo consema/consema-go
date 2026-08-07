@@ -20,5 +20,9 @@
 // every third-party Properties base). Public records are snapshot-bound
 // handles over an immutable Document; the typed errors implement the
 // RFC 0016 §6 Code() contract, and error text is human presentation only
-// and never participates in conformance comparison.
+// and never participates in conformance comparison. The shared edit
+// records (ChangeSet, EditPlan, UntouchedByteProof, AssociationPlacement,
+// LosslessStructuralIndex) live in go/document since 0.16.0 G2.4; this
+// package exposes them under its established local names as aliases and
+// thin wrappers.
 package properties

@@ -164,7 +164,7 @@ func ExecuteYamlSyntaxQuery(ctx context.Context, executable *protocol.Executable
 	for ordinal, piece := range pieces {
 		input = append(input, YamlSyntaxMatch{
 			node:    doc.authority.NodeRef(uint64(ordinal), document.RoleYamlSyntaxPiece),
-			span:    piece.span,
+			span:    piece.Span(),
 			kind:    kinds[ordinal],
 			ordinal: ordinal,
 		})

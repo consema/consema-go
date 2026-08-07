@@ -899,7 +899,7 @@ func (p *parser) pushPiece(decodedStart, decodedEnd int, kind StructuralPieceKin
 		p.failed = resourceLimitFailure("source-coordinate-coverage", 1, 0)
 		return
 	}
-	p.pieces = append(p.pieces, StructuralPiece{span: span, kind: kind})
+	p.pieces = append(p.pieces, document.NewStructuralPiece(span, kind))
 	p.kinds = append(p.kinds, syntax)
 }
 

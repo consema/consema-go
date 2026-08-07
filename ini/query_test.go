@@ -49,11 +49,12 @@ func TestNativeQueryKeepsProfileEquivalenceDuplicatesAndOwnership(t *testing.T) 
 		}
 	}
 
-	// NOTE: the shared protocol operator table validates every INI
-	// operator except ini.duplicate-group (its input-dependent row is
-	// unreachable behind the table lookup; protocol/query_validate.go).
-	// The vector suite does not exercise that operator, so the execution
-	// surface stays covered by the direct document facts here.
+	// NOTE: ini.duplicate-group is reachable through the shared protocol
+	// operator table (its input-dependent RoleAny row is typed by the
+	// input role; protocol/query_validate.go) and its execution is covered
+	// by the external regression in protocol/duplicate_group_exec_test.go
+	// (G2.4). The direct duplicate facts asserted above complement that
+	// coverage.
 	exactExpression := (&protocol.QueryExpression{Kind: protocol.ExpressionInput}).
 		Then(protocol.NewOperatorCall("ini.all-entries", 1)).
 		Then(protocol.NewOperatorCall("ini.entry-key-equals", 1).

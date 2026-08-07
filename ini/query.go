@@ -238,7 +238,7 @@ func ExecuteIniSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQ
 		return nil, protocol.QueryFailureDomainMismatch(domain)
 	}
 	context := &queryContext{ctx: ctx, document: doc, limits: limits}
-	pieces := doc.index.pieces
+	pieces := doc.index.Pieces()
 	if failure := context.step(len(pieces)); failure != nil {
 		return nil, failure
 	}
@@ -246,7 +246,7 @@ func ExecuteIniSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQ
 	for ordinal, piece := range pieces {
 		input = append(input, IniSyntaxMatch{
 			node:    doc.authority.NodeRef(uint64(ordinal), document.RoleIniSyntaxPiece),
-			span:    piece.span,
+			span:    piece.Span(),
 			kind:    doc.kinds[ordinal],
 			ordinal: ordinal,
 		})

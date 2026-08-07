@@ -472,18 +472,19 @@ func (c *projectionContext) addEntryValueOrigins(projected ProjectedLocation,
 			continue
 		}
 		start := 0
-		for index, piece := range c.document.index.pieces {
-			if piece.span.EndByte() <= physical.contentSpan.StartByte() {
+		pieces := c.document.index.Pieces()
+		for index, piece := range pieces {
+			if piece.Span().EndByte() <= physical.contentSpan.StartByte() {
 				start = index + 1
 			}
 		}
-		for ordinal := start; ordinal < len(c.document.index.pieces); ordinal++ {
-			piece := c.document.index.pieces[ordinal]
-			if piece.span.StartByte() >= physical.contentSpan.EndByte() {
+		for ordinal := start; ordinal < len(pieces); ordinal++ {
+			pieceSpan := pieces[ordinal].Span()
+			if pieceSpan.StartByte() >= physical.contentSpan.EndByte() {
 				break
 			}
 			if c.document.kinds[ordinal] == SyntaxKindEntryValue {
-				if failure := c.addOrigin(projected, entry.node, piece.span,
+				if failure := c.addOrigin(projected, entry.node, pieceSpan,
 					RelationContinuationFragment); failure != nil {
 					return failure
 				}

@@ -7,11 +7,13 @@
 // (no FFI, no third-party dependencies).
 //
 // The package builds on go/document for raw source snapshots, spans, node
-// identities, parse limits, and materialization requests, and on go/core
-// for the PortableValue model. Format-specific records that go/document
-// does not yet carry (change sets, edit plans, untouched-byte proofs,
-// format operation registries, association placement) live here until the
-// document milestone that absorbs them.
+// identities, parse limits, materialization requests, and — since 0.16.0
+// G2.4 — the shared edit records (change sets, edit plans, untouched-byte
+// proofs, lossless structural indexes, association placement). This
+// package keeps the format-local names of its public surface as aliases
+// and thin wrappers over the go/document records; the format operation
+// registries remain format-local because the operation descriptors are
+// family-specific facts.
 //
 // Cancellation follows the SDK convention (docs/go-implementation-plan.md
 // §21.2 line 1827): context.Context carries cancellation and deadlines

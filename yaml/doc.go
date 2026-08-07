@@ -19,5 +19,8 @@
 // are private; the public contract is the immutable Document snapshot, its
 // snapshot-bound native handles, the query/projection/materialization/edit
 // results, and the typed errors implementing the RFC 0016 §6 Code()
-// contract.
+// contract. The shared edit records (ChangeSet, UntouchedByteProof,
+// AssociationPlacement, LosslessStructuralIndex) live in go/document
+// since 0.16.0 G2.4; this package exposes them under its established
+// local names as aliases and thin wrappers.
 package yaml

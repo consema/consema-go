@@ -561,13 +561,8 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 		}
 		delta += len(edit.replacement) - edit.oldSpan.Len()
 	}
-	changeSet := ChangeSet{
-		base:        d.SnapshotIdentity(),
-		target:      newDocument.SnapshotIdentity(),
-		sourceEdits: sourceEdits,
-		mappings:    mappings,
-		diagnostics: diagnostics,
-	}
+	changeSet := document.NewChangeSet(d.SnapshotIdentity(), newDocument.SnapshotIdentity(),
+		sourceEdits, mappings, diagnostics)
 	patchLimits := sourcePatchLimits(d.parseLimits, len(sourceEdits))
 	replacements := make([]document.SourceReplacement, 0, len(sourceEdits))
 	for _, edit := range sourceEdits {
@@ -604,7 +599,7 @@ func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *Edi
 	if failure != nil {
 		return nil, failure
 	}
-	plan, err := newEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
+	plan, err := document.NewEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
 		commit.ChangeSet.Diagnostics())
 	if err != nil {
 		return nil, &EditFailure{Kind: EditFailureNewDocumentFormationFailed}
@@ -1186,9 +1181,10 @@ func (d *Document) delimiter(kind JsonSyntaxKind, container document.Span,
 // range (edit.rs:999-1022).
 func (d *Document) syntaxBetween(kind JsonSyntaxKind, start, end int, last bool) (document.Span, bool) {
 	matches := make([]document.Span, 0, 4)
-	for index, piece := range d.structuralIndex.pieces {
-		if d.syntaxKinds[index] == kind && piece.span.StartByte() >= start && piece.span.EndByte() <= end {
-			matches = append(matches, piece.span)
+	for index, piece := range d.structuralIndex.Pieces() {
+		span := piece.Span()
+		if d.syntaxKinds[index] == kind && span.StartByte() >= start && span.EndByte() <= end {
+			matches = append(matches, span)
 		}
 	}
 	if len(matches) == 0 {

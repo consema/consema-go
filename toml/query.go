@@ -105,7 +105,7 @@ func ExecuteTomlSyntaxQuery(ctx context.Context, executable *protocol.Executable
 	for ordinal, piece := range pieces {
 		input = append(input, TomlSyntaxMatch{
 			node:    doc.nodeRef(ordinal, document.RoleTomlSyntaxPiece),
-			span:    piece.span,
+			span:    piece.Span(),
 			kind:    kinds[ordinal],
 			ordinal: ordinal,
 		})
@@ -210,7 +210,7 @@ func (d *Document) authoritySpan(node document.NodeRef) document.Span {
 		ordinal := int(node.Index())
 		pieces := d.index.Pieces()
 		if ordinal >= 0 && ordinal < len(pieces) {
-			return pieces[ordinal].span
+			return pieces[ordinal].Span()
 		}
 	}
 	span, err := d.authority.Span(0, 0)

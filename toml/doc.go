@@ -11,6 +11,11 @@
 // commits the frozen TOML structural edit operations atomically with
 // ChangeSet, SourcePatch, and untouched-byte evidence.
 //
+// The shared edit records (ChangeSet, EditPlan, UntouchedByteProof,
+// AssociationPlacement, LosslessStructuralIndex) live in go/document
+// since 0.16.0 G2.4; this package exposes them under its established
+// local names as aliases and thin wrappers.
+//
 // The implementation is self-written Go over the TOML 1.0 grammar (RFC
 // 0001 is the semantic authority; the shared conformance vectors and the
 // Rust public API follow); no third-party TOML library is used

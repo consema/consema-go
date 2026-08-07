@@ -57,11 +57,17 @@ func Parse(source []byte, profile YamlProfile,
 	if failure := converter.convert(&stream); failure != nil {
 		return nil, failure
 	}
+	// The tokenizer partitions every raw source byte exactly once; a
+	// coverage violation is an internal invariant failure.
+	index, err := NewLosslessStructuralIndex(authority.Identity(), snapshot.Len(), tokenized.pieces)
+	if err != nil {
+		return nil, newNativeFailure("yaml.native.invalid-source-span@1")
+	}
 	return &Document{
 		authority: authority,
 		source:    snapshot,
 		profile:   profile,
-		index:     &LosslessStructuralIndex{pieces: tokenized.pieces},
+		index:     index,
 		kinds:     tokenized.kinds,
 		native:    stream,
 		documents: len(stream.documents),

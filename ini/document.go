@@ -6,64 +6,34 @@ import (
 )
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (consema-document lib.rs:415-422).
-type StructuralPieceKind uint8
+// (document.StructuralPieceKind; consema-document lib.rs:415-422).
+type StructuralPieceKind = document.StructuralPieceKind
 
 // The three frozen piece classes.
 const (
 	// PieceToken is a lexical token.
-	PieceToken StructuralPieceKind = iota
+	PieceToken = document.PieceToken
 	// PieceTrivia is whitespace, newline, comment, or profile trivia.
-	PieceTrivia
+	PieceTrivia = document.PieceTrivia
 	// PieceErrorRegion is bytes not accepted as token or trivia.
-	PieceErrorRegion
+	PieceErrorRegion = document.PieceErrorRegion
 )
 
 // StructuralPiece is one source byte interval and its lossless class
-// (consema-document lib.rs:425-447).
-type StructuralPiece struct {
-	span document.Span
-	kind StructuralPieceKind
-}
-
-// Span returns the exact raw byte range.
-func (p StructuralPiece) Span() document.Span { return p.span }
-
-// Kind returns the lossless class.
-func (p StructuralPiece) Kind() StructuralPieceKind { return p.kind }
+// (document.StructuralPiece; consema-document lib.rs:425-447).
+type StructuralPiece = document.StructuralPiece
 
 // LosslessStructuralIndex is the exhaustive ordered token/trivia coverage
-// of one source (consema-document lib.rs:449-492). The index validates
-// exact byte coverage and snapshot binding at construction.
-type LosslessStructuralIndex struct {
-	pieces []StructuralPiece
-}
+// of one source (document.LosslessStructuralIndex; consema-document
+// lib.rs:449-492). The index validates exact byte coverage and snapshot
+// binding at construction.
+type LosslessStructuralIndex = document.LosslessStructuralIndex
 
 // NewLosslessStructuralIndex validates exact raw-byte coverage of the
 // source and snapshot binding (consema-document lib.rs:449-492).
 func NewLosslessStructuralIndex(identity document.SnapshotIdentity, sourceLen int,
 	pieces []StructuralPiece) (*LosslessStructuralIndex, error) {
-	next := 0
-	for _, piece := range pieces {
-		if piece.span.Snapshot() != identity {
-			return nil, &document.LocationError{Kind: document.LocationWrongSnapshot}
-		}
-		if piece.span.StartByte() != next || piece.span.EndByte() <= piece.span.StartByte() ||
-			piece.span.EndByte() > sourceLen {
-			return nil, &document.LocationError{Kind: document.LocationIncompleteStructuralCoverage}
-		}
-		next = piece.span.EndByte()
-	}
-	if next != sourceLen {
-		return nil, &document.LocationError{Kind: document.LocationIncompleteStructuralCoverage}
-	}
-	return &LosslessStructuralIndex{pieces: append([]StructuralPiece(nil), pieces...)}, nil
-}
-
-// Pieces returns the ordered exhaustive pieces. The returned slice is a
-// copy; pieces are logically immutable.
-func (i *LosslessStructuralIndex) Pieces() []StructuralPiece {
-	return append([]StructuralPiece(nil), i.pieces...)
+	return document.NewLosslessStructuralIndex(identity, sourceLen, pieces)
 }
 
 // IniPhysicalLine is one exact physical source line (consema-ini
@@ -393,10 +363,11 @@ func (d *Document) span(start, end int) (document.Span, bool) {
 
 // pieceWithin returns the first piece of one kind within a raw span.
 func (d *Document) pieceWithin(span document.Span, kind IniSyntaxKind) (document.Span, bool) {
-	for index, piece := range d.index.pieces {
-		if piece.span.StartByte() >= span.StartByte() && piece.span.EndByte() <= span.EndByte() &&
+	for index, piece := range d.index.Pieces() {
+		pieceSpan := piece.Span()
+		if pieceSpan.StartByte() >= span.StartByte() && pieceSpan.EndByte() <= span.EndByte() &&
 			d.kinds[index] == kind {
-			return piece.span, true
+			return pieceSpan, true
 		}
 	}
 	return document.Span{}, false

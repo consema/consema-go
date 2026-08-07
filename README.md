@@ -88,6 +88,22 @@ materialization requests, and verifiable source patches).
     `ProfileId`, `MaterializationStyleId`, `NewlinePolicy`, `MappingPolicy`,
     `RepresentabilityPolicy`, `ParseLimits`, `MaterializationLimits`,
     `MaterializationRequest`;
+  - `placement.go` — `AssociationPlacement` + `PlacementKind` (the four
+    frozen placements; 0.16.0 G2.4);
+  - `change_set.go` — `ChangeSet`/`SourceEdit`/`NodeMapping` (the shared
+    old-to-new edit records; 0.16.0 G2.4);
+  - `edit_plan.go` — `EditPlan`/`EditPlanSourceId` (the shared validated
+    dry-run plan; 0.16.0 G2.4);
+  - `untouched.go` — `UntouchedByteProof`/`UntouchedByteRegion`/
+    `UntouchedByteProofError` (the shared verifiable byte evidence;
+    0.16.0 G2.4);
+  - `structural.go` — `StructuralPieceKind`/`StructuralPiece`/
+    `LosslessStructuralIndex` (the shared exhaustive token/trivia/
+    error-region coverage; 0.16.0 G2.4). The shared edit records are the
+    canonical implementations of the consema-document records
+    (change_set.rs, edit_plan.rs, untouched_proof.rs, lib.rs); the five
+    family packages expose them under their established local names as
+    aliases and thin wrappers;
 - `json/` — the JSON family surface (0.15.0 G1.2; RFC 0016 §5), mirroring
   the capability face of crates/consema-json:
   - `profile.go` — `JsonProfile` (StrictV1/JsoncBoundedV1/Json5StandardV1)
@@ -115,7 +131,9 @@ materialization requests, and verifiable source patches).
   - `edit.go`/`placement.go`/`change_set.go`/`untouched.go` —
     `EditTransaction` (+ builder, seven operations), atomic `Commit`/
     `DryRun` with `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
-    `UntouchedByteProof`, and `FormatOperationRegistry`.
+    `UntouchedByteProof`, and `FormatOperationRegistry`. The shared edit
+    records come from go/document (0.16.0 G2.4); the operation registry
+    is format-local.
 - `toml/` — the TOML family surface (0.15.0 G1.3; RFC 0001, RFC 0016 §5),
   mirroring the capability face of crates/consema-toml:
   - `toml.go` — `TomlProfile` (Toml10V1), `TomlSyntaxKind` (the closed
@@ -142,6 +160,8 @@ materialization requests, and verifiable source patches).
     scalar and structural operations), atomic `Commit`/`DryRun` with
     `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
     `UntouchedByteProof`, and the seven-operation `FormatOperationRegistry`.
+    The shared edit records come from go/document (0.16.0 G2.4); the
+    operation registry is format-local.
 - `yaml/` — the YAML family surface (0.16.0 G2.1; RFC 0007, RFC 0016 §5),
   mirroring the capability face of crates/consema-yaml:
   - `yaml.go` — `YamlProfile` (Yaml12CoreV1 / Yaml11CompatV1, explicit
@@ -175,7 +195,9 @@ materialization requests, and verifiable source patches).
     `EditTransaction` (+ builder, the eight frozen operations with the
     anchor-safe rules), atomic `Commit`/`DryRun` with `ChangeSet`,
     `SourcePatch` derivation, `UntouchedByteProof`, and the eight-
-    operation `FormatOperationRegistry`.
+    operation `FormatOperationRegistry`. The shared edit records come
+    from go/document (0.16.0 G2.4); the operation registry is
+    format-local.
 - `ini/` — the INI family surface (0.16.0 G2.2; RFC 0009, RFC 0016 §5),
   mirroring the capability face of crates/consema-ini:
   - `profile.go` — `IniProfile` (PortableV1 / WindowsV1 /
@@ -207,7 +229,8 @@ materialization requests, and verifiable source patches).
     profile-specific quote/multiline/comment ownership), atomic
     `Commit`/`DryRun` with `ChangeSet`, `EditPlan`, `SourcePatch`
     derivation, `UntouchedByteProof`, and the eight-operation
-    `FormatOperationRegistry`.
+    `FormatOperationRegistry`. The shared edit records come from
+    go/document (0.16.0 G2.4); the operation registry is format-local.
 - `properties/` — the Java Properties family surface (0.16.0 G2.3; RFC
   0010, RFC 0016 §5), mirroring the capability face of
   crates/consema-properties:
@@ -246,6 +269,8 @@ materialization requests, and verifiable source patches).
     remove-property, rename-property), atomic `Commit`/`DryRun` with
     `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
     `UntouchedByteProof`, and the five-operation `FormatOperationRegistry`.
+    The shared edit records come from go/document (0.16.0 G2.4); the
+    operation registry is format-local.
 - `consema` (the package root, `*.go` directly in `go/`) — the facade
   surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
   - `document.go` — the `Document` union over the implemented format

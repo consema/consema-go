@@ -62,28 +62,24 @@ type EditOperation struct {
 }
 
 // AssociationPlacement is the explicit association placement of one
-// structural edit (edit.rs AssociationPlacement).
-type AssociationPlacement struct {
-	// Kind is "Start", "End", "Before", or "After".
-	Kind string
-	// Anchor is the association identity of Before/After placements.
-	Anchor document.NodeRef
-}
+// structural edit (document.AssociationPlacement; edit.rs
+// AssociationPlacement).
+type AssociationPlacement = document.AssociationPlacement
 
 // PlacementStart is the start placement.
-func PlacementStart() AssociationPlacement { return AssociationPlacement{Kind: "Start"} }
+func PlacementStart() AssociationPlacement { return document.PlacementAtStart() }
 
 // PlacementEnd is the end placement.
-func PlacementEnd() AssociationPlacement { return AssociationPlacement{Kind: "End"} }
+func PlacementEnd() AssociationPlacement { return document.PlacementAtEnd() }
 
 // PlacementBefore places the new association before one exact association.
 func PlacementBefore(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "Before", Anchor: anchor}
+	return document.BeforeAnchor(anchor)
 }
 
 // PlacementAfter places the new association after one exact association.
 func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "After", Anchor: anchor}
+	return document.AfterAnchor(anchor)
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
@@ -519,13 +515,8 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 		return nil, failure
 	}
 	mappings := buildNodeMappings(newDocument, finalExpected, tx)
-	changeSet := ChangeSet{
-		base:        d.SnapshotIdentity(),
-		target:      newDocument.SnapshotIdentity(),
-		sourceEdits: sourceEdits,
-		mappings:    mappings,
-		diagnostics: diagnostics,
-	}
+	changeSet := document.NewChangeSet(d.SnapshotIdentity(), newDocument.SnapshotIdentity(),
+		sourceEdits, mappings, diagnostics)
 	patchLimits := editSourcePatchLimits(d.parseLimits, len(sourceEdits))
 	replacements := make([]document.SourceReplacement, 0, len(sourceEdits))
 	source := d.source.Bytes()
@@ -563,7 +554,7 @@ func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *Edi
 	if failure != nil {
 		return nil, failure
 	}
-	plan, err := newEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
+	plan, err := document.NewEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
 		commit.ChangeSet.Diagnostics())
 	if err != nil {
 		return nil, &EditFailure{Kind: EditFailureNewDocumentFormationFailed}
@@ -623,8 +614,9 @@ func (d *Document) validateRemovedAnchors(tx *EditTransaction) *EditFailure {
 		if operation.Kind != EditOperationInsertProperty {
 			continue
 		}
-		if (operation.Placement.Kind == "Before" || operation.Placement.Kind == "After") &&
-			removed[operation.Placement.Anchor] {
+		if (operation.Placement.Kind() == document.PlacementBefore ||
+			operation.Placement.Kind() == document.PlacementAfter) &&
+			removed[operation.Placement.Anchor()] {
 			return &EditFailure{Kind: EditFailurePlacementAnchorRemoved}
 		}
 	}
@@ -635,8 +627,8 @@ func (d *Document) validateRemovedAnchors(tx *EditTransaction) *EditFailure {
 // position) pair (edit.rs:507-541).
 func (d *Document) insertionLocation(placement AssociationPlacement) (int, int, *EditFailure) {
 	count := len(d.properties)
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		position := d.source.Len()
 		if len(d.properties) > 0 {
 			span, failure := d.recordOwnership(&d.properties[0])
@@ -646,10 +638,10 @@ func (d *Document) insertionLocation(placement AssociationPlacement) (int, int, 
 			position = span.StartByte()
 		}
 		return 0, position, nil
-	case "End":
+	case document.PlacementEnd:
 		return count, d.source.Len(), nil
-	case "Before":
-		ordinal, failure := d.propertyOrdinal(placement.Anchor)
+	case document.PlacementBefore:
+		ordinal, failure := d.propertyOrdinal(placement.Anchor())
 		if failure != nil {
 			return 0, 0, failure
 		}
@@ -658,8 +650,8 @@ func (d *Document) insertionLocation(placement AssociationPlacement) (int, int, 
 			return 0, 0, failure
 		}
 		return ordinal, span.StartByte(), nil
-	case "After":
-		ordinal, failure := d.propertyOrdinal(placement.Anchor)
+	case document.PlacementAfter:
+		ordinal, failure := d.propertyOrdinal(placement.Anchor())
 		if failure != nil {
 			return 0, 0, failure
 		}
@@ -1224,14 +1216,14 @@ func operationID(operation *EditOperation) string {
 }
 
 func placementName(placement AssociationPlacement) string {
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		return "start"
-	case "End":
+	case document.PlacementEnd:
 		return "end"
-	case "Before":
+	case document.PlacementBefore:
 		return "before"
-	case "After":
+	case document.PlacementAfter:
 		return "after"
 	}
 	return "start"

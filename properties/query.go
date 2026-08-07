@@ -172,7 +172,7 @@ func ExecutePropertiesSyntaxQuery(ctx context.Context, executable *protocol.Exec
 	for ordinal, piece := range pieces {
 		input = append(input, PropertiesSyntaxMatch{
 			node:    doc.authority.NodeRef(uint64(ordinal), document.RolePropertiesSyntaxPiece),
-			span:    piece.span,
+			span:    piece.Span(),
 			kind:    doc.syntaxKinds[ordinal],
 			ordinal: ordinal,
 		})

@@ -162,7 +162,7 @@ func tokenize(text string, authority *document.DocumentAuthority,
 			return nil, nil, newFormationFailure("toml.parse.syntax@1", protocol.CategorySyntax,
 				cursor, end, nil)
 		}
-		pieces = append(pieces, StructuralPiece{span: span, kind: kind})
+		pieces = append(pieces, document.NewStructuralPiece(span, kind))
 		kinds = append(kinds, syntax)
 		cursor = end
 	}
@@ -241,10 +241,11 @@ func tokenizerStringEnd(bytes []byte, start int) int {
 func preflightDelimiterNesting(text string, pieces []StructuralPiece, maxDepth int) *FormationFailure {
 	depth := 0
 	for _, piece := range pieces {
-		if piece.kind != PieceToken {
+		if piece.Kind() != PieceToken {
 			continue
 		}
-		token := text[piece.span.StartByte():piece.span.EndByte()]
+		span := piece.Span()
+		token := text[span.StartByte():span.EndByte()]
 		switch token {
 		case "[", "{":
 			depth++

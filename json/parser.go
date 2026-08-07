@@ -86,32 +86,26 @@ func buildDocument(ctx context.Context, snapshot *document.SourceSnapshot,
 		return nil, failure
 	}
 	syntaxKinds := make([]JsonSyntaxKind, 0, len(lexemes))
-	pieces := make([]structuralPiece, 0, len(lexemes))
+	pieces := make([]document.StructuralPiece, 0, len(lexemes))
 	for _, item := range lexemes {
 		syntaxKinds = append(syntaxKinds, item.syntaxKind())
-		kind := pieceToken
+		kind := document.PieceToken
 		if item.class == classTrivia {
-			kind = pieceTrivia
+			kind = document.PieceTrivia
 		} else if item.class == classError {
-			kind = pieceErrorRegion
+			kind = document.PieceErrorRegion
 		}
 		span, err := authority.Span(item.start, item.end)
 		if err != nil {
 			return nil, invariantFailure()
 		}
-		pieces = append(pieces, structuralPiece{span: span, kind: kind})
+		pieces = append(pieces, document.NewStructuralPiece(span, kind))
 	}
-	index := &LosslessStructuralIndex{pieces: pieces}
 	// The lexer partitions every source byte exactly once; a violation is
-	// an internal invariant failure.
-	next := 0
-	for _, piece := range pieces {
-		if piece.span.StartByte() != next {
-			return nil, invariantFailure()
-		}
-		next = piece.span.EndByte()
-	}
-	if next != snapshot.Len() {
+	// an internal invariant failure. The shared index constructor enforces
+	// the exact coverage contract.
+	index, err := document.NewLosslessStructuralIndex(authority.Identity(), snapshot.Len(), pieces)
+	if err != nil {
 		return nil, invariantFailure()
 	}
 

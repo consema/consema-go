@@ -300,6 +300,76 @@ func TestEditAliasRemovalDoesNotRemoveTarget(t *testing.T) {
 	}
 }
 
+// TestEditRemoveSequenceElementWithUnrelatedAlias pins the anchor-dependency
+// scope: a removal unrelated to any anchor succeeds even when the document
+// contains aliases. The Go side previously collected the owned nodes of the
+// whole document and rejected every removal; edit.rs collects only the
+// removed subtree (validate_removal_dependencies), so the unrelated removal
+// succeeds there (dual-end divergence, fixed 2026-08-08).
+func TestEditRemoveSequenceElementWithUnrelatedAlias(t *testing.T) {
+	doc := editDoc(t, "defaults: &defaults\n  key: value\ncopy: *defaults\nseq:\n  - one\n  - two\n")
+	root, _ := doc.Document(0)
+	seqEntry, _ := root.Root().MappingEntry(2)
+	sequence := seqEntry.Value()
+	first, _ := sequence.SequenceItem(0)
+	builder := NewEditTransactionBuilder(doc)
+	builder.RemoveSequenceElement(first.NodeRef())
+	commit, failure := doc.Commit(builder.Build())
+	if failure != nil {
+		t.Fatalf("edit failed: %s", failure.Name())
+	}
+	expected := "defaults: &defaults\n  key: value\ncopy: *defaults\nseq:\n  - two\n"
+	if string(commit.Document.Render()) != expected {
+		t.Fatalf("render %q, want %q", string(commit.Document.Render()), expected)
+	}
+	// The alias and its anchor definition survive untouched.
+	alias, _ := commit.Document.Alias(0)
+	if length, ok := alias.Target().MappingLen(); !ok || length != 1 {
+		t.Fatalf("alias target mapping length %d, ok %v", length, ok)
+	}
+}
+
+// TestEditRemoveMappingEntryInsideAnchoredMapping pins the removal of one
+// entry inside an anchored subtree: the anchor definition itself survives,
+// so the dependent alias observes no missing definition and no
+// anchor-dependency violation is reported.
+func TestEditRemoveMappingEntryInsideAnchoredMapping(t *testing.T) {
+	doc := editDoc(t, "defaults: &defaults\n  key: value\n  other: x\ncopy: *defaults\n")
+	root, _ := doc.Document(0)
+	defaultsEntry, _ := root.Root().MappingEntry(0)
+	defaults := defaultsEntry.Value()
+	target, _ := defaults.MappingEntry(0)
+	builder := NewEditTransactionBuilder(doc)
+	builder.RemoveMappingEntry(target.NodeRef())
+	commit, failure := doc.Commit(builder.Build())
+	if failure != nil {
+		t.Fatalf("edit failed: %s", failure.Name())
+	}
+	expected := "defaults: &defaults\n  other: x\ncopy: *defaults\n"
+	if string(commit.Document.Render()) != expected {
+		t.Fatalf("render %q, want %q", string(commit.Document.Render()), expected)
+	}
+}
+
+// TestEditRemoveMappingEntryOrphaningAlias pins the mapping-removal
+// rejection path: the whole anchored definition is removed while the
+// dependent alias remains, so the removal still fails with
+// yaml.edit.anchor-dependency@1.
+func TestEditRemoveMappingEntryOrphaningAlias(t *testing.T) {
+	doc := editDoc(t, "anchored: &x\n  key: value\ncopy: *x\n")
+	root, _ := doc.Document(0)
+	target, _ := root.Root().MappingEntry(0)
+	builder := NewEditTransactionBuilder(doc)
+	builder.RemoveMappingEntry(target.NodeRef())
+	_, failure := doc.Commit(builder.Build())
+	if failure == nil || failure.Code() != "yaml.edit.anchor-dependency@1" {
+		t.Fatalf("failure %v", failure)
+	}
+	if string(doc.Render()) != "anchored: &x\n  key: value\ncopy: *x\n" {
+		t.Fatalf("base source changed after failure")
+	}
+}
+
 // TestEditStructuralContainerConflict pins the one-mutation-per-container
 // rule (edit.rs test).
 func TestEditStructuralContainerConflict(t *testing.T) {

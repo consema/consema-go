@@ -54,7 +54,9 @@ func loadCaseFile(t *testing.T) []fileCase {
 		seen[c.ID] = true
 		switch c.Kind {
 		case "document":
-			if c.Format != "json" && c.Format != "toml" {
+			switch c.Format {
+			case "json", "toml", "yaml", "ini", "properties":
+			default:
 				t.Fatalf("case %s: unknown format %q", c.ID, c.Format)
 			}
 			if _, err := parseDocumentProfile(&c); err != nil {

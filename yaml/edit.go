@@ -123,28 +123,24 @@ type EditOperation struct {
 }
 
 // AssociationPlacement is the explicit association placement of one
-// structural edit (edit.rs AssociationPlacement).
-type AssociationPlacement struct {
-	// Kind is "Start", "End", "Before", or "After".
-	Kind string
-	// Anchor is the association identity of Before/After placements.
-	Anchor document.NodeRef
-}
+// structural edit (document.AssociationPlacement; edit.rs
+// AssociationPlacement).
+type AssociationPlacement = document.AssociationPlacement
 
 // PlacementStart is the start placement.
-func PlacementStart() AssociationPlacement { return AssociationPlacement{Kind: "Start"} }
+func PlacementStart() AssociationPlacement { return document.PlacementAtStart() }
 
 // PlacementEnd is the end placement.
-func PlacementEnd() AssociationPlacement { return AssociationPlacement{Kind: "End"} }
+func PlacementEnd() AssociationPlacement { return document.PlacementAtEnd() }
 
 // PlacementBefore places the new association before one exact association.
 func PlacementBefore(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "Before", Anchor: anchor}
+	return document.BeforeAnchor(anchor)
 }
 
 // PlacementAfter places the new association after one exact association.
 func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "After", Anchor: anchor}
+	return document.AfterAnchor(anchor)
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
@@ -280,68 +276,31 @@ type EditCommit struct {
 	UntouchedProof UntouchedByteProof
 }
 
-// ChangeSet is the complete old-to-new change facts (consema-document
-// change_set.rs).
-type ChangeSet struct {
-	oldSnapshot document.SnapshotIdentity
-	newSnapshot document.SnapshotIdentity
-	sourceEdits []SourceEdit
-	mappings    []NodeMapping
-	diagnostics []*protocol.Diagnostic
-}
+// ChangeSet is the complete old-to-new change facts
+// (document.ChangeSet; consema-document change_set.rs).
+type ChangeSet = document.ChangeSet
 
-// OldSnapshot returns the base snapshot identity.
-func (c ChangeSet) OldSnapshot() document.SnapshotIdentity { return c.oldSnapshot }
+// SourceEdit is one raw-byte source edit (document.SourceEdit;
+// consema-document source_patch.rs SourceEdit).
+type SourceEdit = document.SourceEdit
 
-// NewSnapshot returns the result snapshot identity.
-func (c ChangeSet) NewSnapshot() document.SnapshotIdentity { return c.newSnapshot }
+// NodeMappingStatus is the closed node-mapping status
+// (protocol.NodeMappingStatus; the six frozen values of the shared
+// contract).
+type NodeMappingStatus = protocol.NodeMappingStatus
 
-// SourceEdits returns the ordered source edits.
-func (c ChangeSet) SourceEdits() []SourceEdit { return append([]SourceEdit(nil), c.sourceEdits...) }
-
-// NodeMappings returns the old-to-new node mappings.
-func (c ChangeSet) NodeMappings() []NodeMapping { return append([]NodeMapping(nil), c.mappings...) }
-
-// Diagnostics returns the ordered edit diagnostics.
-func (c ChangeSet) Diagnostics() []*protocol.Diagnostic {
-	return append([]*protocol.Diagnostic(nil), c.diagnostics...)
-}
-
-// SourceEdit is one raw-byte source edit (consema-document source_patch.rs
-// SourceEdit).
-type SourceEdit struct {
-	// OldSpan is the replaced base span.
-	OldSpan document.Span
-	// NewSpan is the replacement span in the result snapshot.
-	NewSpan document.Span
-	// Replacement is the exact new bytes.
-	Replacement []byte
-}
-
-// NodeMappingStatus is the closed node-mapping status.
-type NodeMappingStatus string
-
-// The three frozen node-mapping statuses.
+// The node-mapping statuses published by the YAML edit surface.
 const (
 	// NodeMappingReplaced maps the old node to a reparsed result node.
-	NodeMappingReplaced NodeMappingStatus = "Replaced"
+	NodeMappingReplaced = protocol.MappingReplaced
 	// NodeMappingDeleted reports the old node was deleted.
-	NodeMappingDeleted NodeMappingStatus = "Deleted"
+	NodeMappingDeleted = protocol.MappingDeleted
 	// NodeMappingUnmapped reports the old node has no result identity.
-	NodeMappingUnmapped NodeMappingStatus = "Unmapped"
+	NodeMappingUnmapped = protocol.MappingUnmapped
 )
 
-// NodeMapping is one old-to-new node identity fact.
-type NodeMapping struct {
-	// Old is the base identity.
-	Old document.NodeRef
-	// New is the reparsed result identity when one exists.
-	New *document.NodeRef
-	// Status is the mapping status.
-	Status NodeMappingStatus
-	// Reason is the stable reason for non-trivial or unresolved mapping.
-	Reason *string
-}
+// NodeMapping is one old-to-new node identity fact (document.NodeMapping).
+type NodeMapping = document.NodeMapping
 
 // EditFailureKind is the stable edit validation or commit failure category
 // (edit.rs:258-299).
@@ -696,13 +655,8 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 		}
 		delta += len(edit.replacement) - edit.oldSpan.Len()
 	}
-	changeSet := ChangeSet{
-		oldSnapshot: d.SnapshotIdentity(),
-		newSnapshot: newDocument.SnapshotIdentity(),
-		sourceEdits: sourceEdits,
-		mappings:    mappings,
-		diagnostics: diagnostics,
-	}
+	changeSet := document.NewChangeSet(d.SnapshotIdentity(), newDocument.SnapshotIdentity(),
+		sourceEdits, mappings, diagnostics)
 	patchLimits := editSourcePatchLimits(d.limits, len(sourceEdits))
 	sourcePatch, err := document.NewSourcePatch(d.source,
 		editSourcePatchReplacements(source, sourceEdits),
@@ -913,9 +867,10 @@ func (d *Document) scalarLiteralSpan(index int) (document.Span, bool) {
 func (d *Document) pieceWithin(span document.Span, kind YamlSyntaxKind) (document.Span, bool) {
 	pieces := d.index.Pieces()
 	for _, piece := range pieces {
-		if piece.span.StartByte() >= span.StartByte() && piece.span.EndByte() <= span.EndByte() &&
+		pieceSpan := piece.Span()
+		if pieceSpan.StartByte() >= span.StartByte() && pieceSpan.EndByte() <= span.EndByte() &&
 			d.kinds[pieceIndex(d, piece)] == kind {
-			return piece.span, true
+			return pieceSpan, true
 		}
 	}
 	return document.Span{}, false
@@ -929,9 +884,10 @@ func (d *Document) syntaxBetween(kind YamlSyntaxKind, start, end int,
 	found := document.Span{}
 	ok := false
 	for _, piece := range pieces {
-		if piece.span.StartByte() >= start && piece.span.EndByte() <= end &&
+		pieceSpan := piece.Span()
+		if pieceSpan.StartByte() >= start && pieceSpan.EndByte() <= end &&
 			d.kinds[pieceIndex(d, piece)] == kind {
-			found = piece.span
+			found = pieceSpan
 			ok = true
 			if !last {
 				return found, true
@@ -945,8 +901,10 @@ func (d *Document) syntaxBetween(kind YamlSyntaxKind, start, end int,
 func pieceIndex(d *Document, piece StructuralPiece) int {
 	pieces := d.index.Pieces()
 	for index, candidate := range pieces {
-		if candidate.span.StartByte() == piece.span.StartByte() &&
-			candidate.span.EndByte() == piece.span.EndByte() {
+		candidateSpan := candidate.Span()
+		pieceSpan := piece.Span()
+		if candidateSpan.StartByte() == pieceSpan.StartByte() &&
+			candidateSpan.EndByte() == pieceSpan.EndByte() {
 			return index
 		}
 	}
@@ -1446,20 +1404,20 @@ func (d *Document) canonicalValueFragment(value core.Value) (string, *Materializ
 // (edit.rs mapping_placement / sequence_placement).
 func (d *Document) collectionPlacement(container int, spans []document.Span,
 	placement AssociationPlacement) (int, *EditFailure) {
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		return 0, nil
-	case "End":
+	case document.PlacementEnd:
 		return len(spans), nil
-	case "Before", "After":
-		targetContainer, ordinal, failure := d.resolveAssociation(placement.Anchor)
+	case document.PlacementBefore, document.PlacementAfter:
+		targetContainer, ordinal, failure := d.resolveAssociation(placement.Anchor())
 		if failure != nil {
 			return 0, failure
 		}
 		if targetContainer != container {
 			return 0, &EditFailure{Kind: EditFailureInvalidPlacement}
 		}
-		if placement.Kind == "After" {
+		if placement.Kind() == document.PlacementAfter {
 			ordinal++
 		}
 		return ordinal, nil
@@ -1733,13 +1691,14 @@ func (d *Document) nearestNewline(offset int) string {
 		if d.kinds[index] != SyntaxKindNewline {
 			continue
 		}
-		distance := piece.span.StartByte() - offset
+		pieceSpan := piece.Span()
+		distance := pieceSpan.StartByte() - offset
 		if distance < 0 {
 			distance = -distance
 		}
 		if !found || distance < bestDistance {
 			bestDistance = distance
-			best = d.rawSlice(piece.span)
+			best = d.rawSlice(pieceSpan)
 			found = true
 		}
 	}
@@ -1777,12 +1736,11 @@ func (d *Document) prepareMappingRemoval(target document.NodeRef) ([]preparedEdi
 	}
 	content := &d.native.nodes[container].content
 	entry := content.entries[ordinal]
-	pairs := [][2]interface{}{
-		{entry.key, entry.keyAlias},
-		{entry.value, entry.valueAlias},
+	roots := []removalRoot{
+		{node: entry.key, alias: entry.keyAlias},
+		{node: entry.value, alias: entry.valueAlias},
 	}
-	var ownedNodes []int
-	if failure := d.validateRemovalDependencies(owned, pairs, &ownedNodes); failure != nil {
+	if failure := d.validateRemovalDependencies(owned, roots); failure != nil {
 		return nil, failure
 	}
 	var replacement []byte
@@ -1814,9 +1772,8 @@ func (d *Document) prepareSequenceRemoval(target document.NodeRef) ([]preparedEd
 	}
 	content := &d.native.nodes[container].content
 	item := content.items[ordinal]
-	pairs := [][2]interface{}{{item.node, item.alias}}
-	var ownedNodes []int
-	if failure := d.validateRemovalDependencies(owned, pairs, &ownedNodes); failure != nil {
+	roots := []removalRoot{{node: item.node, alias: item.alias}}
+	if failure := d.validateRemovalDependencies(owned, roots); failure != nil {
 		return nil, failure
 	}
 	var replacement []byte
@@ -1876,13 +1833,26 @@ func (d *Document) collectionRemovalSpan(container int, spans []document.Span,
 	return span, nil
 }
 
+// removalRoot is one removed association root: the owned node index and
+// its optional alias occurrence (edit.rs validate_removal_dependencies
+// roots).
+type removalRoot struct {
+	node  int
+	alias *int
+}
+
 // validateRemovalDependencies checks the anchor-dependency rule for one
-// removal (edit.rs validate_removal_dependencies).
+// removal (edit.rs validate_removal_dependencies). Only the owned nodes of
+// the removed associations participate; an alias elsewhere in the document
+// never triggers the rule. The removal is rejected only when one of the
+// removed nodes is still referenced by an alias outside the removed span.
 func (d *Document) validateRemovalDependencies(owned document.Span,
-	pairs [][2]interface{}, ownedNodes *[]int) *EditFailure {
+	roots []removalRoot) *EditFailure {
 	collected := make(map[int]bool)
-	for _, root := range d.native.documents {
-		d.collectOwnedNodes(root.root, collected)
+	for _, root := range roots {
+		if root.alias == nil {
+			d.collectOwnedNodes(root.node, collected)
+		}
 	}
 	for _, alias := range d.native.aliases {
 		if collected[alias.target] && (alias.span.StartByte() < owned.StartByte() ||
@@ -1890,8 +1860,6 @@ func (d *Document) validateRemovalDependencies(owned document.Span,
 			return &EditFailure{Kind: EditFailureAnchorDependency}
 		}
 	}
-	_ = pairs
-	_ = ownedNodes
 	return nil
 }
 

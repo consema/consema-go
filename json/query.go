@@ -154,7 +154,7 @@ func ExecuteJSONSyntaxQuery(ctx context.Context, executable *protocol.Executable
 		return nil, protocol.QueryFailureDomainMismatch(domain)
 	}
 	context := &queryContext{document: doc, limits: limits}
-	pieces := doc.structuralIndex.pieces
+	pieces := doc.structuralIndex.Pieces()
 	if failure := context.step(ctx, len(pieces)); failure != nil {
 		return nil, failure
 	}
@@ -162,7 +162,7 @@ func ExecuteJSONSyntaxQuery(ctx context.Context, executable *protocol.Executable
 	for ordinal, piece := range pieces {
 		input = append(input, JsonSyntaxMatch{
 			node:    doc.authority.NodeRef(uint64(ordinal), document.RoleJsonSyntaxPiece),
-			span:    piece.span,
+			span:    piece.Span(),
 			kind:    doc.syntaxKinds[ordinal],
 			ordinal: ordinal,
 		})

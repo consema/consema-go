@@ -13,29 +13,24 @@ import (
 )
 
 // AssociationPlacement is the explicit association placement of one
-// insertion operation (consema-document RFC 0004; the Rust
-// AssociationPlacement).
-type AssociationPlacement struct {
-	// Kind is "Start", "End", "Before", or "After".
-	Kind string
-	// Anchor is the exact association identity of Before/After placements.
-	Anchor document.NodeRef
-}
+// insertion operation (document.AssociationPlacement; consema-document
+// AssociationPlacement; RFC 0004).
+type AssociationPlacement = document.AssociationPlacement
 
 // PlacementStart inserts at the container start.
-func PlacementStart() AssociationPlacement { return AssociationPlacement{Kind: "Start"} }
+func PlacementStart() AssociationPlacement { return document.PlacementAtStart() }
 
 // PlacementEnd inserts at the container end.
-func PlacementEnd() AssociationPlacement { return AssociationPlacement{Kind: "End"} }
+func PlacementEnd() AssociationPlacement { return document.PlacementAtEnd() }
 
 // PlacementBefore inserts immediately before one exact association.
 func PlacementBefore(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "Before", Anchor: anchor}
+	return document.BeforeAnchor(anchor)
 }
 
 // PlacementAfter inserts immediately after one exact association.
 func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "After", Anchor: anchor}
+	return document.AfterAnchor(anchor)
 }
 
 // RepresentationPolicy is the explicit semantic scalar representation
@@ -204,68 +199,31 @@ type EditCommit struct {
 	UntouchedProof UntouchedByteProof
 }
 
-// ChangeSet is the complete old-to-new change facts (consema-document
-// change_set.rs).
-type ChangeSet struct {
-	oldSnapshot document.SnapshotIdentity
-	newSnapshot document.SnapshotIdentity
-	sourceEdits []SourceEdit
-	mappings    []NodeMapping
-	diagnostics []*protocol.Diagnostic
-}
+// ChangeSet is the complete old-to-new change facts
+// (document.ChangeSet; consema-document change_set.rs).
+type ChangeSet = document.ChangeSet
 
-// OldSnapshot returns the base snapshot identity.
-func (c ChangeSet) OldSnapshot() document.SnapshotIdentity { return c.oldSnapshot }
+// SourceEdit is one raw-byte source edit (document.SourceEdit;
+// consema-document source_patch.rs SourceEdit).
+type SourceEdit = document.SourceEdit
 
-// NewSnapshot returns the result snapshot identity.
-func (c ChangeSet) NewSnapshot() document.SnapshotIdentity { return c.newSnapshot }
+// NodeMappingStatus is the closed node-mapping status
+// (protocol.NodeMappingStatus; the six frozen values of the shared
+// contract).
+type NodeMappingStatus = protocol.NodeMappingStatus
 
-// SourceEdits returns the ordered source edits.
-func (c ChangeSet) SourceEdits() []SourceEdit { return append([]SourceEdit(nil), c.sourceEdits...) }
-
-// NodeMappings returns the old-to-new node mappings.
-func (c ChangeSet) NodeMappings() []NodeMapping { return append([]NodeMapping(nil), c.mappings...) }
-
-// Diagnostics returns the ordered edit diagnostics.
-func (c ChangeSet) Diagnostics() []*protocol.Diagnostic {
-	return append([]*protocol.Diagnostic(nil), c.diagnostics...)
-}
-
-// SourceEdit is one raw-byte source edit (consema-document source_patch.rs
-// SourceEdit).
-type SourceEdit struct {
-	// OldSpan is the replaced base span.
-	OldSpan document.Span
-	// NewSpan is the replacement span in the result snapshot.
-	NewSpan document.Span
-	// Replacement is the exact new bytes.
-	Replacement []byte
-}
-
-// NodeMappingStatus is the closed node-mapping status.
-type NodeMappingStatus string
-
-// The three frozen node-mapping statuses.
+// The node-mapping statuses published by the TOML edit surface.
 const (
 	// NodeMappingReplaced maps the old node to a reparsed result node.
-	NodeMappingReplaced NodeMappingStatus = "Replaced"
+	NodeMappingReplaced = protocol.MappingReplaced
 	// NodeMappingDeleted reports the old node was deleted.
-	NodeMappingDeleted NodeMappingStatus = "Deleted"
+	NodeMappingDeleted = protocol.MappingDeleted
 	// NodeMappingUnmapped reports the old node has no result identity.
-	NodeMappingUnmapped NodeMappingStatus = "Unmapped"
+	NodeMappingUnmapped = protocol.MappingUnmapped
 )
 
-// NodeMapping is one old-to-new node identity fact.
-type NodeMapping struct {
-	// Old is the base identity.
-	Old document.NodeRef
-	// New is the optional result identity.
-	New *document.NodeRef
-	// Status is the mapping status.
-	Status NodeMappingStatus
-	// Reason is the stable unmapped reason.
-	Reason string
-}
+// NodeMapping is one old-to-new node identity fact (document.NodeMapping).
+type NodeMapping = document.NodeMapping
 
 // EditFailureKind classifies a stable edit validation or commit failure
 // (consema-toml edit.rs:242-279).
@@ -467,24 +425,21 @@ func (d *Document) Commit(transaction *EditTransaction) (*EditCommit, *EditFailu
 					node := newDocument.nodeRef(found, document.RoleTomlItem)
 					mapping.New = &node
 				} else {
-					mapping.Reason = "reparsed-item-not-uniquely-located"
+					reason := "reparsed-item-not-uniquely-located"
+					mapping.Reason = &reason
 				}
 			case mappingPlanDeleted:
 				mapping.Status = NodeMappingDeleted
 			case mappingPlanUnmapped:
-				mapping.Reason = edit.mapping.reason
+				reason := edit.mapping.reason
+				mapping.Reason = &reason
 			}
 			mappings = append(mappings, mapping)
 		}
 		delta += len(edit.replacement) - edit.oldSpan.Len()
 	}
-	changeSet := ChangeSet{
-		oldSnapshot: d.SnapshotIdentity(),
-		newSnapshot: newDocument.SnapshotIdentity(),
-		sourceEdits: sourceEdits,
-		mappings:    mappings,
-		diagnostics: diagnostics,
-	}
+	changeSet := document.NewChangeSet(d.SnapshotIdentity(), newDocument.SnapshotIdentity(),
+		sourceEdits, mappings, diagnostics)
 	patchLimits := sourcePatchLimits(d.limits, len(sourceEdits))
 	sourcePatch, err := document.NewSourcePatch(d.source, sourcePatchReplacements(source, sourceEdits),
 		operationMetadata(transaction), patchLimits)
@@ -713,14 +668,14 @@ func (d *Document) prepareDelimitedInsertion(containerIndex int,
 	prefixComma := false
 	suffixComma := false
 	if len(associations) == 0 {
-		switch placement.Kind {
-		case "Start":
+		switch placement.Kind() {
+		case document.PlacementStart:
 			delimiter, failure := d.delimiter(syntax.open, containerSpan, false)
 			if failure != nil {
 				return preparedEdit{}, failure
 			}
 			position = delimiter.EndByte()
-		case "End":
+		case document.PlacementEnd:
 			delimiter, failure := d.delimiter(syntax.close, containerSpan, true)
 			if failure != nil {
 				return preparedEdit{}, failure
@@ -730,22 +685,22 @@ func (d *Document) prepareDelimitedInsertion(containerIndex int,
 			return preparedEdit{}, &EditFailure{Kind: EditFailureTargetNotFound}
 		}
 	} else {
-		switch placement.Kind {
-		case "Start":
+		switch placement.Kind() {
+		case document.PlacementStart:
 			position = d.entities[associations[0]].span.StartByte()
 			suffixComma = true
-		case "End":
+		case document.PlacementEnd:
 			position = d.entities[associations[len(associations)-1]].span.EndByte()
 			prefixComma = true
-		case "Before":
-			anchor, failure := d.resolveAnchor(placement.Anchor, syntax.anchorRole, associations)
+		case document.PlacementBefore:
+			anchor, failure := d.resolveAnchor(placement.Anchor(), syntax.anchorRole, associations)
 			if failure != nil {
 				return preparedEdit{}, failure
 			}
 			position = d.entities[anchor].span.StartByte()
 			suffixComma = true
-		case "After":
-			anchor, failure := d.resolveAnchor(placement.Anchor, syntax.anchorRole, associations)
+		case document.PlacementAfter:
+			anchor, failure := d.resolveAnchor(placement.Anchor(), syntax.anchorRole, associations)
 			if failure != nil {
 				return preparedEdit{}, failure
 			}
@@ -779,23 +734,23 @@ func (d *Document) prepareTableLineInsertion(tableIndex int, entries []int,
 	placement AssociationPlacement, fragment []byte) (preparedEdit, *EditFailure) {
 	kind := d.itemEntity(tableIndex).publicKind()
 	var position int
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		if kind == ItemKindRootTable {
 			position = 0
 		} else {
 			position = d.firstLineAfterHeader(d.entities[tableIndex].span)
 		}
-	case "End":
+	case document.PlacementEnd:
 		position = d.tableEndInsertion(entries, tableIndex)
-	case "Before":
-		anchor, failure := d.resolveAnchor(placement.Anchor, document.RoleTomlEntry, entries)
+	case document.PlacementBefore:
+		anchor, failure := d.resolveAnchor(placement.Anchor(), document.RoleTomlEntry, entries)
 		if failure != nil {
 			return preparedEdit{}, failure
 		}
 		position = d.lineStart(d.entities[anchor].span.StartByte())
-	case "After":
-		anchor, failure := d.resolveAnchor(placement.Anchor, document.RoleTomlEntry, entries)
+	case document.PlacementAfter:
+		anchor, failure := d.resolveAnchor(placement.Anchor(), document.RoleTomlEntry, entries)
 		if failure != nil {
 			return preparedEdit{}, failure
 		}
@@ -1203,9 +1158,9 @@ func validateDependencies(transaction *EditTransaction) *EditFailure {
 		case "RemoveEntry", "RemoveArrayElement":
 			removed[operation.Target] = true
 		case "InsertEntry", "InsertArrayElement":
-			switch operation.Placement.Kind {
-			case "Before", "After":
-				anchors = append(anchors, operation.Placement.Anchor)
+			switch operation.Placement.Kind() {
+			case document.PlacementBefore, document.PlacementAfter:
+				anchors = append(anchors, operation.Placement.Anchor())
 			}
 		}
 	}
@@ -1639,7 +1594,17 @@ func operationSummaries(transaction *EditTransaction) ([]*protocol.EditOperation
 }
 
 func placementName(placement AssociationPlacement) string {
-	return strings.ToLower(placement.Kind)
+	switch placement.Kind() {
+	case document.PlacementStart:
+		return "start"
+	case document.PlacementEnd:
+		return "end"
+	case document.PlacementBefore:
+		return "before"
+	case document.PlacementAfter:
+		return "after"
+	}
+	return "end"
 }
 
 func tomlPolicyName(policy RepresentationPolicy) string {
@@ -1668,383 +1633,69 @@ func boolToInt(value bool) int {
 }
 
 // EditPlanSourceId is the caller-stable source identity of a transferable
-// edit plan (consema-document edit_plan.rs:14-26).
-type EditPlanSourceId struct {
-	value string
-}
+// edit plan (document.EditPlanSourceId; consema-document edit_plan.rs:14-26).
+type EditPlanSourceId = document.EditPlanSourceId
 
 // NewEditPlanSourceId validates one non-empty bounded external source
 // identity.
 func NewEditPlanSourceId(value string) (*EditPlanSourceId, error) {
-	if value == "" || len(value) > 1024 {
-		return nil, fmt.Errorf("toml: invalid edit plan source id")
-	}
-	return &EditPlanSourceId{value: value}, nil
+	return document.NewEditPlanSourceId(value)
 }
-
-// String returns the exact caller-stable source identity.
-func (s *EditPlanSourceId) String() string { return s.value }
 
 // EditPlan is the fully validated dry-run plan; possessing it does not
-// authorize a write (consema-document edit_plan.rs:47-97).
-type EditPlan struct {
-	sourceID   EditPlanSourceId
-	profile    document.ProfileId
-	operations []*protocol.EditOperationSummary
-	patch      *document.SourcePatch
-	report     []*protocol.Diagnostic
-}
+// authorize a write (document.EditPlan; consema-document edit_plan.rs:47-97).
+type EditPlan = document.EditPlan
 
 // NewEditPlan closes a plan only when its ordered operation metadata
 // matches its exact patch.
 func NewEditPlan(sourceID EditPlanSourceId, profile document.ProfileId,
 	operations []*protocol.EditOperationSummary, patch *document.SourcePatch,
 	report []*protocol.Diagnostic) (*EditPlan, error) {
-	metadata := patch.Metadata()
-	for index, operation := range operations {
-		key := fmt.Sprintf("operation.%d", index)
-		expected := operation.Operation.ID() + "@" + strconv.FormatUint(uint64(operation.Operation.Version()), 10)
-		if metadata[key] != expected {
-			return nil, fmt.Errorf("toml: edit plan operation metadata mismatch at %d", index)
-		}
-	}
-	operationKeys := 0
-	for key := range metadata {
-		if strings.HasPrefix(key, "operation.") {
-			operationKeys++
-		}
-	}
-	if operationKeys != len(operations) {
-		return nil, fmt.Errorf("toml: edit plan operation metadata count mismatch")
-	}
-	return &EditPlan{
-		sourceID: sourceID, profile: profile,
-		operations: append([]*protocol.EditOperationSummary(nil), operations...),
-		patch:      patch, report: append([]*protocol.Diagnostic(nil), report...),
-	}, nil
-}
-
-// SourceID returns the caller-stable source identity.
-func (p *EditPlan) SourceID() EditPlanSourceId { return p.sourceID }
-
-// Profile returns the target profile.
-func (p *EditPlan) Profile() document.ProfileId { return p.profile }
-
-// Operations returns the ordered safe summaries.
-func (p *EditPlan) Operations() []*protocol.EditOperationSummary {
-	return append([]*protocol.EditOperationSummary(nil), p.operations...)
-}
-
-// Replacements returns the exact patch replacements.
-func (p *EditPlan) Replacements() []document.SourceReplacement {
-	return p.patch.Replacements()
-}
-
-// TargetDigest returns the exact target content identity.
-func (p *EditPlan) TargetDigest() document.ContentDigest {
-	return p.patch.TargetDigest()
-}
-
-// SourcePatch returns the exact patch facts.
-func (p *EditPlan) SourcePatch() *document.SourcePatch { return p.patch }
-
-// Diagnostics returns the ordered edit diagnostics.
-func (p *EditPlan) Diagnostics() []*protocol.Diagnostic {
-	return append([]*protocol.Diagnostic(nil), p.report...)
-}
-
-// WithAllReplacementsRedacted marks every replacement payload for redacted
-// review/debug presentation.
-func (p *EditPlan) WithAllReplacementsRedacted(redactOriginal, redactReplacement bool) (*EditPlan, error) {
-	patch, err := p.patch.WithAllReplacementsRedacted(redactOriginal, redactReplacement)
-	if err != nil {
-		return nil, err
-	}
-	return &EditPlan{
-		sourceID: p.sourceID, profile: p.profile,
-		operations: append([]*protocol.EditOperationSummary(nil), p.operations...),
-		patch:      patch, report: append([]*protocol.Diagnostic(nil), p.report...),
-	}, nil
-}
-
-// String renders the plan with every replacement payload, honoring the
-// redaction flags (the redacted debug facts must not leak raw values).
-func (p *EditPlan) String() string {
-	var output strings.Builder
-	output.WriteString("EditPlan{source:")
-	output.WriteString(p.sourceID.value)
-	output.WriteString(" profile:")
-	output.WriteString(p.profile.ID())
-	output.WriteString("@")
-	output.WriteString(strconv.FormatUint(uint64(p.profile.Version()), 10))
-	output.WriteString(" operations:[")
-	for index, operation := range p.operations {
-		if index != 0 {
-			output.WriteString(", ")
-		}
-		output.WriteString(operation.Operation.ID())
-		output.WriteString("{")
-		names := make([]string, 0, len(operation.Summary))
-		for name := range operation.Summary {
-			names = append(names, name)
-		}
-		sort.Strings(names)
-		for position, name := range names {
-			if position != 0 {
-				output.WriteString(", ")
-			}
-			output.WriteString(name)
-			output.WriteString("=")
-			output.WriteString(operation.Summary[name])
-		}
-		output.WriteString("}")
-	}
-	output.WriteString("] patch:{")
-	for index, replacement := range p.patch.Replacements() {
-		if index != 0 {
-			output.WriteString(", ")
-		}
-		output.WriteString("[")
-		output.WriteString(strconv.Itoa(replacement.OldStart()))
-		output.WriteString("..")
-		output.WriteString(strconv.Itoa(replacement.OldEnd()))
-		output.WriteString("] original=")
-		if replacement.RedactOriginal() {
-			output.WriteString("[redacted]")
-		} else {
-			output.WriteString(string(replacement.Original()))
-		}
-		output.WriteString(" replacement=")
-		if replacement.RedactReplacement() {
-			output.WriteString("[redacted]")
-		} else {
-			output.WriteString(string(replacement.Replacement()))
-		}
-	}
-	output.WriteString("}}")
-	return output.String()
+	return document.NewEditPlan(sourceID.String(), profile, operations, patch, report)
 }
 
 // UntouchedByteRegion is one maximal unchanged raw-byte interval mapped
-// across two source snapshots (untouched_proof.rs:7-59).
-type UntouchedByteRegion struct {
-	oldStart, oldEnd int
-	newStart, newEnd int
-}
+// across two source snapshots (document.UntouchedByteRegion;
+// untouched_proof.rs:7-59).
+type UntouchedByteRegion = document.UntouchedByteRegion
 
 // NewUntouchedByteRegion creates one region fact; the enclosing proof
 // validates length and ordering.
 func NewUntouchedByteRegion(oldStart, oldEnd, newStart, newEnd int) UntouchedByteRegion {
-	return UntouchedByteRegion{oldStart: oldStart, oldEnd: oldEnd, newStart: newStart, newEnd: newEnd}
+	return document.NewUntouchedByteRegion(oldStart, oldEnd, newStart, newEnd)
 }
 
-// OldStart returns the inclusive start in the base snapshot.
-func (r UntouchedByteRegion) OldStart() int { return r.oldStart }
-
-// OldEnd returns the exclusive end in the base snapshot.
-func (r UntouchedByteRegion) OldEnd() int { return r.oldEnd }
-
-// NewStart returns the inclusive start in the target snapshot.
-func (r UntouchedByteRegion) NewStart() int { return r.newStart }
-
-// NewEnd returns the exclusive end in the target snapshot.
-func (r UntouchedByteRegion) NewEnd() int { return r.newEnd }
-
 // UntouchedByteProofErrorKind classifies a proof construction or
-// verification failure (untouched_proof.rs:135-178).
-type UntouchedByteProofErrorKind uint8
+// verification failure (document.UntouchedByteProofErrorKind;
+// untouched_proof.rs:135-178).
+type UntouchedByteProofErrorKind = document.UntouchedByteProofErrorKind
 
 // The stable proof failure classes.
 const (
-	ProofErrorEncodingMismatch UntouchedByteProofErrorKind = iota
-	ProofErrorInvalidReplacement
-	ProofErrorReplacementOrder
-	ProofErrorDuplicateInsertion
-	ProofErrorOriginalMismatch
-	ProofErrorTargetMismatch
-	ProofErrorCoordinateOverflow
-	ProofErrorInvalidRegion
-	ProofErrorDigestMismatch
-	ProofErrorProofMismatch
+	ProofErrorEncodingMismatch   = document.ProofErrorEncodingMismatch
+	ProofErrorInvalidReplacement = document.ProofErrorInvalidReplacement
+	ProofErrorReplacementOrder   = document.ProofErrorReplacementOrder
+	ProofErrorDuplicateInsertion = document.ProofErrorDuplicateInsertion
+	ProofErrorOriginalMismatch   = document.ProofErrorOriginalMismatch
+	ProofErrorTargetMismatch     = document.ProofErrorTargetMismatch
+	ProofErrorCoordinateOverflow = document.ProofErrorCoordinateOverflow
+	ProofErrorInvalidRegion      = document.ProofErrorInvalidRegion
+	ProofErrorDigestMismatch     = document.ProofErrorDigestMismatch
+	ProofErrorProofMismatch      = document.ProofErrorProofMismatch
 )
 
-// UntouchedByteProofError is a proof construction or verification failure.
-type UntouchedByteProofError struct {
-	// Kind identifies the failure.
-	Kind UntouchedByteProofErrorKind
-	// Index is the zero-based replacement or region position.
-	Index int
-}
-
-// Error implements error.
-func (e *UntouchedByteProofError) Error() string {
-	switch e.Kind {
-	case ProofErrorEncodingMismatch:
-		return "toml: untouched-byte proof encoding mismatch"
-	case ProofErrorInvalidReplacement:
-		return fmt.Sprintf("toml: untouched-byte proof invalid replacement at %d", e.Index)
-	case ProofErrorReplacementOrder:
-		return fmt.Sprintf("toml: untouched-byte proof replacement order at %d", e.Index)
-	case ProofErrorDuplicateInsertion:
-		return fmt.Sprintf("toml: untouched-byte proof duplicate insertion at %d", e.Index)
-	case ProofErrorOriginalMismatch:
-		return fmt.Sprintf("toml: untouched-byte proof original mismatch at %d", e.Index)
-	case ProofErrorTargetMismatch:
-		return "toml: untouched-byte proof target mismatch"
-	case ProofErrorCoordinateOverflow:
-		return "toml: untouched-byte proof coordinate overflow"
-	case ProofErrorInvalidRegion:
-		return fmt.Sprintf("toml: untouched-byte proof invalid region at %d", e.Index)
-	case ProofErrorDigestMismatch:
-		return "toml: untouched-byte proof digest mismatch"
-	case ProofErrorProofMismatch:
-		return "toml: untouched-byte proof region mismatch"
-	}
-	return "toml: untouched-byte proof error"
-}
+// UntouchedByteProofError is a proof construction or verification
+// failure (document.UntouchedByteProofError).
+type UntouchedByteProofError = document.UntouchedByteProofError
 
 // UntouchedByteProof is the immutable evidence for every byte outside one
-// exact replacement plan (untouched_proof.rs:61-132).
-type UntouchedByteProof struct {
-	baseDigest   document.ContentDigest
-	targetDigest document.ContentDigest
-	regions      []UntouchedByteRegion
-}
+// exact replacement plan (document.UntouchedByteProof;
+// untouched_proof.rs:61-132).
+type UntouchedByteProof = document.UntouchedByteProof
 
 // CreateUntouchedByteProof creates a proof only when the replacements
 // exactly produce the supplied target snapshot.
 func CreateUntouchedByteProof(base, target *document.SourceSnapshot,
 	replacements []document.SourceReplacement) (UntouchedByteProof, error) {
-	regions, err := expectedRegions(base, target, replacements)
-	if err != nil {
-		return UntouchedByteProof{}, err
-	}
-	return UntouchedByteProof{
-		baseDigest:   base.Digest(),
-		targetDigest: target.Digest(),
-		regions:      regions,
-	}, nil
-}
-
-// Verify rechecks digests, replacement preconditions, exact target bytes,
-// and every region fact.
-func (p UntouchedByteProof) Verify(base, target *document.SourceSnapshot,
-	replacements []document.SourceReplacement) error {
-	if !base.Digest().Equal(p.baseDigest) || !target.Digest().Equal(p.targetDigest) {
-		return &UntouchedByteProofError{Kind: ProofErrorDigestMismatch}
-	}
-	expected, err := expectedRegions(base, target, replacements)
-	if err != nil {
-		return err
-	}
-	if len(expected) != len(p.regions) {
-		return &UntouchedByteProofError{Kind: ProofErrorProofMismatch}
-	}
-	for index := range expected {
-		if expected[index] != p.regions[index] {
-			return &UntouchedByteProofError{Kind: ProofErrorProofMismatch}
-		}
-	}
-	return nil
-}
-
-// BaseDigest returns the required base digest.
-func (p UntouchedByteProof) BaseDigest() document.ContentDigest { return p.baseDigest }
-
-// TargetDigest returns the required target digest.
-func (p UntouchedByteProof) TargetDigest() document.ContentDigest { return p.targetDigest }
-
-// Regions returns the canonical maximal unchanged regions.
-func (p UntouchedByteProof) Regions() []UntouchedByteRegion {
-	return append([]UntouchedByteRegion(nil), p.regions...)
-}
-
-// expectedRegions computes the canonical maximal unchanged regions
-// (untouched_proof.rs:189-260).
-func expectedRegions(base, target *document.SourceSnapshot,
-	replacements []document.SourceReplacement) ([]UntouchedByteRegion, error) {
-	if !base.EncodingFacts().Equal(target.EncodingFacts()) {
-		return nil, &UntouchedByteProofError{Kind: ProofErrorEncodingMismatch}
-	}
-	baseBytes := base.Bytes()
-	targetBytes := target.Bytes()
-	regions := make([]UntouchedByteRegion, 0, len(replacements)+1)
-	oldCursor := 0
-	newCursor := 0
-	for index, replacement := range replacements {
-		var previous *document.SourceReplacement
-		if index > 0 {
-			previous = &replacements[index-1]
-		}
-		if failure := validateProofReplacement(baseBytes, index, replacement,
-			previous != nil, previous); failure != nil {
-			return nil, failure
-		}
-		unchangedLen := replacement.OldStart() - oldCursor
-		newUnchangedEnd := newCursor + unchangedLen
-		if newUnchangedEnd > len(targetBytes) ||
-			string(targetBytes[newCursor:newUnchangedEnd]) != string(baseBytes[oldCursor:replacement.OldStart()]) {
-			return nil, &UntouchedByteProofError{Kind: ProofErrorTargetMismatch}
-		}
-		regions = append(regions, UntouchedByteRegion{
-			oldStart: oldCursor, oldEnd: replacement.OldStart(),
-			newStart: newCursor, newEnd: newUnchangedEnd,
-		})
-		replacementEnd := newUnchangedEnd + len(replacement.Replacement())
-		if replacementEnd > len(targetBytes) ||
-			string(targetBytes[newUnchangedEnd:replacementEnd]) != string(replacement.Replacement()) {
-			return nil, &UntouchedByteProofError{Kind: ProofErrorTargetMismatch}
-		}
-		oldCursor = replacement.OldEnd()
-		newCursor = replacementEnd
-	}
-	tailLen := len(baseBytes) - oldCursor
-	newEnd := newCursor + tailLen
-	if newEnd != len(targetBytes) ||
-		string(targetBytes[newCursor:newEnd]) != string(baseBytes[oldCursor:]) {
-		return nil, &UntouchedByteProofError{Kind: ProofErrorTargetMismatch}
-	}
-	regions = append(regions, UntouchedByteRegion{
-		oldStart: oldCursor, oldEnd: len(baseBytes),
-		newStart: newCursor, newEnd: newEnd,
-	})
-	if failure := validateRegions(regions); failure != nil {
-		return nil, failure
-	}
-	return regions, nil
-}
-
-func validateProofReplacement(baseBytes []byte, index int, replacement document.SourceReplacement,
-	hasPrevious bool, previous *document.SourceReplacement) *UntouchedByteProofError {
-	oldStart := replacement.OldStart()
-	oldEnd := replacement.OldEnd()
-	if oldStart > oldEnd || oldEnd > len(baseBytes) ||
-		len(replacement.Original()) != oldEnd-oldStart {
-		return &UntouchedByteProofError{Kind: ProofErrorInvalidReplacement, Index: index}
-	}
-	if string(baseBytes[oldStart:oldEnd]) != string(replacement.Original()) {
-		return &UntouchedByteProofError{Kind: ProofErrorOriginalMismatch, Index: index}
-	}
-	if hasPrevious {
-		if previous.OldStart() > previous.OldEnd() || previous.OldEnd() > oldStart {
-			return &UntouchedByteProofError{Kind: ProofErrorReplacementOrder, Index: index}
-		}
-		if oldStart == oldEnd && previous.OldEnd() == oldStart {
-			return &UntouchedByteProofError{Kind: ProofErrorDuplicateInsertion, Index: index}
-		}
-	}
-	return nil
-}
-
-func validateRegions(regions []UntouchedByteRegion) *UntouchedByteProofError {
-	previous := UntouchedByteRegion{oldEnd: -1, newEnd: -1}
-	for index, region := range regions {
-		if region.oldStart > region.oldEnd || region.newStart > region.newEnd ||
-			region.oldEnd-region.oldStart != region.newEnd-region.newStart ||
-			region.oldStart < previous.oldEnd || region.newStart < previous.newEnd {
-			return &UntouchedByteProofError{Kind: ProofErrorInvalidRegion, Index: index}
-		}
-		previous = region
-	}
-	return nil
+	return document.CreateUntouchedByteProof(base, target, replacements)
 }

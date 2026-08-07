@@ -32,5 +32,8 @@
 // atomic commit, dry-run plans, replayable patches, and untouched-byte
 // proofs, and the frozen eight-operation registry shared by every profile.
 // All failures are typed errors carrying the RFC 0016 §6 Code() contract
-// with registered codes.
+// with registered codes. The shared edit records (ChangeSet, EditPlan,
+// UntouchedByteProof, AssociationPlacement, LosslessStructuralIndex)
+// live in go/document since 0.16.0 G2.4; this package exposes them under
+// its established local names as aliases and thin wrappers.
 package ini

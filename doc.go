@@ -46,17 +46,15 @@
 // independent implementations of the language-neutral contracts
 // (RFC 0016 §1.1; stdlib-only).
 //
-// # Known structural debt (recorded, not fixed in G1.4)
+// # Known structural debt (cleared 2026-08-08, G2.4)
 //
-// go/json and go/toml each define the same-family edit surface types
-// (ChangeSet, EditPlan, UntouchedByteProof, LosslessStructuralIndex,
-// AssociationPlacement, and the format operation registries) with
-// identical roles but package-local shapes. G1.4 deliberately does not
-// lift them into a shared package — the lift would break the two newly
-// landed packages — and the root package exposes no merged edit types:
-// the Document union and the Registry surface use composition, never
-// type merging. The completion path is milestone 0.16.0 G2.4 ("全操作
-// 补齐"), where the shared types land and the family packages migrate.
+// The same-family edit surface types (ChangeSet, EditPlan,
+// UntouchedByteProof, LosslessStructuralIndex, AssociationPlacement, and
+// the format operation registries) were promoted into go/document and the
+// family packages migrated to the shared shapes in G2.4, including the
+// seven drift items unified against the Rust reference (git records:
+// "Deliver Go 0.16.0 G2.1-G2.3"). The Document union and the Registry
+// surface still use composition, never type merging.
 //
 // # context.Context
 //

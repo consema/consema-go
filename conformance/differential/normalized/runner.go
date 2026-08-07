@@ -32,17 +32,21 @@ import (
 
 	"consema.dev/consema/core"
 	"consema.dev/consema/document"
+	"consema.dev/consema/ini"
 	"consema.dev/consema/json"
+	"consema.dev/consema/properties"
 	"consema.dev/consema/protocol"
 	"consema.dev/consema/toml"
+	"consema.dev/consema/yaml"
 )
 
 // CaseFileManifest is the frozen manifest id of the differential input set.
 const CaseFileManifest = "consema.differential.normalized@1"
 
-// MinCaseCount is the task's lower bound for the input set ("至少 40 个
-// case"); the integrity test fails if the checked-in file drops below it.
-const MinCaseCount = 40
+// MinCaseCount is the task's lower bound for the input set (79 json/toml
+// cases + 25+ yaml/ini/properties cases, milestone 0.16.0 G2.4); the
+// integrity test fails if the checked-in file drops below it.
+const MinCaseCount = 104
 
 // RustDirEnv names the directory of the Rust evidence files.
 const RustDirEnv = "CONSEMA_DIFFERENTIAL_NORMALIZED_RUST_DIR"
@@ -289,10 +293,19 @@ func join(items []string) string { return strings.Join(items, "|") }
 
 // docState is the execution state of one document case.
 type docState struct {
-	doc         *json.Document
-	tomlDoc     *toml.Document
-	foreign     *json.Document
-	foreignToml *toml.Document
+	doc           *json.Document
+	tomlDoc       *toml.Document
+	yamlDoc       *yaml.Document
+	iniDoc        *ini.Document
+	propertiesDoc *properties.Document
+
+	foreign           *json.Document
+	foreignToml       *toml.Document
+	foreignYaml       *yaml.Document
+	foreignIni        *ini.Document
+	foreignProperties *properties.Document
+	iniLimits         ini.IniParseLimits
+	propertiesLimits  properties.PropertiesParseLimits
 
 	format           string
 	profile          interface{}
@@ -320,7 +333,10 @@ type docState struct {
 }
 
 // documentParsed reports whether the parse step succeeded.
-func (s *docState) documentParsed() bool { return s.doc != nil || s.tomlDoc != nil }
+func (s *docState) documentParsed() bool {
+	return s.doc != nil || s.tomlDoc != nil || s.yamlDoc != nil ||
+		s.iniDoc != nil || s.propertiesDoc != nil
+}
 
 // runDocumentCase executes one document-face case and returns its ordered
 // normalized facts.
@@ -335,8 +351,11 @@ func runDocumentCase(c *fileCase) ([]string, error) {
 		foreignSource:    c.ForeignSource,
 		foreignSourceHex: c.ForeignSourceHex,
 		parseLimits:      document.DefaultParseLimits(),
+		iniLimits:        ini.DefaultIniParseLimits(),
+		propertiesLimits: properties.DefaultPropertiesParseLimits(),
 	}
 	applyParseLimits(&state.parseLimits, c.ParseLimits)
+	applyParseLimitsState(state, c.ParseLimits)
 
 	facts := &facts{}
 	if !parseIntoState(state, c, profile, state.parseLimits) {
@@ -430,8 +449,82 @@ func parseIntoState(state *docState, c *fileCase, profile interface{}, limits do
 		state.rootKind = doc.Root().Kind().String()
 		state.native = tomlNativeItem(doc.Root(), 0)
 		return true
+	case "yaml":
+		var p yaml.YamlProfile
+		switch profile {
+		case yaml.Yaml12CoreV1:
+			p = yaml.Yaml12CoreV1
+		case yaml.Yaml11CompatV1:
+			p = yaml.Yaml11CompatV1
+		}
+		doc, failure := yaml.Parse([]byte(c.Source), p, limits)
+		if failure != nil {
+			state.fatalCode = failure.Code()
+			return false
+		}
+		state.yamlDoc = doc
+		state.formation = doc.FormationStatus().String()
+		state.diagnosticCodes = diagnosticCodes(doc.Diagnostics())
+		state.rootKind = yamlRootKind(doc)
+		state.native = yamlNativeSummary(doc)
+		return true
+	case "ini":
+		var p ini.IniProfile
+		switch profile {
+		case ini.PortableV1:
+			p = ini.PortableV1
+		case ini.WindowsV1:
+			p = ini.WindowsV1
+		case ini.PythonConfigParserV1:
+			p = ini.PythonConfigParserV1
+		}
+		doc, failure := ini.Parse([]byte(c.Source), p, ini.IniEncodingProfileDefault(),
+			state.iniLimits)
+		if failure != nil {
+			state.fatalCode = failure.Code()
+			return false
+		}
+		state.iniDoc = doc
+		state.formation = doc.FormationStatus().String()
+		state.diagnosticCodes = diagnosticCodes(doc.Diagnostics())
+		state.rootKind = "Document"
+		state.native = fmt.Sprintf("sections=%d entries=%d", len(doc.Sections()), len(doc.Entries()))
+		return true
+	case "properties":
+		doc, failure := properties.ParseReader([]byte(c.Source), document.Utf8Encoding(),
+			state.propertiesLimits)
+		if failure != nil {
+			state.fatalCode = failure.Code()
+			return false
+		}
+		state.propertiesDoc = doc
+		state.formation = doc.FormationStatus().String()
+		state.diagnosticCodes = diagnosticCodes(doc.Diagnostics())
+		state.rootKind = "Document"
+		state.native = fmt.Sprintf("properties=%d comments=%d",
+			len(doc.Properties()), len(doc.Comments()))
+		return true
 	}
 	return false
+}
+
+// yamlRootKind renders the document-0 root node kind fact of a YAML stream.
+func yamlRootKind(doc *yaml.Document) string {
+	if doc.DocumentCount() == 0 {
+		return "EmptyStream"
+	}
+	yamlDoc, ok := doc.Document(0)
+	if !ok {
+		return "EmptyStream"
+	}
+	return yamlDoc.Root().Kind().String()
+}
+
+// yamlNativeSummary renders the stream-level native facts: the document
+// count and the alias occurrence count (the graph/alias face of the
+// language-neutral surface, roadmap §11.2).
+func yamlNativeSummary(doc *yaml.Document) string {
+	return fmt.Sprintf("docs=%d aliases=%d", doc.DocumentCount(), doc.AliasCount())
 }
 
 // parseDocumentProfile resolves the case profile.
@@ -450,11 +543,37 @@ func parseDocumentProfile(c *fileCase) (interface{}, error) {
 		if c.Profile == "toml.1.0@1" {
 			return toml.Toml10V1, nil
 		}
+	case "yaml":
+		switch c.Profile {
+		case "yaml.1.2-core@1":
+			return yaml.Yaml12CoreV1, nil
+		case "yaml.1.1-compat@1":
+			return yaml.Yaml11CompatV1, nil
+		}
+	case "ini":
+		switch c.Profile {
+		case "ini.portable@1":
+			return ini.PortableV1, nil
+		case "ini.windows@1":
+			return ini.WindowsV1, nil
+		case "ini.python-configparser@1":
+			return ini.PythonConfigParserV1, nil
+		}
+	case "properties":
+		switch c.Profile {
+		case "java-properties.reader@1":
+			return properties.PropertiesReaderV1, nil
+		case "java-properties.latin1@1":
+			return properties.PropertiesLatin1V1, nil
+		}
 	}
 	return nil, fmt.Errorf("case %s: unknown format/profile %q/%q", c.ID, c.Format, c.Profile)
 }
 
-// applyParseLimits applies the descriptor overrides.
+// applyParseLimits applies the descriptor overrides. The descriptor only
+// carries the shared document.ParseLimits fields; the INI and Properties
+// family limits (their Common members) inherit the same overrides so the
+// descriptor keeps its existing shape.
 func applyParseLimits(limits *document.ParseLimits, desc *parseLimitsDesc) {
 	if desc == nil {
 		return
@@ -474,6 +593,15 @@ func applyParseLimits(limits *document.ParseLimits, desc *parseLimitsDesc) {
 	if desc.MaxDiagnostics != nil {
 		limits.MaxDiagnostics = *desc.MaxDiagnostics
 	}
+}
+
+// applyParseLimitsState applies the shared descriptor overrides to the
+// family-specific limits of the current state.
+func applyParseLimitsState(state *docState, desc *parseLimitsDesc) {
+	state.iniLimits.Common = state.parseLimits
+	state.propertiesLimits.Common = state.parseLimits
+	applyParseLimits(&state.iniLimits.Common, desc)
+	applyParseLimits(&state.propertiesLimits.Common, desc)
 }
 
 // diagnosticCodes renders the ordered diagnostic codes.
@@ -683,22 +811,119 @@ func emitNativeQuery(facts *facts, state *docState, step *stepDesc) {
 		facts.set("query.native.matches", join(items))
 		return
 	}
-	matches, queryFailure := toml.ExecuteTomlQuery(context.Background(), executable, state.tomlDoc, limits)
-	if queryFailure != nil {
-		facts.set("query.native.status", "Failed")
-		facts.set("query.native.failure", queryFailure.Code())
-		facts.set("query.native.count", "")
-		facts.set("query.native.matches", "")
+	if state.tomlDoc != nil {
+		matches, queryFailure := toml.ExecuteTomlQuery(context.Background(), executable, state.tomlDoc, limits)
+		if queryFailure != nil {
+			facts.set("query.native.status", "Failed")
+			facts.set("query.native.failure", queryFailure.Code())
+			facts.set("query.native.count", "")
+			facts.set("query.native.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, tomlNativeMatch(match))
+		}
+		facts.set("query.native.status", "Completed")
+		facts.set("query.native.failure", "")
+		facts.set("query.native.count", strconv.Itoa(len(matches)))
+		facts.set("query.native.matches", join(items))
 		return
 	}
-	items := make([]string, 0, len(matches))
-	for _, match := range matches {
-		items = append(items, tomlNativeMatch(match))
+	if state.yamlDoc != nil {
+		yamlMatches, yamlFailure := yaml.ExecuteYamlQuery(context.Background(), executable,
+			state.yamlDoc, limits)
+		if yamlFailure != nil {
+			facts.set("query.native.status", "Failed")
+			facts.set("query.native.failure", yamlFailure.Code())
+			facts.set("query.native.count", "")
+			facts.set("query.native.matches", "")
+			return
+		}
+		yamlItems := make([]string, 0, len(yamlMatches))
+		for _, match := range yamlMatches {
+			yamlItems = append(yamlItems, yamlNativeMatch(&match))
+		}
+		facts.set("query.native.status", "Completed")
+		facts.set("query.native.failure", "")
+		facts.set("query.native.count", strconv.Itoa(len(yamlMatches)))
+		facts.set("query.native.matches", join(yamlItems))
+		return
 	}
-	facts.set("query.native.status", "Completed")
-	facts.set("query.native.failure", "")
-	facts.set("query.native.count", strconv.Itoa(len(matches)))
-	facts.set("query.native.matches", join(items))
+	if state.iniDoc != nil {
+		iniMatches, iniFailure := ini.ExecuteIniQuery(context.Background(), executable,
+			state.iniDoc, limits)
+		if iniFailure != nil {
+			facts.set("query.native.status", "Failed")
+			facts.set("query.native.failure", iniFailure.Code())
+			facts.set("query.native.count", "")
+			facts.set("query.native.matches", "")
+			return
+		}
+		iniItems := make([]string, 0, len(iniMatches))
+		for _, match := range iniMatches {
+			iniItems = append(iniItems, iniNativeMatch(&match))
+		}
+		facts.set("query.native.status", "Completed")
+		facts.set("query.native.failure", "")
+		facts.set("query.native.count", strconv.Itoa(len(iniMatches)))
+		facts.set("query.native.matches", join(iniItems))
+		return
+	}
+	if state.propertiesDoc != nil {
+		propertiesMatches, propertiesFailure := properties.ExecutePropertiesQuery(
+			context.Background(), executable, state.propertiesDoc, limits)
+		if propertiesFailure != nil {
+			facts.set("query.native.status", "Failed")
+			facts.set("query.native.failure", propertiesFailure.Code())
+			facts.set("query.native.count", "")
+			facts.set("query.native.matches", "")
+			return
+		}
+		propertiesItems := make([]string, 0, len(propertiesMatches))
+		for _, match := range propertiesMatches {
+			propertiesItems = append(propertiesItems, propertiesNativeMatch(&match))
+		}
+		facts.set("query.native.status", "Completed")
+		facts.set("query.native.failure", "")
+		facts.set("query.native.count", strconv.Itoa(len(propertiesMatches)))
+		facts.set("query.native.matches", join(propertiesItems))
+	}
+}
+
+// yamlNativeMatch renders one YAML native match identity fact in the
+// canonical vocabulary: KIND:identity where the identity is the ordinal of
+// ordered matches, the node kind name of Node matches, and the escaped
+// anchor name of AnchorDefinition matches.
+func yamlNativeMatch(match *yaml.YamlMatch) string {
+	switch match.Kind {
+	case yaml.YamlMatchStream:
+		return "Stream:0"
+	case yaml.YamlMatchDocument:
+		return fmt.Sprintf("Document:%d", match.Ordinal)
+	case yaml.YamlMatchNode:
+		return "Node:" + match.KindName.String()
+	case yaml.YamlMatchMappingEntry:
+		return fmt.Sprintf("MappingEntry:%d", match.Ordinal)
+	case yaml.YamlMatchSequenceElement:
+		return fmt.Sprintf("SequenceElement:%d", match.Ordinal)
+	case yaml.YamlMatchAnchorDefinition:
+		return "AnchorDefinition:" + escape(match.Anchor)
+	case yaml.YamlMatchAliasOccurrence:
+		return fmt.Sprintf("AliasOccurrence:%d", match.Ordinal)
+	}
+	return "?"
+}
+
+// iniNativeMatch renders one INI native match identity fact: KIND:ordinal.
+func iniNativeMatch(match *ini.IniMatch) string {
+	return string(match.Kind) + ":" + strconv.Itoa(match.Ordinal)
+}
+
+// propertiesNativeMatch renders one Properties native match identity fact:
+// KIND:ordinal.
+func propertiesNativeMatch(match *properties.PropertiesMatch) string {
+	return string(match.Kind) + ":" + strconv.Itoa(match.Ordinal)
 }
 
 // emitSyntaxQuery executes the optional syntax query step.
@@ -748,22 +973,84 @@ func emitSyntaxQuery(facts *facts, state *docState, step *stepDesc) {
 		facts.set("query.syntax.matches", join(items))
 		return
 	}
-	matches, queryFailure := toml.ExecuteTomlSyntaxQuery(context.Background(), executable, state.tomlDoc, limits)
-	if queryFailure != nil {
-		facts.set("query.syntax.status", "Failed")
-		facts.set("query.syntax.failure", queryFailure.Code())
-		facts.set("query.syntax.count", "")
-		facts.set("query.syntax.matches", "")
+	if state.tomlDoc != nil {
+		matches, queryFailure := toml.ExecuteTomlSyntaxQuery(context.Background(), executable, state.tomlDoc, limits)
+		if queryFailure != nil {
+			facts.set("query.syntax.status", "Failed")
+			facts.set("query.syntax.failure", queryFailure.Code())
+			facts.set("query.syntax.count", "")
+			facts.set("query.syntax.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+		}
+		facts.set("query.syntax.status", "Completed")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+		facts.set("query.syntax.matches", join(items))
 		return
 	}
-	items := make([]string, 0, len(matches))
-	for _, match := range matches {
-		items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+	if state.yamlDoc != nil {
+		matches, queryFailure := yaml.ExecuteYamlSyntaxQuery(context.Background(), executable,
+			state.yamlDoc, limits)
+		if queryFailure != nil {
+			facts.set("query.syntax.status", "Failed")
+			facts.set("query.syntax.failure", queryFailure.Code())
+			facts.set("query.syntax.count", "")
+			facts.set("query.syntax.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+		}
+		facts.set("query.syntax.status", "Completed")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+		facts.set("query.syntax.matches", join(items))
+		return
 	}
-	facts.set("query.syntax.status", "Completed")
-	facts.set("query.syntax.failure", "")
-	facts.set("query.syntax.count", strconv.Itoa(len(matches)))
-	facts.set("query.syntax.matches", join(items))
+	if state.iniDoc != nil {
+		matches, queryFailure := ini.ExecuteIniSyntaxQuery(context.Background(), executable,
+			state.iniDoc, limits)
+		if queryFailure != nil {
+			facts.set("query.syntax.status", "Failed")
+			facts.set("query.syntax.failure", queryFailure.Code())
+			facts.set("query.syntax.count", "")
+			facts.set("query.syntax.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+		}
+		facts.set("query.syntax.status", "Completed")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+		facts.set("query.syntax.matches", join(items))
+		return
+	}
+	if state.propertiesDoc != nil {
+		matches, queryFailure := properties.ExecutePropertiesSyntaxQuery(context.Background(),
+			executable, state.propertiesDoc, limits)
+		if queryFailure != nil {
+			facts.set("query.syntax.status", "Failed")
+			facts.set("query.syntax.failure", queryFailure.Code())
+			facts.set("query.syntax.count", "")
+			facts.set("query.syntax.matches", "")
+			return
+		}
+		items := make([]string, 0, len(matches))
+		for _, match := range matches {
+			items = append(items, fmt.Sprintf("%s@%d", match.Kind().AsStr(), match.Ordinal()))
+		}
+		facts.set("query.syntax.status", "Completed")
+		facts.set("query.syntax.failure", "")
+		facts.set("query.syntax.count", strconv.Itoa(len(matches)))
+		facts.set("query.syntax.matches", join(items))
+	}
 }
 
 // jsonNativeMatch renders one JSON native match identity fact.
@@ -805,8 +1092,15 @@ func tomlNativeMatch(match toml.TomlMatch) string {
 // Rust syntax_query_v1.rs definition()).
 func buildQueryDefinition(step *stepDesc, domain *protocol.QueryDomain) (*protocol.ExecutableQuery, *protocol.QueryFailure) {
 	format := "json"
-	if strings.HasPrefix(step.Domain, "toml.") {
+	switch {
+	case strings.HasPrefix(step.Domain, "toml."):
 		format = "toml"
+	case strings.HasPrefix(step.Domain, "yaml."):
+		format = "yaml"
+	case strings.HasPrefix(step.Domain, "ini."):
+		format = "ini"
+	case strings.HasPrefix(step.Domain, "java-properties."):
+		format = "properties"
 	}
 	calls := make([]*protocol.OperatorCall, 0, len(step.Filters))
 	for _, filter := range step.Filters {
@@ -821,6 +1115,16 @@ func buildQueryDefinition(step *stepDesc, domain *protocol.QueryDomain) (*protoc
 			call, buildFailure = argumentCall("core.take", "count", &filter, filter.argumentInteger)
 		case "json.member-name-equals", "toml.entry-name-equals":
 			call, buildFailure = argumentCall(filter.Operator, "name", &filter, filter.argumentString)
+		case "yaml.where-node-kind":
+			call, buildFailure = argumentCall("yaml.where-node-kind", "kind", &filter, filter.argumentString)
+		case "yaml.where-tag":
+			call, buildFailure = argumentCall("yaml.where-tag", "tag", &filter, filter.argumentString)
+		case "yaml.scalar-canonical-equals":
+			call, buildFailure = argumentCall("yaml.scalar-canonical-equals", "canonical", &filter, filter.argumentString)
+		case "ini.entry-value-state-is":
+			call, buildFailure = argumentCall("ini.entry-value-state-is", "state", &filter, filter.argumentString)
+		case "properties.property-value-state-is":
+			call, buildFailure = argumentCall("properties.property-value-state-is", "state", &filter, filter.argumentString)
 		default:
 			call = protocol.NewOperatorCall(filter.Operator, 1)
 		}
@@ -993,25 +1297,150 @@ func emitProject(facts *facts, state *docState, step *stepDesc) {
 		facts.set("project.provenance_entries", strconv.Itoa(len(result.Complete.Provenance.Entries())))
 		return
 	}
-	request := buildTomlProjectionRequest(step)
-	result := state.tomlDoc.Project(request)
-	if result.Failed != nil {
-		facts.set("project.status", "Failed")
-		facts.set("project.failure", result.Failed.Diagnostics[0].Code)
-		facts.set("project.fidelity", "")
-		facts.set("project.value_kind", "")
-		facts.set("project.report", tomlReportSummary(result.Failed.Report))
-		facts.set("project.provenance_entries", "")
+	if state.tomlDoc != nil {
+		request := buildTomlProjectionRequest(step)
+		result := state.tomlDoc.Project(request)
+		if result.Failed != nil {
+			facts.set("project.status", "Failed")
+			facts.set("project.failure", result.Failed.Diagnostics[0].Code)
+			facts.set("project.fidelity", "")
+			facts.set("project.value_kind", "")
+			facts.set("project.report", tomlReportSummary(result.Failed.Report))
+			facts.set("project.provenance_entries", "")
+			return
+		}
+		state.value = result.Complete.Value
+		state.projected = true
+		facts.set("project.status", "Completed")
+		facts.set("project.failure", "")
+		facts.set("project.fidelity", string(result.Complete.Fidelity))
+		facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
+		facts.set("project.report", tomlReportSummary(result.Complete.Report))
+		facts.set("project.provenance_entries", strconv.Itoa(len(result.Complete.Provenance.Entries())))
 		return
 	}
-	state.value = result.Complete.Value
-	state.projected = true
-	facts.set("project.status", "Completed")
-	facts.set("project.failure", "")
-	facts.set("project.fidelity", string(result.Complete.Fidelity))
-	facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
-	facts.set("project.report", tomlReportSummary(result.Complete.Report))
-	facts.set("project.provenance_entries", strconv.Itoa(len(result.Complete.Provenance.Entries())))
+	if state.yamlDoc != nil {
+		result := state.yamlDoc.ProjectValue(yaml.BestExactValueV1())
+		if result.Failed != nil {
+			facts.set("project.status", "Failed")
+			facts.set("project.failure", result.Failed.Code())
+			facts.set("project.fidelity", "")
+			facts.set("project.value_kind", "")
+			facts.set("project.report", "")
+			facts.set("project.provenance_entries", "")
+			return
+		}
+		state.value = result.Complete.Value
+		state.projected = true
+		facts.set("project.status", "Completed")
+		facts.set("project.failure", "")
+		facts.set("project.fidelity", result.Complete.Fidelity.String())
+		facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
+		facts.set("project.report", yamlEventSummary(result.Complete.Report))
+		facts.set("project.provenance_entries",
+			strconv.Itoa(len(result.Complete.Provenance.Entries())))
+		return
+	}
+	if state.iniDoc != nil {
+		result := state.iniDoc.Project(ini.BestExactEntryMappingV1())
+		if result.Failed != nil {
+			facts.set("project.status", "Failed")
+			facts.set("project.failure", result.Failed.Diagnostics[0].Code)
+			facts.set("project.fidelity", "")
+			facts.set("project.value_kind", "")
+			facts.set("project.report", iniEventSummary(result.Failed.Report))
+			facts.set("project.provenance_entries", "")
+			return
+		}
+		state.value = result.Complete.Value
+		state.projected = true
+		facts.set("project.status", "Completed")
+		facts.set("project.failure", "")
+		facts.set("project.fidelity", string(result.Complete.Fidelity))
+		facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
+		facts.set("project.report", iniEventSummary(result.Complete.Report))
+		facts.set("project.provenance_entries",
+			strconv.Itoa(len(result.Complete.Provenance.Entries())))
+		return
+	}
+	if state.propertiesDoc != nil {
+		result := state.propertiesDoc.Project(properties.BestExactEntryMapping())
+		if result.Failed != nil {
+			facts.set("project.status", "Failed")
+			facts.set("project.failure", result.Failed.Diagnostics[0].Code)
+			facts.set("project.fidelity", "")
+			facts.set("project.value_kind", "")
+			facts.set("project.report", propertiesEventSummary(result.Failed.Report))
+			facts.set("project.provenance_entries", "")
+			return
+		}
+		state.value = result.Complete.Value
+		state.projected = true
+		facts.set("project.status", "Completed")
+		facts.set("project.failure", "")
+		facts.set("project.fidelity", result.Complete.Fidelity.String())
+		facts.set("project.value_kind", neutralKindName(result.Complete.Value.Kind()))
+		facts.set("project.report", propertiesEventSummary(result.Complete.Report))
+		facts.set("project.provenance_entries",
+			strconv.Itoa(len(result.Complete.Provenance.Entries())))
+	}
+}
+
+// yamlEventSummary renders the YAML projection report as ordered
+// EventKind:count pairs.
+func yamlEventSummary(report yaml.ProjectionReport) string {
+	order := make([]string, 0)
+	counts := make(map[string]int)
+	for _, event := range report.Events() {
+		name := event.Kind.String()
+		if _, seen := counts[name]; !seen {
+			order = append(order, name)
+		}
+		counts[name]++
+	}
+	parts := make([]string, 0, len(order))
+	for _, name := range order {
+		parts = append(parts, fmt.Sprintf("%s:%d", name, counts[name]))
+	}
+	return join(parts)
+}
+
+// iniEventSummary renders the INI projection report as ordered
+// EventKind:count pairs.
+func iniEventSummary(report ini.ProjectionReport) string {
+	order := make([]string, 0)
+	counts := make(map[string]int)
+	for _, event := range report.Events() {
+		name := string(event.Kind)
+		if _, seen := counts[name]; !seen {
+			order = append(order, name)
+		}
+		counts[name]++
+	}
+	parts := make([]string, 0, len(order))
+	for _, name := range order {
+		parts = append(parts, fmt.Sprintf("%s:%d", name, counts[name]))
+	}
+	return join(parts)
+}
+
+// propertiesEventSummary renders the Properties projection report as
+// ordered event-code:count pairs (the report events carry their registered
+// code, java-properties.projection.duplicate-collapsed@1).
+func propertiesEventSummary(report properties.ProjectionReport) string {
+	order := make([]string, 0)
+	counts := make(map[string]int)
+	for _, event := range report.Events() {
+		if _, seen := counts[event.Code]; !seen {
+			order = append(order, event.Code)
+		}
+		counts[event.Code]++
+	}
+	parts := make([]string, 0, len(order))
+	for _, name := range order {
+		parts = append(parts, fmt.Sprintf("%s:%d", name, counts[name]))
+	}
+	return join(parts)
 }
 
 // buildJSONProjectionRequest builds the JSON projection request from the
@@ -1143,19 +1572,69 @@ func emitMaterialize(facts *facts, state *docState, step *stepDesc) {
 		facts.set("materialize.fidelity", "")
 		return
 	}
-	result := toml.Materialize(value, request)
-	if result.Complete != nil {
-		output := string(result.Complete.Document.Render())
-		facts.set("materialize.status", "Completed")
-		facts.set("materialize.failure", "")
-		facts.set("materialize.output", escape(output))
-		facts.set("materialize.fidelity", string(result.Complete.Fidelity))
+	if state.tomlDoc != nil {
+		result := toml.Materialize(value, request)
+		if result.Complete != nil {
+			output := string(result.Complete.Document.Render())
+			facts.set("materialize.status", "Completed")
+			facts.set("materialize.failure", "")
+			facts.set("materialize.output", escape(output))
+			facts.set("materialize.fidelity", string(result.Complete.Fidelity))
+			return
+		}
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", result.Failed.Failure.Code())
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
 		return
 	}
-	facts.set("materialize.status", "Failed")
-	facts.set("materialize.failure", result.Failed.Failure.Code())
-	facts.set("materialize.output", "")
-	facts.set("materialize.fidelity", "")
+	if state.yamlDoc != nil {
+		result := yaml.MaterializeValue(value, request)
+		if result.Complete != nil {
+			output := string(result.Complete.Document.Render())
+			facts.set("materialize.status", "Completed")
+			facts.set("materialize.failure", "")
+			facts.set("materialize.output", escape(output))
+			facts.set("materialize.fidelity", string(result.Complete.Fidelity))
+			return
+		}
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", result.Failed.Failure.Code())
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
+		return
+	}
+	if state.iniDoc != nil {
+		result := ini.Materialize(value, request)
+		if result.Complete != nil {
+			output := string(result.Complete.Document.Render())
+			facts.set("materialize.status", "Completed")
+			facts.set("materialize.failure", "")
+			facts.set("materialize.output", escape(output))
+			facts.set("materialize.fidelity", string(result.Complete.Fidelity))
+			return
+		}
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", result.Failed.Failure.Code())
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
+		return
+	}
+	if state.propertiesDoc != nil {
+		result := properties.Materialize(value, request)
+		if result.Complete != nil {
+			output := string(result.Complete.Document.Render())
+			facts.set("materialize.status", "Completed")
+			facts.set("materialize.failure", "")
+			facts.set("materialize.output", escape(output))
+			facts.set("materialize.fidelity", string(result.Complete.Fidelity))
+			return
+		}
+		facts.set("materialize.status", "Failed")
+		facts.set("materialize.failure", result.Failed.Failure.Code())
+		facts.set("materialize.output", "")
+		facts.set("materialize.fidelity", "")
+	}
 }
 
 // decodeMaterializeValue decodes the materialize input descriptor through
@@ -1240,7 +1719,7 @@ func emitEdit(facts *facts, state *docState, step *stepDesc) {
 	}
 	state.editRun = true
 	if state.doc != nil {
-		if !state.ensureForeignJSON() {
+		if !state.ensureForeign() {
 			facts.set("edit.status", "Failed")
 			facts.set("edit.failure", "core.source.invalid-sequence@1")
 			facts.set("edit.output", "")
@@ -1269,35 +1748,108 @@ func emitEdit(facts *facts, state *docState, step *stepDesc) {
 		facts.set("edit.source_edit_count", "")
 		return
 	}
-	builder := toml.NewEditTransactionBuilder(state.tomlDoc)
-	if !applyTomlEditOperations(builder, state, step) {
+	if state.tomlDoc != nil {
+		builder := toml.NewEditTransactionBuilder(state.tomlDoc)
+		if !applyTomlEditOperations(builder, state, step) {
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.edit.target-not-found@1")
+			facts.set("edit.output", "")
+			facts.set("edit.source_edit_count", "")
+			return
+		}
+		commit, editFailure := state.tomlDoc.Commit(builder.Build())
+		if commit != nil {
+			facts.set("edit.status", "Completed")
+			facts.set("edit.failure", "")
+			facts.set("edit.output", escape(string(commit.Document.Render())))
+			facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+			return
+		}
 		facts.set("edit.status", "Failed")
-		facts.set("edit.failure", "core.edit.target-not-found@1")
+		facts.set("edit.failure", editFailure.Code())
 		facts.set("edit.output", "")
 		facts.set("edit.source_edit_count", "")
 		return
 	}
-	commit, editFailure := state.tomlDoc.Commit(builder.Build())
-	if commit != nil {
-		facts.set("edit.status", "Completed")
-		facts.set("edit.failure", "")
-		facts.set("edit.output", escape(string(commit.Document.Render())))
-		facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+	if state.yamlDoc != nil {
+		builder := yaml.NewEditTransactionBuilder(state.yamlDoc)
+		if !applyYamlEditOperations(builder, state, step) {
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.edit.target-not-found@1")
+			facts.set("edit.output", "")
+			facts.set("edit.source_edit_count", "")
+			return
+		}
+		commit, editFailure := state.yamlDoc.Commit(builder.Build())
+		if commit != nil {
+			facts.set("edit.status", "Completed")
+			facts.set("edit.failure", "")
+			facts.set("edit.output", escape(string(commit.Document.Render())))
+			facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+			return
+		}
+		facts.set("edit.status", "Failed")
+		facts.set("edit.failure", editFailure.Code())
+		facts.set("edit.output", "")
+		facts.set("edit.source_edit_count", "")
 		return
 	}
-	facts.set("edit.status", "Failed")
-	facts.set("edit.failure", editFailure.Code())
-	facts.set("edit.output", "")
-	facts.set("edit.source_edit_count", "")
+	if state.iniDoc != nil {
+		builder := ini.NewEditTransactionBuilder(state.iniDoc)
+		if !applyIniEditOperations(builder, state, step) {
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.edit.target-not-found@1")
+			facts.set("edit.output", "")
+			facts.set("edit.source_edit_count", "")
+			return
+		}
+		commit, editFailure := state.iniDoc.Commit(builder.Build())
+		if commit != nil {
+			facts.set("edit.status", "Completed")
+			facts.set("edit.failure", "")
+			facts.set("edit.output", escape(string(commit.Document.Render())))
+			facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+			return
+		}
+		facts.set("edit.status", "Failed")
+		facts.set("edit.failure", editFailure.Code())
+		facts.set("edit.output", "")
+		facts.set("edit.source_edit_count", "")
+		return
+	}
+	if state.propertiesDoc != nil {
+		builder := properties.NewEditTransactionBuilder(state.propertiesDoc)
+		if !applyPropertiesEditOperations(builder, state, step) {
+			facts.set("edit.status", "Failed")
+			facts.set("edit.failure", "core.edit.target-not-found@1")
+			facts.set("edit.output", "")
+			facts.set("edit.source_edit_count", "")
+			return
+		}
+		commit, editFailure := state.propertiesDoc.Commit(builder.Build())
+		if commit != nil {
+			facts.set("edit.status", "Completed")
+			facts.set("edit.failure", "")
+			facts.set("edit.output", escape(string(commit.Document.Render())))
+			facts.set("edit.source_edit_count", strconv.Itoa(len(commit.ChangeSet.SourceEdits())))
+			return
+		}
+		facts.set("edit.status", "Failed")
+		facts.set("edit.failure", editFailure.Code())
+		facts.set("edit.output", "")
+		facts.set("edit.source_edit_count", "")
+	}
 }
 
-// ensureForeignJSON parses the foreign source when the case declares one
+// ensureForeign parses the foreign source when the case declares one
 // (the wrong-snapshot edit cases). The source is declared literally or as
 // raw hex bytes; a declared source that fails to decode or parse reports
 // edit.failure = core.source.invalid-sequence@1 (the Go-side norm that the
 // Rust example mirrors).
-func (s *docState) ensureForeignJSON() bool {
-	if s.foreign != nil || (s.foreignSource == "" && s.foreignSourceHex == "") {
+func (s *docState) ensureForeign() bool {
+	if s.foreign != nil || s.foreignToml != nil || s.foreignYaml != nil ||
+		s.foreignIni != nil || s.foreignProperties != nil ||
+		(s.foreignSource == "" && s.foreignSourceHex == "") {
 		return true
 	}
 	foreignBytes := []byte(s.foreignSource)
@@ -1331,6 +1883,44 @@ func (s *docState) ensureForeignJSON() bool {
 			return false
 		}
 		s.foreignToml = doc
+		return true
+	case "yaml":
+		var p yaml.YamlProfile
+		switch s.profile {
+		case yaml.Yaml12CoreV1:
+			p = yaml.Yaml12CoreV1
+		case yaml.Yaml11CompatV1:
+			p = yaml.Yaml11CompatV1
+		}
+		doc, failure := yaml.Parse(foreignBytes, p, s.parseLimits)
+		if failure != nil {
+			return false
+		}
+		s.foreignYaml = doc
+		return true
+	case "ini":
+		var p ini.IniProfile
+		switch s.profile {
+		case ini.PortableV1:
+			p = ini.PortableV1
+		case ini.WindowsV1:
+			p = ini.WindowsV1
+		case ini.PythonConfigParserV1:
+			p = ini.PythonConfigParserV1
+		}
+		doc, failure := ini.Parse(foreignBytes, p, ini.IniEncodingProfileDefault(), s.iniLimits)
+		if failure != nil {
+			return false
+		}
+		s.foreignIni = doc
+		return true
+	case "properties":
+		doc, failure := properties.ParseReader(foreignBytes, document.Utf8Encoding(),
+			s.propertiesLimits)
+		if failure != nil {
+			return false
+		}
+		s.foreignProperties = doc
 		return true
 	}
 	return false
@@ -1497,6 +2087,458 @@ func applyTomlEditOperations(builder *toml.EditTransactionBuilder, state *docSta
 		}
 	}
 	return true
+}
+
+// applyYamlEditOperations applies the declared YAML edit operations; false
+// means a descriptor could not be resolved.
+func applyYamlEditOperations(builder *yaml.EditTransactionBuilder, state *docState, step *stepDesc) bool {
+	for _, op := range step.Operations {
+		switch op.Operation {
+		case "semantic-scalar":
+			value, ok := op.Value.coreValue()
+			if !ok {
+				return false
+			}
+			target, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			policy, ok := yamlRepresentationPolicy(op.Policy)
+			if !ok {
+				return false
+			}
+			builder.SemanticScalar(target, value, policy)
+		case "literal-scalar":
+			target, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			literal, err := hex.DecodeString(op.LiteralHex)
+			if err != nil {
+				return false
+			}
+			builder.LiteralScalar(target, literal)
+		case "rename-anchor":
+			target, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RenameAnchor(target, op.Name)
+		case "insert-mapping-entry":
+			container, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreValue()
+			if !ok {
+				return false
+			}
+			placement, ok := resolveYamlPlacement(state, op.Placement)
+			if !ok {
+				return false
+			}
+			builder.InsertMappingEntry(container, core.String(op.Name), value, placement)
+		case "remove-mapping-entry":
+			target, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RemoveMappingEntry(target)
+		case "insert-sequence-element":
+			container, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreValue()
+			if !ok {
+				return false
+			}
+			placement, ok := resolveYamlPlacement(state, op.Placement)
+			if !ok {
+				return false
+			}
+			builder.InsertSequenceElement(container, value, placement)
+		case "remove-sequence-element":
+			target, ok := resolveYamlTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RemoveSequenceElement(target)
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// applyIniEditOperations applies the declared INI edit operations; false
+// means a descriptor could not be resolved.
+func applyIniEditOperations(builder *ini.EditTransactionBuilder, state *docState, step *stepDesc) bool {
+	for _, op := range step.Operations {
+		switch op.Operation {
+		case "semantic-value":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreString()
+			if !ok {
+				return false
+			}
+			policy, ok := iniRepresentationPolicy(op.Policy)
+			if !ok {
+				return false
+			}
+			builder.SemanticValue(target, value, policy)
+		case "literal-value":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			literal, err := hex.DecodeString(op.LiteralHex)
+			if err != nil {
+				return false
+			}
+			builder.LiteralValue(target, literal)
+		case "insert-section":
+			container, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			placement, ok := resolveIniPlacement(state, op.Placement)
+			if !ok {
+				return false
+			}
+			builder.InsertSection(container, op.Name, placement)
+		case "remove-section":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RemoveSection(target)
+		case "rename-section":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RenameSection(target, op.Name)
+		case "insert-entry":
+			container, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreString()
+			if !ok {
+				return false
+			}
+			placement, ok := resolveIniPlacement(state, op.Placement)
+			if !ok {
+				return false
+			}
+			builder.InsertEntry(container, op.Name, value, placement)
+		case "remove-entry":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RemoveEntry(target)
+		case "rename-entry":
+			target, ok := resolveIniTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RenameEntry(target, op.Name)
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// applyPropertiesEditOperations applies the declared Properties edit
+// operations; false means a descriptor could not be resolved.
+func applyPropertiesEditOperations(builder *properties.EditTransactionBuilder, state *docState, step *stepDesc) bool {
+	for _, op := range step.Operations {
+		switch op.Operation {
+		case "semantic-value":
+			target, ok := resolvePropertiesTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreString()
+			if !ok {
+				return false
+			}
+			builder.SemanticValue(target, properties.NewJavaStringFromUnicode(value))
+		case "literal-value":
+			target, ok := resolvePropertiesTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			literal, err := hex.DecodeString(op.LiteralHex)
+			if err != nil {
+				return false
+			}
+			builder.LiteralValue(target, literal)
+		case "insert-property":
+			container, ok := resolvePropertiesTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			value, ok := op.Value.coreString()
+			if !ok {
+				return false
+			}
+			placement, ok := resolvePropertiesPlacement(state, op.Placement)
+			if !ok {
+				return false
+			}
+			builder.InsertProperty(container, properties.NewJavaStringFromUnicode(op.Name),
+				properties.NewJavaStringFromUnicode(value), placement)
+		case "remove-property":
+			target, ok := resolvePropertiesTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RemoveProperty(target)
+		case "rename-property":
+			target, ok := resolvePropertiesTarget(state, op.Target)
+			if !ok {
+				return false
+			}
+			builder.RenameProperty(target, properties.NewJavaStringFromUnicode(op.Name))
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// resolveYamlTarget resolves one target descriptor to a YAML node handle.
+func resolveYamlTarget(state *docState, target *targetDesc) (document.NodeRef, bool) {
+	doc := state.yamlDoc
+	if target.Foreign {
+		if state.foreignYaml == nil {
+			return document.NodeRef{}, false
+		}
+		doc = state.foreignYaml
+	}
+	yamlDoc, ok := doc.Document(0)
+	if !ok {
+		return document.NodeRef{}, false
+	}
+	root := yamlDoc.Root()
+	switch target.Kind {
+	case "document-root":
+		return root.NodeRef(), true
+	case "mapping-entry":
+		entry, ok := root.MappingEntry(target.Ordinal)
+		if !ok {
+			return document.NodeRef{}, false
+		}
+		return entry.NodeRef(), true
+	case "mapping-value":
+		entry, ok := root.MappingEntry(target.Ordinal)
+		if !ok {
+			return document.NodeRef{}, false
+		}
+		return entry.Value().NodeRef(), true
+	case "mapping-key":
+		entry, ok := root.MappingEntry(target.Ordinal)
+		if !ok {
+			return document.NodeRef{}, false
+		}
+		return entry.Key().NodeRef(), true
+	case "sequence-element":
+		// A root-level sequence item, or the sequence under the first
+		// mapping entry (the anchored nested-sequence shape).
+		if item, ok := root.SequenceItem(target.Ordinal); ok {
+			return item.NodeRef(), true
+		}
+		if entry, ok := root.MappingEntry(0); ok {
+			if item, ok := entry.Value().SequenceItem(target.Ordinal); ok {
+				return item.NodeRef(), true
+			}
+		}
+		return document.NodeRef{}, false
+	case "sequence-element-node":
+		if item, ok := root.SequenceItem(target.Ordinal); ok {
+			return item.Node().NodeRef(), true
+		}
+		if entry, ok := root.MappingEntry(0); ok {
+			if item, ok := entry.Value().SequenceItem(target.Ordinal); ok {
+				return item.Node().NodeRef(), true
+			}
+		}
+		return document.NodeRef{}, false
+	case "anchor-value":
+		entry, ok := root.MappingEntry(target.Ordinal)
+		if !ok {
+			return document.NodeRef{}, false
+		}
+		anchor, ok := entry.Value().AnchorNodeRef()
+		if !ok {
+			return document.NodeRef{}, false
+		}
+		return anchor, true
+	}
+	return document.NodeRef{}, false
+}
+
+// resolveIniTarget resolves one target descriptor to an INI node handle.
+func resolveIniTarget(state *docState, target *targetDesc) (document.NodeRef, bool) {
+	doc := state.iniDoc
+	if target.Foreign {
+		if state.foreignIni == nil {
+			return document.NodeRef{}, false
+		}
+		doc = state.foreignIni
+	}
+	switch target.Kind {
+	case "document":
+		return doc.NodeRef(), true
+	case "section":
+		sections := doc.Sections()
+		if target.Ordinal >= len(sections) {
+			return document.NodeRef{}, false
+		}
+		return sections[target.Ordinal].NodeRef(), true
+	case "entry":
+		entries := doc.Entries()
+		if target.Ordinal >= len(entries) {
+			return document.NodeRef{}, false
+		}
+		return entries[target.Ordinal].NodeRef(), true
+	}
+	return document.NodeRef{}, false
+}
+
+// resolvePropertiesTarget resolves one target descriptor to a Properties
+// node handle.
+func resolvePropertiesTarget(state *docState, target *targetDesc) (document.NodeRef, bool) {
+	doc := state.propertiesDoc
+	if target.Foreign {
+		if state.foreignProperties == nil {
+			return document.NodeRef{}, false
+		}
+		doc = state.foreignProperties
+	}
+	switch target.Kind {
+	case "document":
+		return doc.NodeRef(), true
+	case "property":
+		properties := doc.Properties()
+		if target.Ordinal >= len(properties) {
+			return document.NodeRef{}, false
+		}
+		return properties[target.Ordinal].NodeRef(), true
+	}
+	return document.NodeRef{}, false
+}
+
+// resolveYamlPlacement resolves one placement descriptor for YAML.
+func resolveYamlPlacement(state *docState, placement *placementDesc) (yaml.AssociationPlacement, bool) {
+	if placement == nil {
+		return yaml.PlacementEnd(), true
+	}
+	switch placement.At {
+	case "start":
+		return yaml.PlacementStart(), true
+	case "end":
+		return yaml.PlacementEnd(), true
+	}
+	if placement.BeforeOrdinal != nil {
+		anchor, ok := yamlOrdinalAnchor(state, *placement.BeforeOrdinal)
+		if !ok {
+			return yaml.AssociationPlacement{}, false
+		}
+		return yaml.PlacementBefore(anchor), true
+	}
+	if placement.AfterOrdinal != nil {
+		anchor, ok := yamlOrdinalAnchor(state, *placement.AfterOrdinal)
+		if !ok {
+			return yaml.AssociationPlacement{}, false
+		}
+		return yaml.PlacementAfter(anchor), true
+	}
+	return yaml.PlacementEnd(), true
+}
+
+// resolveIniPlacement resolves one placement descriptor for INI.
+func resolveIniPlacement(state *docState, placement *placementDesc) (ini.AssociationPlacement, bool) {
+	if placement == nil {
+		return ini.PlacementEnd(), true
+	}
+	switch placement.At {
+	case "start":
+		return ini.PlacementStart(), true
+	case "end":
+		return ini.PlacementEnd(), true
+	}
+	return ini.PlacementEnd(), true
+}
+
+// resolvePropertiesPlacement resolves one placement descriptor for
+// Properties.
+func resolvePropertiesPlacement(state *docState, placement *placementDesc) (properties.AssociationPlacement, bool) {
+	if placement == nil {
+		return properties.PlacementEnd(), true
+	}
+	switch placement.At {
+	case "start":
+		return properties.PlacementStart(), true
+	case "end":
+		return properties.PlacementEnd(), true
+	}
+	return properties.PlacementEnd(), true
+}
+
+// yamlOrdinalAnchor resolves the anchor of the current YAML container: the
+// mapping entries for insert-mapping-entry, the sequence elements for
+// insert-sequence-element.
+func yamlOrdinalAnchor(state *docState, ordinal int) (document.NodeRef, bool) {
+	yamlDoc, ok := state.yamlDoc.Document(0)
+	if !ok {
+		return document.NodeRef{}, false
+	}
+	root := yamlDoc.Root()
+	if entry, ok := root.MappingEntry(ordinal); ok {
+		return entry.NodeRef(), true
+	}
+	if item, ok := root.SequenceItem(ordinal); ok {
+		return item.NodeRef(), true
+	}
+	return document.NodeRef{}, false
+}
+
+// yamlRepresentationPolicy resolves one policy name.
+func yamlRepresentationPolicy(name string) (yaml.RepresentationPolicy, bool) {
+	switch name {
+	case "PreserveCompatible":
+		return yaml.RepresentationPolicyPreserveCompatible, true
+	case "CanonicalForProfile":
+		return yaml.RepresentationPolicyCanonicalForProfile, true
+	case "PreserveElseCanonical":
+		return yaml.RepresentationPolicyPreserveElseCanonical, true
+	case "ExactLiteral":
+		return yaml.RepresentationPolicyExactLiteral, true
+	}
+	return yaml.RepresentationPolicyExactLiteral, false
+}
+
+// iniRepresentationPolicy resolves one policy name.
+func iniRepresentationPolicy(name string) (ini.RepresentationPolicy, bool) {
+	switch name {
+	case "PreserveCompatible":
+		return ini.RepresentationPolicyPreserveCompatible, true
+	case "CanonicalForProfile":
+		return ini.RepresentationPolicyCanonicalForProfile, true
+	case "PreserveElseCanonical":
+		return ini.RepresentationPolicyPreserveElseCanonical, true
+	case "ExactLiteral":
+		return ini.RepresentationPolicyExactLiteral, true
+	}
+	return ini.RepresentationPolicyExactLiteral, false
 }
 
 // resolveJSONTarget resolves one target descriptor to a JSON node handle.
@@ -1711,6 +2753,14 @@ func tomlRepresentationPolicy(name string) (toml.RepresentationPolicy, bool) {
 }
 
 // coreValue builds one core.Value from a scalar descriptor.
+// coreString renders the string descriptor as Go text.
+func (v *valueDesc) coreString() (string, bool) {
+	if v.String == "" {
+		return "", false
+	}
+	return v.String, true
+}
+
 func (v *valueDesc) coreValue() (core.Value, bool) {
 	switch {
 	case v.Null != nil:

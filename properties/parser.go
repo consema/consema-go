@@ -654,7 +654,7 @@ func (p *parser) buildStructuralPieces() ([]StructuralPiece, []PropertiesSyntaxK
 		if failure != nil {
 			return nil, nil, failure
 		}
-		pieces = append(pieces, StructuralPiece{span: span, kind: kind})
+		pieces = append(pieces, document.NewStructuralPiece(span, kind))
 		syntaxKinds = append(syntaxKinds, syntax)
 	}
 	return pieces, syntaxKinds, nil

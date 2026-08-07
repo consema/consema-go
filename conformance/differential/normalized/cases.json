@@ -1,6 +1,6 @@
 {
  "manifest": "consema.differential.normalized@1",
- "generated": "2026-08-07",
+ "generated": "2026-08-08",
  "cases": [
   {
    "id": "json.strict.parse.object-nested",
@@ -850,7 +850,7 @@
    "kind": "document",
    "format": "json",
    "profile": "json5.standard@1",
-   "source": "\ufeff{ // lead\nunquoted:'value',a:.5,hex:+0X10,trail:1.,exp:1.e+2,truth:true,nil:null,inf:-Infinity,nan:+NaN,}",
+   "source": "﻿{ // lead\nunquoted:'value',a:.5,hex:+0X10,trail:1.,exp:1.e+2,truth:true,nil:null,inf:-Infinity,nan:+NaN,}",
    "steps": [
     {
      "op": "parse"
@@ -862,7 +862,7 @@
    "kind": "document",
    "format": "json",
    "profile": "json5.standard@1",
-   "source": "'a\u2028b'",
+   "source": "'a b'",
    "steps": [
     {
      "op": "parse"
@@ -1729,6 +1729,635 @@
         "ordinal": 0
        },
        "literal_hex": "f09f286263"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "yaml.parse.mapping-scalars",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "a: 1\nb: two\nc: true\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "yaml.parse.multi-document",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "---\na: 1\n---\nb: 2\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "yaml.parse.anchor-alias",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "base: &b {x: 1}\ncopy: *b\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "yaml.parse.negative.undefined-alias",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "[*missing]\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "yaml.parse.negative.resource-limit",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "a: 1\nb: 2\nc: 3\n",
+   "parse_limits": {
+    "max_source_bytes": 3
+   },
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "yaml.query.native.mapping-entry-key-canonical",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "a: 1\nb: 2\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "yaml.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "yaml.documents"
+      },
+      {
+       "operator": "yaml.document-root"
+      },
+      {
+       "operator": "yaml.try-mapping-entries"
+      },
+      {
+       "operator": "yaml.mapping-entry-key"
+      },
+      {
+       "operator": "yaml.scalar-canonical-equals",
+       "argument": "b"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "yaml.query.native.alias-target",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "base: &b {x: 1}\ncopy: *b\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "yaml.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "yaml.alias-occurrences"
+      },
+      {
+       "operator": "yaml.alias-target"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "yaml.query.syntax.document-start",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "---\na: 1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-syntax",
+     "domain": "yaml.lossless-syntax-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "kind-is",
+       "argument": "DocumentStart"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "yaml.query.negative.resource-limit",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "[a, b, c]\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "yaml.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "yaml.documents"
+      },
+      {
+       "operator": "yaml.document-root"
+      },
+      {
+       "operator": "yaml.try-sequence-elements"
+      }
+     ],
+     "query_limits": {
+      "max_results": 0
+     },
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "yaml.project.value-materialize",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "a: 1\nb: [true, null]\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "project",
+     "target": "BestExactValue"
+    },
+    {
+     "op": "materialize",
+     "input": "project",
+     "target_profile": "yaml.1.2-core@1",
+     "style": "yaml.canonical-flow",
+     "newline": "Lf"
+    }
+   ]
+  },
+  {
+   "id": "yaml.edit.scalar-semantic",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "a: 1\nb: two\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "edit",
+     "operations": [
+      {
+       "operation": "semantic-scalar",
+       "target": {
+        "kind": "mapping-value",
+        "ordinal": 0
+       },
+       "value": {
+        "integer": "5"
+       },
+       "policy": "PreserveCompatible"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "yaml.edit.negative.anchor-dependency",
+   "kind": "document",
+   "format": "yaml",
+   "profile": "yaml.1.2-core@1",
+   "source": "seq:\n  - &x one\ncopy: *x\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "edit",
+     "operations": [
+      {
+       "operation": "remove-sequence-element",
+       "target": {
+        "kind": "sequence-element",
+        "ordinal": 0
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ini.parse.portable-basic",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\nb=two\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "ini.parse.negative.duplicate-recovery",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\na=2\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "ini.parse.python-continuation",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.python-configparser@1",
+   "source": "[s]\nkey: first\n    second\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "ini.query.native.sections-entries",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\nb=2\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "ini.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "ini.document-sections"
+      },
+      {
+       "operator": "ini.section-entries"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "ini.query.native.duplicate-group",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.windows@1",
+   "source": "[Main]\r\nName=one\r\nname=two\r\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "ini.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "ini.all-entries"
+      },
+      {
+       "operator": "ini.duplicate-group"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "ini.query.syntax.entry-key",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-syntax",
+     "domain": "ini.lossless-syntax-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "kind-is",
+       "argument": "EntryKey"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "ini.project.entry-mapping-materialize",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "project",
+     "target": "BestExactEntryMapping"
+    },
+    {
+     "op": "materialize",
+     "input": "project",
+     "target_profile": "ini.portable@1",
+     "style": "ini.portable-canonical",
+     "newline": "Lf"
+    }
+   ]
+  },
+  {
+   "id": "ini.edit.insert-entry",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "edit",
+     "operations": [
+      {
+       "operation": "insert-entry",
+       "target": {
+        "kind": "section",
+        "ordinal": 0
+       },
+       "name": "b",
+       "value": {
+        "string": "two"
+       },
+       "placement": {
+        "at": "end"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ini.query.negative.domain-mismatch",
+   "kind": "document",
+   "format": "ini",
+   "profile": "ini.portable@1",
+   "source": "[s]\na=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "ini.native-semantic-query",
+     "domain_version": 2,
+     "filters": [
+      {
+       "operator": "ini.document-sections"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "properties.parse.reader-basic",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\nb=two\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "properties.parse.duplicate-keys",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\na=2\n",
+   "steps": [
+    {
+     "op": "parse"
+    }
+   ]
+  },
+  {
+   "id": "properties.query.native.value-state",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\nempty=\nimplicit\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "java-properties.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "properties.document-properties"
+      },
+      {
+       "operator": "properties.property-value-state-is",
+       "argument": "Present"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "properties.query.native.duplicate-group",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\na=2\nb=3\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-native",
+     "domain": "java-properties.native-semantic-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "properties.document-properties"
+      },
+      {
+       "operator": "properties.duplicate-group"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "properties.query.syntax.key-kind",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "query-syntax",
+     "domain": "java-properties.lossless-syntax-query",
+     "domain_version": 1,
+     "filters": [
+      {
+       "operator": "kind-is",
+       "argument": "Key"
+      }
+     ],
+     "combine": "Single",
+     "selection": "All"
+    }
+   ]
+  },
+  {
+   "id": "properties.project.entry-mapping-materialize",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\nb=two\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "project",
+     "target": "BestExactEntryMapping"
+    },
+    {
+     "op": "materialize",
+     "input": "project",
+     "target_profile": "java-properties.reader@1",
+     "style": "java-properties.reader-canonical",
+     "newline": "Lf"
+    }
+   ]
+  },
+  {
+   "id": "properties.edit.rename-property",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\nb=2\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "edit",
+     "operations": [
+      {
+       "operation": "rename-property",
+       "target": {
+        "kind": "property",
+        "ordinal": 0
+       },
+       "name": "z"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "properties.edit.negative.target-not-found",
+   "kind": "document",
+   "format": "properties",
+   "profile": "java-properties.reader@1",
+   "source": "a=1\n",
+   "steps": [
+    {
+     "op": "parse"
+    },
+    {
+     "op": "edit",
+     "operations": [
+      {
+       "operation": "remove-property",
+       "target": {
+        "kind": "property",
+        "ordinal": 5
+       }
       }
      ]
     }

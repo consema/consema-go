@@ -9,62 +9,14 @@ import (
 )
 
 // LosslessStructuralIndex is the exhaustive token/trivia/error-region
-// byte coverage of one JSON-family document (consema-document
-// LosslessStructuralIndex; consema-json lib.rs:229-239). Every source byte
-// belongs to exactly one piece, in source order.
-type LosslessStructuralIndex struct {
-	pieces []structuralPiece
-}
-
-// structuralPiece is one exact source piece: a token, trivia, or error
-// region.
-type structuralPiece struct {
-	span document.Span
-	kind structuralPieceKind
-}
-
-// structuralPieceKind is the closed piece classification.
-type structuralPieceKind uint8
-
-const (
-	pieceToken structuralPieceKind = iota
-	pieceTrivia
-	pieceErrorRegion
-)
-
-// Pieces returns the ordered exhaustive pieces. The returned slice is a
-// copy; pieces are logically immutable.
-func (i *LosslessStructuralIndex) Pieces() []StructuralPiece {
-	pieces := make([]StructuralPiece, 0, len(i.pieces))
-	for _, piece := range i.pieces {
-		pieces = append(pieces, StructuralPiece{span: piece.span, kind: piece.kind})
-	}
-	return pieces
-}
+// byte coverage of one JSON-family document (document.LosslessStructuralIndex;
+// consema-json lib.rs:229-239). Every source byte belongs to exactly one
+// piece, in source order.
+type LosslessStructuralIndex = document.LosslessStructuralIndex
 
 // StructuralPiece is one exact source piece with its span and class
-// (consema-document StructuralPiece).
-type StructuralPiece struct {
-	span document.Span
-	kind structuralPieceKind
-}
-
-// Span returns the exact raw byte range.
-func (p StructuralPiece) Span() document.Span { return p.span }
-
-// KindName returns the stable piece class: "Token", "Trivia", or
-// "ErrorRegion".
-func (p StructuralPiece) KindName() string {
-	switch p.kind {
-	case pieceToken:
-		return "Token"
-	case pieceTrivia:
-		return "Trivia"
-	case pieceErrorRegion:
-		return "ErrorRegion"
-	}
-	return "Token"
-}
+// (document.StructuralPiece).
+type StructuralPiece = document.StructuralPiece
 
 // Document is an opaque immutable JSON-family document snapshot
 // (consema-json lib.rs:170-183). Completed documents are logically

@@ -150,6 +150,67 @@ func newInt64(value int64) *big.Int {
 	return big.NewInt(value)
 }
 
+func TestIniDuplicateGroupOperatorRow(t *testing.T) {
+	// ini.duplicate-group is the input-dependent table row (RoleAny
+	// placeholder typed by checkInputDependentRoles; query.rs:1056-1065).
+	// It validates from the section and entry inputs and rejects every
+	// other input role with the registered composition code.
+	fromSections := NewQueryDefinition(DomainININativeV1())
+	fromSections.WithExpression(
+		(&QueryExpression{Kind: ExpressionInput}).
+			Then(NewOperatorCall("ini.document-sections", 1)).
+			Then(NewOperatorCall("ini.duplicate-group", 1)),
+	)
+	validated, failure := fromSections.Validate()
+	if failure != nil {
+		t.Fatalf("section chain validation failed: %v", failure)
+	}
+	if validated.OutputRole() != RoleIniSection {
+		t.Errorf("section chain output role = %s, want IniSection", validated.OutputRole())
+	}
+
+	fromEntries := NewQueryDefinition(DomainININativeV1())
+	fromEntries.WithExpression(
+		(&QueryExpression{Kind: ExpressionInput}).
+			Then(NewOperatorCall("ini.all-entries", 1)).
+			Then(NewOperatorCall("ini.duplicate-group", 1)),
+	)
+	validated, failure = fromEntries.Validate()
+	if failure != nil {
+		t.Fatalf("entry chain validation failed: %v", failure)
+	}
+	if validated.OutputRole() != RoleIniEntry {
+		t.Errorf("entry chain output role = %s, want IniEntry", validated.OutputRole())
+	}
+
+	// The duplicate-group chain itself composes further (Section in,
+	// Section out).
+	chained := NewQueryDefinition(DomainININativeV1())
+	chained.WithExpression(
+		(&QueryExpression{Kind: ExpressionInput}).
+			Then(NewOperatorCall("ini.document-sections", 1)).
+			Then(NewOperatorCall("ini.duplicate-group", 1)).
+			Then(NewOperatorCall("ini.section-entries", 1)),
+	)
+	if _, failure := chained.Validate(); failure != nil {
+		t.Errorf("duplicate-group composition failed: %v", failure)
+	}
+
+	// A physical-line input is not a duplicate-group carrier: the row
+	// rejects it with the frozen composition code.
+	bad := NewQueryDefinition(DomainININativeV1())
+	bad.WithExpression(
+		(&QueryExpression{Kind: ExpressionInput}).
+			Then(NewOperatorCall("ini.physical-lines", 1)).
+			Then(NewOperatorCall("ini.duplicate-group", 1)),
+	)
+	_, failure = bad.Validate()
+	if failure == nil || failure.Kind != FailureInvalidOperatorComposition ||
+		failure.Code() != "core.query.invalid-composition@1" {
+		t.Errorf("wrong-role chain: got %v", failure)
+	}
+}
+
 func TestSyntaxKindVocabularies(t *testing.T) {
 	// The frozen kind names validate; unknown names are invalid arguments.
 	kindChecks := []struct {

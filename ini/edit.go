@@ -118,28 +118,24 @@ type EditOperation struct {
 }
 
 // AssociationPlacement is the explicit association placement of one
-// structural edit (edit.rs AssociationPlacement).
-type AssociationPlacement struct {
-	// Kind is "Start", "End", "Before", or "After".
-	Kind string
-	// Anchor is the association identity of Before/After placements.
-	Anchor document.NodeRef
-}
+// structural edit (document.AssociationPlacement; edit.rs
+// AssociationPlacement).
+type AssociationPlacement = document.AssociationPlacement
 
 // PlacementStart is the start placement.
-func PlacementStart() AssociationPlacement { return AssociationPlacement{Kind: "Start"} }
+func PlacementStart() AssociationPlacement { return document.PlacementAtStart() }
 
 // PlacementEnd is the end placement.
-func PlacementEnd() AssociationPlacement { return AssociationPlacement{Kind: "End"} }
+func PlacementEnd() AssociationPlacement { return document.PlacementAtEnd() }
 
 // PlacementBefore places the new association before one exact association.
 func PlacementBefore(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "Before", Anchor: anchor}
+	return document.BeforeAnchor(anchor)
 }
 
 // PlacementAfter places the new association after one exact association.
 func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{Kind: "After", Anchor: anchor}
+	return document.AfterAnchor(anchor)
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
@@ -710,10 +706,8 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 		}
 		delta += len(edit.replacement) - edit.oldSpan.Len()
 	}
-	changeSet := ChangeSet{
-		base: d.SnapshotIdentity(), target: newDocument.SnapshotIdentity(),
-		sourceEdits: sourceEdits, mappings: mappings, diagnostics: diagnostics,
-	}
+	changeSet := document.NewChangeSet(d.SnapshotIdentity(), newDocument.SnapshotIdentity(),
+		sourceEdits, mappings, diagnostics)
 	patchLimits := editSourcePatchLimits(d.limits, len(sourceEdits))
 	patch, patchErr := document.NewSourcePatch(d.source,
 		editSourcePatchReplacements(source, sourceEdits), editOperationMetadata(tx), patchLimits)
@@ -744,7 +738,7 @@ func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *Edi
 	if failure != nil {
 		return nil, failure
 	}
-	plan, err := newEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
+	plan, err := document.NewEditPlan(sourceID, d.Profile(), summaries, commit.SourcePatch,
 		commit.ChangeSet.Diagnostics())
 	if err != nil {
 		return nil, &EditFailure{Kind: EditFailureNewDocumentFormationFailed}
@@ -770,13 +764,15 @@ func (d *Document) validateDependencies(tx *EditTransaction) *EditFailure {
 		operation := &tx.operations[index]
 		switch operation.Kind {
 		case EditOperationInsertSection:
-			if (operation.Placement.Kind == "Before" || operation.Placement.Kind == "After") &&
-				removedSections[operation.Placement.Anchor] {
+			if (operation.Placement.Kind() == document.PlacementBefore ||
+				operation.Placement.Kind() == document.PlacementAfter) &&
+				removedSections[operation.Placement.Anchor()] {
 				return &EditFailure{Kind: EditFailurePlacementAnchorRemoved}
 			}
 		case EditOperationInsertEntry:
-			if (operation.Placement.Kind == "Before" || operation.Placement.Kind == "After") &&
-				removedEntries[operation.Placement.Anchor] {
+			if (operation.Placement.Kind() == document.PlacementBefore ||
+				operation.Placement.Kind() == document.PlacementAfter) &&
+				removedEntries[operation.Placement.Anchor()] {
 				return &EditFailure{Kind: EditFailurePlacementAnchorRemoved}
 			}
 			if removedSections[operation.Section] {
@@ -908,21 +904,21 @@ func (d *Document) prepareInsertSection(documentRef document.NodeRef, name strin
 		return nil, failure
 	}
 	var position int
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		if len(d.sections) == 0 {
 			position = d.source.Len()
 		} else {
 			position, _ = d.sectionLineStart(&d.sections[0])
 		}
-	case "End":
+	case document.PlacementEnd:
 		position = d.source.Len()
-	case "Before", "After":
-		section, failure := d.resolveSection(placement.Anchor)
+	case document.PlacementBefore, document.PlacementAfter:
+		section, failure := d.resolveSection(placement.Anchor())
 		if failure != nil {
 			return nil, failure
 		}
-		if placement.Kind == "Before" {
+		if placement.Kind() == document.PlacementBefore {
 			position, failure = d.sectionLineStart(section)
 			if failure != nil {
 				return nil, failure
@@ -930,7 +926,7 @@ func (d *Document) prepareInsertSection(documentRef document.NodeRef, name strin
 		} else {
 			ordinal := -1
 			for index := range d.sections {
-				if d.sections[index].node == placement.Anchor {
+				if d.sections[index].node == placement.Anchor() {
 					ordinal = index
 					break
 				}
@@ -1057,21 +1053,21 @@ func (d *Document) prepareInsertEntry(section document.NodeRef, key, value strin
 	}
 	var position int
 	var failure *EditFailure
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		if len(entries) == 0 {
 			position, failure = d.sectionContentEnd(section)
 		} else {
 			position, failure = d.entryLineStart(entries[0])
 		}
-	case "End":
+	case document.PlacementEnd:
 		position, failure = d.sectionContentEnd(section)
-	case "Before", "After":
-		entry, resolveFailure := d.resolveEntryInSection(placement.Anchor, section, entries)
+	case document.PlacementBefore, document.PlacementAfter:
+		entry, resolveFailure := d.resolveEntryInSection(placement.Anchor(), section, entries)
 		if resolveFailure != nil {
 			return nil, resolveFailure
 		}
-		if placement.Kind == "Before" {
+		if placement.Kind() == document.PlacementBefore {
 			position, failure = d.entryLineStart(entry)
 		} else {
 			position, failure = d.entryLineEnd(entry)
@@ -1953,14 +1949,14 @@ func policyName(policy RepresentationPolicy) string {
 
 // placementName renders the stable placement spelling.
 func placementName(placement AssociationPlacement) string {
-	switch placement.Kind {
-	case "Start":
+	switch placement.Kind() {
+	case document.PlacementStart:
 		return "start"
-	case "End":
+	case document.PlacementEnd:
 		return "end"
-	case "Before":
+	case document.PlacementBefore:
 		return "before"
-	case "After":
+	case document.PlacementAfter:
 		return "after"
 	}
 	return "end"

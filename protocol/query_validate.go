@@ -220,8 +220,11 @@ var operatorTable = map[string]operatorSpec{
 		{"key", kindNameString}, {"comparison", kindNameString},
 	}},
 	"ini.native-semantic-query/ini.entry-value-state-is": {RoleIniEntry, RoleIniEntry, []argSpec{{"state", kindNameString}}},
-	"ini.native-semantic-query/ini.physical-lines":       {RoleIniDocument, RoleIniPhysicalLine, nil},
-	"ini.native-semantic-query/ini.logical-lines":        {RoleIniDocument, RoleIniLogicalLine, nil},
+	// ini.duplicate-group is the input-dependent row (RoleAny placeholder);
+	// checkInputDependentRoles types it by the input role (query.rs:1056-1065).
+	"ini.native-semantic-query/ini.duplicate-group": {RoleAny, RoleAny, nil},
+	"ini.native-semantic-query/ini.physical-lines":  {RoleIniDocument, RoleIniPhysicalLine, nil},
+	"ini.native-semantic-query/ini.logical-lines":   {RoleIniDocument, RoleIniLogicalLine, nil},
 
 	// java-properties.native-semantic-query@1
 	"java-properties.native-semantic-query/properties.document-properties":        {RolePropertiesDocument, RolePropertiesProperty, nil},

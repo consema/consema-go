@@ -88,7 +88,7 @@ func tokenize(source *document.SourceSnapshot, authority document.DocumentAuthor
 		} else if item.kind == SyntaxKindErrorRegion {
 			kind = PieceErrorRegion
 		}
-		result.pieces = append(result.pieces, StructuralPiece{span: span, kind: kind})
+		result.pieces = append(result.pieces, document.NewStructuralPiece(span, kind))
 		result.kinds = append(result.kinds, item.kind)
 		if item.kind == SyntaxKindAnchor || item.kind == SyntaxKindAlias {
 			name := string(scanner.chars[item.start+1 : item.end])

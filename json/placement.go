@@ -3,51 +3,42 @@ package json
 import "consema.dev/consema/document"
 
 // AssociationPlacement is the explicit association placement of one
-// structural edit (consema-document AssociationPlacement; RFC 0004).
-// go/document does not yet carry this type, so the JSON family owns it
-// until the document milestone that absorbs it.
-type AssociationPlacement struct {
-	kind   PlacementKind
-	anchor document.NodeRef
-}
+// structural edit (document.AssociationPlacement; consema-document
+// AssociationPlacement; RFC 0004). The shared type lives in go/document;
+// this package keeps the placement constructors and kind constants of
+// its public surface.
 
 // PlacementKind is the closed placement category.
-type PlacementKind uint8
+type PlacementKind = document.PlacementKind
 
 // The four frozen placements.
 const (
 	// PlacementStart places at the container start.
-	PlacementStart PlacementKind = iota
+	PlacementStart = document.PlacementStart
 	// PlacementEnd places at the container end.
-	PlacementEnd
+	PlacementEnd = document.PlacementEnd
 	// PlacementBefore places before one exact anchor association.
-	PlacementBefore
+	PlacementBefore = document.PlacementBefore
 	// PlacementAfter places after one exact anchor association.
-	PlacementAfter
+	PlacementAfter = document.PlacementAfter
 )
 
+// AssociationPlacement is the explicit association placement of one
+// structural edit.
+type AssociationPlacement = document.AssociationPlacement
+
 // PlacementAtStart places at the container start.
-func PlacementAtStart() AssociationPlacement {
-	return AssociationPlacement{kind: PlacementStart}
-}
+func PlacementAtStart() AssociationPlacement { return document.PlacementAtStart() }
 
 // PlacementAtEnd places at the container end.
-func PlacementAtEnd() AssociationPlacement {
-	return AssociationPlacement{kind: PlacementEnd}
-}
+func PlacementAtEnd() AssociationPlacement { return document.PlacementAtEnd() }
 
 // BeforeAnchor places before one exact anchor association.
 func BeforeAnchor(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{kind: PlacementBefore, anchor: anchor}
+	return document.BeforeAnchor(anchor)
 }
 
 // AfterAnchor places after one exact anchor association.
 func AfterAnchor(anchor document.NodeRef) AssociationPlacement {
-	return AssociationPlacement{kind: PlacementAfter, anchor: anchor}
+	return document.AfterAnchor(anchor)
 }
-
-// Kind returns the closed placement category.
-func (p AssociationPlacement) Kind() PlacementKind { return p.kind }
-
-// Anchor returns the exact anchor association of Before/After placements.
-func (p AssociationPlacement) Anchor() document.NodeRef { return p.anchor }
