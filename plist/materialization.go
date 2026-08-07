@@ -268,18 +268,12 @@ func materializeComplete(value core.Value, request document.MaterializationReque
 		target, formationFailure = parseBinary(bytes, parseLimitsFor(limits))
 	}
 	if formationFailure != nil {
-		println("MATFAIL parse", formationFailure.Code())
 		return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
 	}
 	if target.status != document.FormationStatusComplete {
-		println("MATFAIL status", target.status.String())
-		for _, d := range target.Diagnostics() {
-			println("  diag", d.Code)
-		}
 		return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
 	}
 	if !target.native.Equal(native) {
-		println("MATFAIL equality")
 		return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
 	}
 	fidelity := MaterializationFidelityExact
