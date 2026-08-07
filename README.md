@@ -176,6 +176,76 @@ materialization requests, and verifiable source patches).
     anchor-safe rules), atomic `Commit`/`DryRun` with `ChangeSet`,
     `SourcePatch` derivation, `UntouchedByteProof`, and the eight-
     operation `FormatOperationRegistry`.
+- `ini/` — the INI family surface (0.16.0 G2.2; RFC 0009, RFC 0016 §5),
+  mirroring the capability face of crates/consema-ini:
+  - `profile.go` — `IniProfile` (PortableV1 / WindowsV1 /
+    PythonConfigParserV1, explicit selection never dialect guessing),
+    `IniEncodingSelection` (profile default, explicit UTF-8/UTF-16LE/
+    code page, BOM policy), `IniParseLimits`, the closed fourteen-kind
+    `IniSyntaxKind` lossless vocabulary, `IniValueState`/
+    `IniQuoteStyle`/`IniLogicalLineKind`;
+  - `formation.go`/`parser.go`/`python_case.go` — `Parse` under one
+    exact profile: physical-line scanning with limits, per-profile
+    comments/sections/entries/continuations, recovery with stable
+    diagnostics, deterministic duplicate/case-equivalence groups, the
+    pinned Unicode 16.0 `optionxform`, and exhaustive raw-source syntax
+    pieces; `Document` with physical/logical lines, section/entry/
+    error handles, and exact render identity;
+  - `query.go` — `ExecuteIniQuery`/`ExecuteIniSyntaxQuery` over
+    validated `protocol.ExecutableQuery` definitions (the ten native
+    operators, decoded-text syntax matching, profile comparison modes,
+    step/result budgets, context cancellation, ordered cursor);
+  - `projection.go` — `Project` (best-exact nested EntryMapping and
+    explicit RequireObject with comparison/collision policies,
+    fidelity/report/provenance) with the frozen failure codes;
+  - `materialization.go`/`code_page.go` — `Materialize` (portable/
+    windows/python canonical styles, strict encoding with UTF-16 BOM
+    and Windows code pages, canonical byte-closure verification) with
+    the frozen failure codes;
+  - `edit.go`/`change_set.go`/`operation_registry.go`/`untouched.go` —
+    `EditTransaction` (+ builder, the eight frozen operations with
+    profile-specific quote/multiline/comment ownership), atomic
+    `Commit`/`DryRun` with `ChangeSet`, `EditPlan`, `SourcePatch`
+    derivation, `UntouchedByteProof`, and the eight-operation
+    `FormatOperationRegistry`.
+- `properties/` — the Java Properties family surface (0.16.0 G2.3; RFC
+  0010, RFC 0016 §5), mirroring the capability face of
+  crates/consema-properties:
+  - `properties.go` — `PropertiesProfile` (ReaderV1 / Latin1V1, explicit
+    encoding selection never platform guessing), `JavaString` (exact
+    UTF-16 code units, unpaired surrogates preserved as native content,
+    `UTF16BE/1` bytes, well-formedness status), `PropertiesSyntaxKind`
+    (the closed twelve-kind lossless vocabulary with the stable query
+    spellings), `PropertiesValueState`/`PropertiesEscapeKind`/
+    `PropertiesLogicalLineKind`, `PropertiesParseLimits`, and
+    `FormationFailure` with the frozen registered codes;
+  - `document.go`/`parser.go` — `ParseReader`/`ParseLatin1` over the
+    natural/logical-line grammar: continuation with the JDK EOF
+    backslash rule, key/separator/element splitting, exact left-to-right
+    escape decoding, recovery with stable diagnostics, duplicate-key
+    groups, exhaustive syntax coverage, and the `Document` with
+    `PropertiesNaturalLine`/`PropertiesLogicalLine`/`PropertiesComment`/
+    `PropertiesEscape`/`Property`/`PropertiesErrorLine` snapshot-bound
+    handles;
+  - `query.go` — `ExecutePropertiesQuery`/`ExecutePropertiesSyntaxQuery`
+    (+ ordered cursors with cancellation) over validated
+    `protocol.ExecutableQuery` definitions, with exact `UTF16BE/1` key
+    matching, duplicate preservation, and step/result budgets;
+  - `projection.go` — `Project` (best-exact EntryMapping preserving every
+    association, explicit unique-Object under RequireUnique/FirstWins/
+    LastWinsJdkTable) with atomic unpaired-surrogate failure, fidelity,
+    report, and provenance with the frozen failure codes;
+  - `materialization.go`/`cp_encode_table.go` — `Materialize`
+    (canonical Reader/Latin-1 styles, uppercase `\uXXXX` escapes,
+    UTF-16 BOM output, frozen Windows code-page encoding from the
+    go/document decode authority, exact reparse/closure verification)
+    with the frozen failure codes;
+  - `edit.go`/`change_set.go`/`untouched.go`/`operation_registry.go` —
+    `EditTransaction` (+ builder, the five frozen operations:
+    replace-semantic-value, replace-literal-value, insert-property,
+    remove-property, rename-property), atomic `Commit`/`DryRun` with
+    `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
+    `UntouchedByteProof`, and the five-operation `FormatOperationRegistry`.
 - `consema` (the package root, `*.go` directly in `go/`) — the facade
   surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
   - `document.go` — the `Document` union over the implemented format

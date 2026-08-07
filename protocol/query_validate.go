@@ -630,12 +630,18 @@ func checkOperatorArguments(domain *QueryDomain, operator *OperatorCall) *QueryF
 	case operator.id == "properties.property-key-equals" || operator.id == "properties.syntax-utf16be-equals":
 		// The Bytes-typed arguments are validated against the language-
 		// neutral argument-kind vocabulary; the even-length check is
-		// transcribed verbatim for parity.
+		// transcribed verbatim for parity (the Rust `UTF16BE/1` argument
+		// must carry a whole number of code units).
 		name := "key"
 		if operator.id == "properties.syntax-utf16be-equals" {
 			name = "code_units"
 		}
-		if _, exists := operator.arguments[name]; !exists {
+		value, exists := operator.arguments[name]
+		if !exists {
+			return &QueryFailure{Kind: FailureInvalidArgument, Operator: operator.id, Argument: name}
+		}
+		bytes, ok := value.(core.Bytes)
+		if !ok || len(bytes)%2 != 0 {
 			return &QueryFailure{Kind: FailureInvalidArgument, Operator: operator.id, Argument: name}
 		}
 	case operator.id == "properties.property-value-state-is":
