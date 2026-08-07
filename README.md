@@ -271,6 +271,104 @@ materialization requests, and verifiable source patches).
     `UntouchedByteProof`, and the five-operation `FormatOperationRegistry`.
     The shared edit records come from go/document (0.16.0 G2.4); the
     operation registry is format-local.
+- `xml/` — the XML family surface (0.17.0 G3.1; RFC 0012, RFC 0016 §5),
+  mirroring the capability face of crates/consema-xml:
+  - `profile.go` — `XmlProfile` (SafeV1), `XmlEncodingSelection`
+    (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `XmlParseLimits`
+    (common limits plus the element/attribute/namespace-declaration/
+    mixed-content/DQname/comment/PI/CDATA/text/DTD/entity counts, the
+    six-dimension entity expansion budgets, and recovery regions), and
+    the closed `XmlSyntaxKind` lossless vocabulary (RFC 0012 §7);
+  - `namespace.go` — `QName`/`ExpandedName`/`Binding`, the immutable
+    ancestry-derived `NamespaceScope` (default namespace on elements
+    only, permanent `xml` binding, reserved `xmlns`, expanded-name
+    attribute uniqueness), and the four namespace failure kinds;
+  - `entity.go` — the five predefined entities, XML 1.0 character
+    validation, replacement-text validation (never markup), and the
+    document-wide `EntityExpansionState` accounting with the six frozen
+    breach categories;
+  - `document.go` — the immutable namespace-aware native tree
+    (`XmlElement`/`XmlContentItem` handles, ordered attributes and
+    namespace bindings as separate associations, ordered mixed content,
+    reference fragments, declaration/doctype facts, error regions) with
+    exact render identity and `TextSemantic` line-end normalization;
+  - `parser.go` — `Parse` over the XML 1.0 grammar: an independent
+    tokenizer mirroring the reference token surface (top-level
+    whitespace/after-elements states, `]]>` and `<?xml ` guards, DTD
+    subset scanning), namespace resolution at start-tag finalization,
+    bounded internal entities with deterministic recovery, exhaustive
+    raw-byte piece coverage, and deterministic diagnostic ordering;
+  - `query.go` — `ExecuteXMLQuery`/`ExecuteXMLSyntaxQuery` over
+    validated `protocol.ExecutableQuery` definitions, with step/result
+    budgets and context cancellation (native document order, bounded
+    pre-order descendants, in-scope namespace chains);
+  - `projection.go` — `Project` under `ElementTreeRequest` (the exact
+    `xml.element-tree@1` record), `TextContentRequest`, and
+    `SimpleEntryMappingRequest` (all policies mandatory) with
+    fidelity/report/provenance records and the frozen failure codes;
+  - `materialization.go` — `Materialize` (xml.safe-canonical-document
+    style: deterministic spelling, generated prefixes, UTF-8/UTF-16
+    output with BOM, canonical byte-closure verification, provenance
+    map) with the frozen failure codes;
+  - `edit.go`/`change_set.go` — `EditTransaction` (+ builder, the eight
+    frozen operations: replace-text, insert/remove/rename/set-value
+    attribute, insert/remove/rename element), atomic `Commit`/`DryRun`
+    with `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
+    `UntouchedByteProof`, and the eight-operation
+    `FormatOperationRegistry`. The shared edit records come from
+    go/document (0.16.0 G2.4); the operation registry is format-local.
+- `plist/` — the plist family surface (0.17.0 G3.2; RFC 0013), mirroring
+  the capability face of crates/consema-plist:
+  - `profile.go` — `PlistProfile` (XmlV1/BinaryV1), `PlistEncodingSelection`
+    (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `PlistParseLimits`
+    (common limits plus object/dict/array/duplicate-key-group/string/data/
+    UID/extended-size/offset/ref/fact limits and conversion budgets), and
+    the closed `PlistSyntaxKind` lossless vocabulary (RFC 0013 §8.2);
+  - `native.go` — the shared representation-independent native value model
+    (`PlistString` exact UTF-16 code units with surrogate status,
+    `PlistKey`, `PlistInteger`, `PlistReal` with the Float32/Float64 width
+    fact, `PlistBoolean`, `PlistDate` exact double seconds, `PlistData`,
+    `PlistUID`, `PlistDict`/`PlistArray` ordered associations, the acyclic
+    `PlistDocument` arena with shared identity and content-based structural
+    equality, `PlistDocumentBuilder`);
+  - `parser_xml.go` — `Parse` over the `plist.xml@1` grammar: an
+    independent tokenizer mirroring the reference token surface (leading
+    BOM/U+FEFF skip, declaration/doctype/element/attribute/text/CDATA
+    states, after-elements guards), the strict Apple DOCTYPE and
+    `<plist version="1.0">` contracts, the value grammars (integer
+    decimal/hex, real specials, whole-second dates with calendar
+    validation, strict base64), dictionary association rules, recovery
+    with exhaustive piece coverage, and deterministic diagnostic ordering;
+  - `parser_binary.go` — `plist.binary@1` formation: header/trailer
+    mandatory integrity checks (RFC 0013 §5.11), offset-table validation
+    with prefix-cut recovery, the full marker table with extended sizes,
+    binary object/offset/ref/trailer facts and region coverage, and the
+    hardened offset/ref width and bounds checks;
+  - `query.go` — `ExecutePlistNativeQuery`/`ExecutePlistSyntaxQuery`/
+    `ExecutePlistBinaryQuery` over validated `protocol.ExecutableQuery`
+    definitions, with step/result budgets and context cancellation
+    (native source order, lossless syntax pieces, document-level binary
+    structure facts);
+  - `projection.go` — `Project` under the exact `plist.value-tree@1`
+    record and the explicit-policy `plist.projection.require-object@1`
+    target (UID policy, collision policies, fidelity/report/provenance
+    records, and the frozen failure codes);
+  - `materialization.go` — `Materialize` (`plist.xml-canonical@1` /
+    `plist.binary-canonical@1`: the Apple header spelling, deterministic
+    indentation, minimal-width deduplicated object tables, whole-second
+    dates with the authorized `TruncateWithReport` policy, canonical
+    byte-closure verification) with the frozen failure codes;
+  - `conversion.go`/`document.go` — `ConvertTo` across the two
+    representations: serialization, reparse closure, native-model
+    equality, the `representation-change` + per-node value-mapped report,
+    and atomic `plist.conversion.inexpressible@1` failures;
+  - `edit.go` — `EditTransaction` (+ builder, the six frozen operations:
+    set-value, insert/remove-dict-entry, rename-dict-key,
+    insert/remove-array-element), atomic `Commit`/`DryRun` with
+    `ChangeSet`, `SourcePatch` derivation, `UntouchedByteProof`, XML
+    byte-level spans, binary structural rewrites (reference blocks,
+    offset table, trailer), and the six-operation `FormatOperationRegistry`.
+    The shared edit records come from go/document (0.16.0 G2.4).
 - `consema` (the package root, `*.go` directly in `go/`) — the facade
   surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
   - `document.go` — the `Document` union over the implemented format
