@@ -126,8 +126,15 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 	if err == nil || protocolCode(err) != "core.protocol.schema-mismatch@1" {
 		t.Errorf("reordered payload: got %v", err)
 	}
-	// Invalid product versions (cli.rs:1568-1586).
-	for _, version := range []string{"0.12", "0.12.0.1", "0.12.01", "00.1.0", "0.12.a", "0..0"} {
+	// Invalid product versions (cli.rs:1568-1618): the MAJOR.MINOR.PATCH pins
+	// are unchanged; the prerelease-shaped rejections cover the 2026-08-10
+	// SemVer extension (empty identifier, numeric identifier leading zero,
+	// empty prerelease, build metadata).
+	for _, version := range []string{
+		"0.12", "0.12.0.1", "0.12.01", "00.1.0", "0.12.a", "0..0",
+		"1.0.0-rc..1", "1.0.0-01", "1.0.0-rc.1.01", "1.0.0-",
+		"1.0.0+build", "1.0.0-rc.1+build",
+	} {
 		_, err := NewCliOutputMessage(CommandInspect, ExitSuccess, version, payload, nil, redaction)
 		protocolErr, _ := err.(*ProtocolError)
 		if protocolErr == nil || protocolErr.Path != "$.product_version" {
@@ -143,6 +150,39 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 	}
 	if redacted, err := NewRedaction(true, 3); err != nil || redacted.Count() != 3 {
 		t.Error("valid redaction rejected")
+	}
+}
+
+func TestCLIEnvelopeAcceptsPrereleaseProductVersions(t *testing.T) {
+	// RFC 0015 §3.3 (2026-08-10 revision): the product-version check is full
+	// SemVer 2.0 core syntax, so prerelease suffixes are accepted
+	// (cli.rs:1620-1640).
+	payload := rfcInspectPayload(t)
+	redaction, err := NewRedaction(false, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, version := range []string{"1.0.0-rc.1", "1.0.0-beta.2", "1.0.0-0", "0.12.0-alpha.1"} {
+		envelope, err := NewCliOutputMessage(CommandInspect, ExitSuccess, version,
+			payload, nil, redaction)
+		if err != nil {
+			t.Fatalf("version %q rejected: %v", version, err)
+		}
+		if envelope.ProductVersion() != version {
+			t.Errorf("version %q: got %q", version, envelope.ProductVersion())
+		}
+		// The envelope round-trips through the typed decoder.
+		jsonBytes, err := envelope.ToJSON(DefaultProtocolLimits())
+		if err != nil {
+			t.Fatalf("version %q encode: %v", version, err)
+		}
+		decoded, err := envelope.FromJSON(jsonBytes, DefaultProtocolLimits())
+		if err != nil {
+			t.Fatalf("version %q decode: %v", version, err)
+		}
+		if decoded.ProductVersion() != version {
+			t.Errorf("version %q round-trip: got %q", version, decoded.ProductVersion())
+		}
 	}
 }
 

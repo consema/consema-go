@@ -103,7 +103,7 @@ func TestDigestAlgorithmMatchesManifest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const recorded = "e3d6578858fa1fdcab0c19ee0094cd246923dca76e9be4679aabf86b482b68c8"
+	const recorded = "35bebc8d384d71740f7c1a886bc50f4e095ff52fe05d2a407f04b842ee6922fa"
 	if digest.Recorded != recorded {
 		t.Fatalf("manifest record changed: %s", digest.Recorded)
 	}

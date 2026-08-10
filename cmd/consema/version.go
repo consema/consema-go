@@ -8,8 +8,8 @@ package main
 // `PRODUCT_VERSION` from `CARGO_PKG_VERSION` (the workspace version). The Go
 // module's version follows the product release train (RFC 0016 §9: the Go
 // module version tracks the product releases), and this CLI ships as part of
-// the 0.19.0 milestone, so the Go CLI reports "0.19.0". The constant is
-// overridable at build time through `-ldflags "-X main.productVersion=..."`
+// the 1.0.0-rc.1 milestone, so the Go CLI reports "1.0.0-rc.1". The constant
+// is overridable at build time through `-ldflags "-X main.productVersion=..."`
 // for release packaging; the envelope requires a semantic-version-shaped
 // string either way.
-var productVersion = "0.19.0"
+var productVersion = "1.0.0-rc.1"

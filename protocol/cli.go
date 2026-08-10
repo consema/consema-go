@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"crypto/sha256"
+	"strings"
 
 	"consema.dev/consema/core"
 )
@@ -795,7 +796,7 @@ func newCliOutputMessageWithRegistry(command CliCommand, exitClass ExitClass,
 	redaction *Redaction, registry ErrorCodeRegistry) (*CliOutputMessage, error) {
 	if !isSemanticVersion(productVersion) {
 		return nil, invalid("$.product_version",
-			"expected MAJOR.MINOR.PATCH without leading zeros")
+			"expected MAJOR.MINOR.PATCH[-prerelease] without leading zeros or build metadata")
 	}
 	if err := validatePayloadSchema(payload, command); err != nil {
 		return nil, err
@@ -908,7 +909,7 @@ func (m *CliOutputMessage) fromValueWithRegistry(value core.Value, registry Erro
 	}
 	if !isSemanticVersion(productVersion) {
 		return nil, invalid("$.product_version",
-			"expected MAJOR.MINOR.PATCH without leading zeros")
+			"expected MAJOR.MINOR.PATCH[-prerelease] without leading zeros or build metadata")
 	}
 	if err := validatePayloadSchema(fields[4], command); err != nil {
 		return nil, err
@@ -1008,47 +1009,94 @@ func validatePayloadSchema(payload core.Value, command CliCommand) error {
 	return nil
 }
 
-// isSemanticVersion validates MAJOR.MINOR.PATCH without leading zeros
-// (cli.rs:870-885).
+// isSemanticVersion validates the SemVer 2.0 core shape of a product version
+// (RFC 0015 §3.3, 2026-08-10 revision; cli.rs:870-911): MAJOR.MINOR.PATCH
+// with an optional dot-separated -prerelease suffix; numeric segments and
+// numeric prerelease identifiers carry no leading zeros; build metadata ('+'
+// suffix) is rejected (product_version never carries build metadata or git
+// hashes).
 func isSemanticVersion(version string) bool {
-	segments, ok := splitThree(version)
-	if !ok {
+	if strings.Contains(version, "+") {
 		return false
 	}
-	for _, segment := range segments {
-		if segment == "" {
-			return false
-		}
-		for index := 0; index < len(segment); index++ {
-			if segment[index] < '0' || segment[index] > '9' {
-				return false
-			}
-		}
-		if len(segment) > 1 && segment[0] == '0' {
+	core := version
+	hasPrerelease := false
+	prerelease := ""
+	if dash := strings.IndexByte(version, '-'); dash >= 0 {
+		core, prerelease = version[:dash], version[dash+1:]
+		hasPrerelease = true
+	}
+	if !numericCore(core) {
+		return false
+	}
+	if !hasPrerelease {
+		return true
+	}
+	if prerelease == "" {
+		return false
+	}
+	for _, identifier := range strings.Split(prerelease, ".") {
+		if !prereleaseIdentifier(identifier) {
 			return false
 		}
 	}
 	return true
 }
 
-// splitThree splits a string on '.' and reports whether exactly three
-// segments resulted.
-func splitThree(text string) ([]string, bool) {
-	var segments []string
-	start := 0
+// numericCore reports whether text is exactly three dot-separated numeric
+// segments without leading zeros (the MAJOR.MINOR.PATCH core).
+func numericCore(text string) bool {
+	start, count := 0, 0
 	for index := 0; index <= len(text); index++ {
 		if index == len(text) || text[index] == '.' {
-			segments = append(segments, text[start:index])
+			if !numericSegment(text[start:index]) {
+				return false
+			}
+			count++
+			if count > 3 {
+				return false
+			}
 			start = index + 1
-			if len(segments) > 3 {
-				return nil, false
+		}
+	}
+	return count == 3
+}
+
+// numericSegment reports whether one segment is a non-empty digit run without
+// a leading zero (single "0" is allowed).
+func numericSegment(segment string) bool {
+	if segment == "" {
+		return false
+	}
+	for index := 0; index < len(segment); index++ {
+		if segment[index] < '0' || segment[index] > '9' {
+			return false
+		}
+	}
+	return len(segment) == 1 || segment[0] != '0'
+}
+
+// prereleaseIdentifier reports whether one SemVer prerelease identifier is
+// well-formed: non-empty and ASCII alphanumeric or hyphen only; numeric
+// identifiers must not carry leading zeros.
+func prereleaseIdentifier(identifier string) bool {
+	if identifier == "" {
+		return false
+	}
+	numeric := true
+	for index := 0; index < len(identifier); index++ {
+		ch := identifier[index]
+		if ch < '0' || ch > '9' {
+			numeric = false
+			if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '-') {
+				return false
 			}
 		}
 	}
-	if len(segments) != 3 {
-		return nil, false
+	if numeric && len(identifier) > 1 && identifier[0] == '0' {
+		return false
 	}
-	return segments, true
+	return true
 }
 
 // revalidatePlanEntry re-verifies the entry-level cross constraints of a

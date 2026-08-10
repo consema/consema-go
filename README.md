@@ -805,7 +805,9 @@ is transcribed from the Rust published surface (facade registry,
 Go facts are derived from this module's registry surface; nothing is
 re-declared, so drift on either side fails the test.
 Runner state at 0.18.0: **506 passed / 2 documented skips / 0 failed**
-(18 suites / 508 cases, aggregate digest `e3d6578858…`); cross-language
+(18 suites / 508 cases, aggregate digest `35bebc8d…`, defined against the
+canonical LF checkout — the 2026-08-07 CRLF-working-tree value
+`e3d6578858…` was replaced on 2026-08-10); cross-language
 normalized-result differential **108/108**; byte parity **68/68**.
 ## Three-platform verification (0.19.0 G5.4)
 Roadmap §22.4:1907 requires the Go side to pass on Windows/Linux/macOS.
