@@ -495,6 +495,49 @@ The Go public API is held to the six stability policies of roadmap §21.2
    legacy, not SDK policy). The roadmap §21.2 CI verification leg —   the gates below running in CI on the frozen minimum version —is an
    open 0.19.0 gate item (G5.5 review finding F1); locally they are the
    commands in the next section.
+## Go CLI beta (0.19.0 G5.6)
+
+`cmd/consema` is the Go implementation of the official `consema` CLI (RFC
+0015; mirror of the Rust `crates/consema` bin). It is stdlib-only (self-
+written deterministic argument parsing, no clap/flag-based guessing), sits
+inside the module, and reaches format semantics only through the root
+package's public API (RFC 0015 §2.3 hard gate 1).
+
+- **Command surface** — the 11 frozen commands of RFC 0015 §6.1:
+  `inspect`, `capabilities`, `query`, `project`, `materialize`,
+  `convert`, `edit` (dry-run only; `--write` refused), `plan` (read-only
+  batch manifest), `apply` (batch write from a prior plan manifest),
+  `conformance` (embedded self-check subset: envelope round-trip, exit
+  classification, redaction), `explain`.
+- **Machine protocol** — every command emits the `core.cli-output@1`
+  envelope under `--json` (exactly one canonical JSON line + LF);
+  diagnostics go to stderr; exit codes 0-5 classify exclusively through
+  `protocol.ClassifyErrorCode` (RFC 0015 §5; the CLI never classifies
+  itself). `--json --pretty` is a self-written whitespace-only indenter.
+- **Request input** — `query`/`project`/`materialize`/`convert`/`edit`/
+  `plan` consume strict canonical JSON or PVCE/1 via `--request-file` or
+  stdin (`cli.request@1`/`cli.convert-request@1`/`cli.edit-request@1`
+  wrappers; RFC 0015 §3.2).
+- **plan/apply** — reuse the root package's `BatchPlanner`/
+  `ApplyPlanFile` (RFC 0015 §8/§9): the six-step pre-write revalidation
+  (stale digest, original-bytes precondition), the atomic fsio write
+  engine (same-directory temp, atomic replace, read-back target-digest
+  verification, symlink/read-only/directory policy), the interruption
+  recovery three-way rule, and the documented `CONSEMA_APPLY_INTERRUPT_AFTER` /
+  `CONSEMA_APPLY_WRITE_FAILURE` injection seams.
+- **Redaction** — presentation-only (RFC 0015 §11): the frozen key-name
+  pattern set plus `--redact-keys` globs; `--show-secrets` is the sole
+  opt-out; on-disk manifests are never redacted.
+- **Version** — `productVersion` defaults to the Go milestone version
+  `0.19.0` (RFC 0015 §3.3: release version without git hashes; the Go
+  module version follows the product release train, RFC 0016 §9), with a
+  build-time override via `-ldflags "-X main.productVersion=..."`.
+- **Tests** — unit tests mirror the Rust bin's module tests; the
+  process-level e2e suite (`e2e_test.go`) builds the binary in TestMain
+  and drives it via `os/exec` (exit-code matrix, stdout/stderr
+  separation, envelope shape, full plan→apply flow, stale/tampered/
+  read-only/directory/interruption negatives).
+
 ## Build and test
 ```
 cd go
