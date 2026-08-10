@@ -84,7 +84,7 @@ func hexEncode(bytes []byte) string {
 }
 
 func TestCLIEnvelopeRejectionRules(t *testing.T) {
-	// The payload schema must be published by the command (cli.rs:1494-1565).
+	// The payload schema must be published by the command (cli.rs:1538-1610).
 	payload := rfcInspectPayload(t)
 	redaction, err := NewRedaction(false, 0)
 	if err != nil {
