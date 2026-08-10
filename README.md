@@ -528,10 +528,12 @@ package's public API (RFC 0015 §2.3 hard gate 1).
 - **Redaction** — presentation-only (RFC 0015 §11): the frozen key-name
   pattern set plus `--redact-keys` globs; `--show-secrets` is the sole
   opt-out; on-disk manifests are never redacted.
-- **Version** — `productVersion` defaults to the Go milestone version
-  `0.19.0` (RFC 0015 §3.3: release version without git hashes; the Go
-  module version follows the product release train, RFC 0016 §9), with a
-  build-time override via `-ldflags "-X main.productVersion=..."`.
+- **Version** — `productVersion` defaults to the workspace version
+  `1.0.0-rc.1` (go/cmd/consema/version.go; RFC 0015 §3.3: SemVer core
+  syntax with an optional prerelease suffix, no git hashes or build
+  metadata; the Go module version follows the product release train,
+  RFC 0016 §9), with a build-time override via
+  `-ldflags "-X main.productVersion=..."`.
 - **Tests** — unit tests mirror the Rust bin's module tests; the
   process-level e2e suite (`e2e_test.go`) builds the binary in TestMain
   and drives it via `os/exec` (exit-code matrix, stdout/stderr
