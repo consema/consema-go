@@ -35,8 +35,8 @@ type FormationFailure struct {
 	Kind FormationFailureKind
 	// Source is the wrapped source construction failure of Kind Source.
 	Source *document.SourceError
-	// Code is the stable frozen diagnostic code of the failure.
-	Code string
+	// CodeValue is the stable frozen diagnostic code of the failure.
+	CodeValue string
 	// Category is the frozen diagnostic category of the failure.
 	Category protocol.DiagnosticCategory
 	// Arguments are the deterministic failure arguments.
@@ -55,7 +55,7 @@ type FormationFailure struct {
 func (e *FormationFailure) Error() string {
 	switch e.Kind {
 	case FormationFailureSource:
-		return "hcl: " + e.Code
+		return "hcl: " + e.CodeValue
 	case FormationFailureResourceLimit:
 		return fmt.Sprintf("hcl: parse limit %s exceeded: observed %d, limit %d",
 			e.Name, e.Observed, e.Limit)
@@ -65,13 +65,14 @@ func (e *FormationFailure) Error() string {
 	return "hcl: formation failure"
 }
 
-// DiagnosticCode returns the stable frozen code of the failure.
-func (e *FormationFailure) DiagnosticCode() string { return e.Code }
+// Code returns the stable frozen diagnostic code of the failure (RFC 0016
+// §6).
+func (e *FormationFailure) Code() string { return e.CodeValue }
 
 // Diagnostics returns the ordered failure diagnostics (one entry).
 func (e *FormationFailure) Diagnostics() []*protocol.Diagnostic {
 	return []*protocol.Diagnostic{{
-		Code:       e.Code,
+		Code:       e.CodeValue,
 		Category:   e.Category,
 		Severity:   protocol.SeverityError,
 		Primary:    e.Primary,
@@ -109,7 +110,7 @@ func Parse(ctx context.Context, source []byte, profile HclProfile,
 	if _, ok := selection.Validate(); !ok {
 		return nil, &FormationFailure{
 			Kind:      FormationFailureSource,
-			Code:      "hcl.parse.encoding@1",
+			CodeValue: "hcl.parse.encoding@1",
 			Category:  protocol.CategoryEncoding,
 			Arguments: map[string]string{},
 		}
@@ -136,10 +137,10 @@ func Parse(ctx context.Context, source []byte, profile HclProfile,
 		switch sourceError.Kind {
 		case document.SourceErrorInvalidUtf8, document.SourceErrorInvalidSequence:
 			return nil, &FormationFailure{
-				Kind:     FormationFailureSource,
-				Source:   sourceError,
-				Code:     "hcl.parse.invalid-utf8@1",
-				Category: protocol.CategoryEncoding,
+				Kind:      FormationFailureSource,
+				Source:    sourceError,
+				CodeValue: "hcl.parse.invalid-utf8@1",
+				Category:  protocol.CategoryEncoding,
 				Primary: &protocol.SourceLocation{
 					SourceID:  "snapshot",
 					StartByte: uint64(sourceError.ByteOffset),
@@ -152,7 +153,7 @@ func Parse(ctx context.Context, source []byte, profile HclProfile,
 		case document.SourceErrorOffsetOverflow:
 			return nil, &FormationFailure{
 				Kind:      FormationFailureResourceLimit,
-				Code:      "hcl.limit.offset-overflow@1",
+				CodeValue: "hcl.limit.offset-overflow@1",
 				Category:  protocol.CategoryResource,
 				Arguments: map[string]string{},
 			}
@@ -160,7 +161,7 @@ func Parse(ctx context.Context, source []byte, profile HclProfile,
 			return nil, &FormationFailure{
 				Kind:      FormationFailureSource,
 				Source:    sourceError,
-				Code:      "hcl.parse.internal@1",
+				CodeValue: "hcl.parse.internal@1",
 				Category:  protocol.CategoryResource,
 				Arguments: map[string]string{},
 			}
@@ -179,14 +180,14 @@ func lexErrorFailure(err error) *FormationFailure {
 	if lexErr, ok := err.(*hclLexError); ok {
 		return &FormationFailure{
 			Kind:      FormationFailureResourceLimit,
-			Code:      lexErr.code,
+			CodeValue: lexErr.code,
 			Category:  lexErr.category,
 			Arguments: lexErr.arguments,
 		}
 	}
 	return &FormationFailure{
 		Kind:      FormationFailureResourceLimit,
-		Code:      "hcl.parse.internal@1",
+		CodeValue: "hcl.parse.internal@1",
 		Category:  protocol.CategoryResource,
 		Arguments: map[string]string{},
 	}
@@ -197,7 +198,7 @@ func lexErrorFailure(err error) *FormationFailure {
 func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 	return &FormationFailure{
 		Kind:      FormationFailureResourceLimit,
-		Code:      "hcl.limit." + name + "@1",
+		CodeValue: "hcl.limit." + name + "@1",
 		Category:  protocol.CategoryResource,
 		Name:      name,
 		Observed:  observed,

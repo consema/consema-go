@@ -245,3 +245,40 @@ func TestSmokeUtf16(t *testing.T) {
 		t.Fatalf("utf16 root mismatch")
 	}
 }
+
+func TestTypedErrorCodes(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"namespace-unbound-prefix",
+			&NamespaceError{Kind: NamespaceErrorUnboundPrefix, Prefix: "p"},
+			"xml.namespace.unbound-prefix@1"},
+		{"namespace-reserved-prefix",
+			&NamespaceError{Kind: NamespaceErrorReservedPrefix, Prefix: "xmlns"},
+			"xml.namespace.reserved-prefix@1"},
+		{"namespace-xml-rebinding",
+			&NamespaceError{Kind: NamespaceErrorIllegalXmlRebinding, Prefix: "xml", URI: "urn:evil"},
+			"xml.namespace.xml-rebinding@1"},
+		{"namespace-default-xmlns",
+			&NamespaceError{Kind: NamespaceErrorIllegalDefaultXmlns, URI: "http://www.w3.org/2000/xmlns/"},
+			"xml.namespace.default-xmlns@1"},
+		{"replacement-markup",
+			&ReplacementError{Kind: ReplacementErrorContainsMarkup},
+			"xml.entity.markup@1"},
+		{"replacement-illegal-character",
+			&ReplacementError{Kind: ReplacementErrorIllegalCharacter, Scalar: 0x01},
+			"xml.entity.illegal-character@1"},
+	}
+	for _, testCase := range cases {
+		typed, ok := testCase.err.(interface{ Code() string })
+		if !ok {
+			t.Errorf("%s: error type must implement Code()", testCase.name)
+			continue
+		}
+		if got := typed.Code(); got != testCase.want {
+			t.Errorf("%s: Code() = %q, want %q", testCase.name, got, testCase.want)
+		}
+	}
+}

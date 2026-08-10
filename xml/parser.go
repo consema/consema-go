@@ -1323,10 +1323,10 @@ func (p *xmlParser) entityDeclaration(token *xmlToken) *FormationFailure {
 	}
 	switch err := ValidateReplacementText(valueText); {
 	case err != nil && err.Kind == ReplacementErrorContainsMarkup:
-		p.recover("xml.entity.markup@1", raw, protocol.CategoryConformance)
+		p.recover(replacementCode(err), raw, protocol.CategoryConformance)
 		return nil
 	case err != nil:
-		p.recover("xml.entity.illegal-character@1", raw, protocol.CategorySyntax)
+		p.recover(replacementCode(err), raw, protocol.CategorySyntax)
 		return nil
 	}
 	if strings.Contains(valueText, "%") {

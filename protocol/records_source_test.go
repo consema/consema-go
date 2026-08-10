@@ -309,3 +309,32 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		})
 	}
 }
+
+func TestSourceErrorCodesAreRegistered(t *testing.T) {
+	registry := NewErrorCodeRegistry(ErrorRegistryV7)
+
+	cases := []struct {
+		name string
+		err  *SourceError
+		want string
+	}{
+		{"invalid-sequence", &SourceError{Kind: SourceErrorInvalidSequence, ByteOffset: 3},
+			"core.source.invalid-sequence@1"},
+		{"encoding-conflict", &SourceError{Kind: SourceErrorEncodingConflict},
+			"core.source.encoding-conflict@1"},
+		{"unsupported-bom", &SourceError{Kind: SourceErrorUnsupportedBom},
+			"core.source.unsupported-bom@1"},
+		{"resource-limit", &SourceError{Kind: SourceErrorResourceLimit, Limit: "raw-bytes"},
+			"core.source.resource-limit@1"},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := testCase.err.Code(); got != testCase.want {
+				t.Errorf("Code() = %q, want %q", got, testCase.want)
+			}
+			if !registry.Contains(testCase.err.Code()) {
+				t.Errorf("Code() = %q is not registered in the semantic-model v7 error registry", testCase.err.Code())
+			}
+		})
+	}
+}

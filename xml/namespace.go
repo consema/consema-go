@@ -125,6 +125,10 @@ func (e *NamespaceError) Error() string {
 	return "xml: namespace error"
 }
 
+// Code returns the stable family code of the failure (RFC 0016 §6;
+// parser.rs:130-137).
+func (e *NamespaceError) Code() string { return namespaceCode(e) }
+
 // NamespaceScope is an immutable, ancestry-derived namespace scope
 // (namespace.rs:91-99). A scope is never mutated in place; declaring a
 // binding appends to a new child scope, so the immutable ancestry chain of

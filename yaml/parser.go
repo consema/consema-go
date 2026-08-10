@@ -1456,6 +1456,7 @@ func (p *parser) parsePlainBlock(props properties) (occurrence, *FormationFailur
 	firstLineIndent := p.lineIndentAt(p.pos)
 	var parts []string
 	for {
+		before := p.pos
 		parts = append(parts, p.scanBlockPlainLine())
 		if p.failed != nil {
 			return occurrence{}, p.failed
@@ -1468,6 +1469,14 @@ func (p *parser) parsePlainBlock(props properties) (occurrence, *FormationFailur
 			return occurrence{}, p.failed
 		}
 		p.skipSeparationInline()
+		if p.pos == before {
+			// The scanner ended at a stop character (a mapping `:` or a
+			// comment) without consuming input, and the continuation
+			// lookahead misread the same position as more scalar content.
+			// The scalar is complete; the caller resumes at the stop
+			// character. Without this guard the loop spins forever.
+			break
+		}
 	}
 	decoded := strings.Join(parts, " ")
 	end := p.pos

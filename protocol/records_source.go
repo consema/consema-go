@@ -191,6 +191,7 @@ type SourceError struct {
 	Limit string
 }
 
+// Error implements error; the text is human presentation only.
 func (e *SourceError) Error() string {
 	switch e.Kind {
 	case SourceErrorInvalidSequence:
@@ -203,6 +204,23 @@ func (e *SourceError) Error() string {
 		return "source limit exceeded: " + e.Limit
 	}
 	return "source error"
+}
+
+// Code returns the frozen registered code of the failure (RFC 0016 §6;
+// protocol source.rs source_error mapping, registered as core.source.* in
+// the semantic-model v7 registry).
+func (e *SourceError) Code() string {
+	switch e.Kind {
+	case SourceErrorInvalidSequence:
+		return "core.source.invalid-sequence@1"
+	case SourceErrorEncodingConflict:
+		return "core.source.encoding-conflict@1"
+	case SourceErrorUnsupportedBom:
+		return "core.source.unsupported-bom@1"
+	case SourceErrorResourceLimit:
+		return "core.source.resource-limit@1"
+	}
+	return "core.source.invalid-sequence@1"
 }
 
 // mapSourceError converts a source error into the protocol error surface
@@ -1182,17 +1200,7 @@ func sourcePatchSourceCode(err error) string {
 	if !ok {
 		return "core.protocol.invalid-value@1"
 	}
-	switch sourceError.Kind {
-	case SourceErrorInvalidSequence:
-		return "core.source.invalid-sequence@1"
-	case SourceErrorEncodingConflict:
-		return "core.source.encoding-conflict@1"
-	case SourceErrorUnsupportedBom:
-		return "core.source.unsupported-bom@1"
-	case SourceErrorResourceLimit:
-		return "core.source.resource-limit@1"
-	}
-	return "core.protocol.invalid-value@1"
+	return sourceError.Code()
 }
 
 // NewSourcePatch validates replacements against one base snapshot and

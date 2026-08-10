@@ -548,7 +548,7 @@ func (t *xmlTokenizer) next() (*xmlToken, int) {
 					return token, -1
 				}
 				return nil, t.pos
-			case rest[1] == '/':
+			case len(rest) > 1 && rest[1] == '/':
 				if t.depth > 0 {
 					t.depth--
 				}
@@ -1099,7 +1099,20 @@ func (p *xmlParser) parse() (*Document, *FormationFailure) {
 			if next < 0 {
 				break
 			}
-			tokenizer = newFragmentTokenizer(p.decoded, end+next)
+			resume := end + next
+			if resume <= end {
+				// The error is at the resume `<` itself (e.g. `<!` markup
+				// the fragment state cannot start): restarting there would
+				// loop forever on the same position. Skip the byte — it
+				// becomes part of the gap coverage in finish() (RFC 0013
+				// §8.2), and the deterministic error region already covered
+				// the byte before it.
+				resume = end + 1
+			}
+			if resume >= len(p.decoded) {
+				break
+			}
+			tokenizer = newFragmentTokenizer(p.decoded, resume)
 			continue
 		}
 		if failure := p.token(token); failure != nil {

@@ -85,6 +85,22 @@ func (e *ReplacementError) Error() string {
 	return "xml: replacement text failure"
 }
 
+// replacementCode maps one replacement-text failure to its stable
+// diagnostic code (parser.rs:783-794).
+func replacementCode(err *ReplacementError) string {
+	switch err.Kind {
+	case ReplacementErrorContainsMarkup:
+		return "xml.entity.markup@1"
+	case ReplacementErrorIllegalCharacter:
+		return "xml.entity.illegal-character@1"
+	}
+	return "xml.entity.markup@1"
+}
+
+// Code returns the stable family code of the failure (RFC 0016 §6;
+// parser.rs:783-794).
+func (e *ReplacementError) Code() string { return replacementCode(e) }
+
 // ValidateReplacementText validates one internal general entity value
 // (entity.rs:74-89). An admitted value may contain character data,
 // character references, predefined entity references, or references to

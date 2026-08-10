@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("e0: e0\n s:[a,t")

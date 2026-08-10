@@ -27,7 +27,9 @@ const (
 	FormationFailureResourceLimit
 	// FormationFailureCancelled: the caller's context was cancelled during
 	// bounded formation. This is a Go-idiomatic resource guard, never a
-	// language-neutral fact.
+	// language-neutral fact. Reserved for a future cancellable parse
+	// entry: the plist family mirrors the Rust facade today and `Parse`
+	// takes no context, so this kind is not yet constructed.
 	FormationFailureCancelled
 )
 

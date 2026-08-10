@@ -210,9 +210,17 @@ type binaryParser struct {
 	limits    PlistParseLimits
 	sink      *diagnosticSink
 	recovered bool
-	uidCount  int
-	extended  int
-	facts     int
+	// headerOK records whether the source starts with the `bplist00` magic.
+	// A source whose header is not the magic is not a binary plist at all:
+	// its trailer bytes are plain source text, so a trailer field can never
+	// be a genuine limit breach (RFC 0013 §5.1; the frozen Foundation fact
+	// "an XML fixture under the binary profile is Recovered with the header
+	// diagnostic and no native model"). Trailer limit checks are demoted to
+	// recoveries for such sources; the genuine binary path keeps them fatal.
+	headerOK bool
+	uidCount int
+	extended int
+	facts    int
 }
 
 // parseBinaryDocument forms one `plist.binary@1` document from a validated
@@ -238,6 +246,7 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 
 	// Header (RFC 0013 §5.1): any other version string is Recovered.
 	headerOK := string(bytes[:8]) == string(binaryHeader)
+	p.headerOK = headerOK
 	if !headerOK {
 		p.recover("plist.binary.header@1", p.locationOfRaw(0, 8),
 			map[string]string{"expected": "bplist00"})
@@ -245,7 +254,9 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 
 	// Trailer facts are bytes of the source and are always recorded.
 	raw := readRawTrailer(bytes)
-	p.recordFact()
+	if failure := p.recordFact(); failure != nil {
+		return nil, failure
+	}
 	trailerFacts := BinaryTrailerFacts{
 		sortVersion:       raw.sortVersion,
 		offsetIntSize:     raw.offsetIntSize,
@@ -257,8 +268,14 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 	}
 
 	// Mandatory integrity checks run before any object is decoded (RFC
-	// 0013 §5.11).
-	trailerOK := p.validateTrailer(&raw)
+	// 0013 §5.11). A limit or arithmetic-overflow violation is fatal; the
+	// `Ok(false)` outcome (an unrecoverable trailer, RFC 0013 §5.11
+	// mandatory checks) still forms a Recovered document with exhaustive
+	// error-region coverage and no native document.
+	trailerOK, limitFailure := p.validateTrailer(&raw)
+	if limitFailure != nil {
+		return nil, limitFailure
+	}
 	if !trailerOK {
 		regions := []document.BinaryRegion{
 			p.region(0, map[bool]string{true: "header", false: "error-region"}[headerOK], 0, 8),
@@ -280,8 +297,16 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 		return nil, p.fatalLimit("offset-table-bytes", tableBytes, p.limits.MaxOffsetTableBytes)
 	}
 
-	offsetFacts, objectOffsets, entryCut := p.readOffsetTable(offsetTableOffset, numObjects, offsetIntSize)
-	shapes, shapeCut := p.scanObjects(objectOffsets, entryCut, offsetTableOffset, objectRefSize, numObjects)
+	offsetFacts, objectOffsets, entryCut, factFailure := p.readOffsetTable(
+		offsetTableOffset, numObjects, offsetIntSize)
+	if factFailure != nil {
+		return nil, factFailure
+	}
+	shapes, shapeCut, scanFailure := p.scanObjects(objectOffsets, entryCut,
+		offsetTableOffset, objectRefSize, numObjects)
+	if scanFailure != nil {
+		return nil, scanFailure
+	}
 	cut := p.verifyDictKeys(shapes, shapeCut)
 
 	// Native document eligibility: the top object and every reference of a
@@ -349,7 +374,9 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 	// Facts of the proven prefix (RFC 0013 §8.3).
 	objects := make([]BinaryObjectFact, 0, cut)
 	for index := 0; index < cut; index++ {
-		p.recordFact()
+		if failure := p.recordFact(); failure != nil {
+			return nil, failure
+		}
 		objects = append(objects, BinaryObjectFact{
 			index:  index,
 			offset: shapes[index].offset,
@@ -360,7 +387,9 @@ func (p *binaryParser) parse() (*Document, *FormationFailure) {
 	refs := make([]BinaryObjectRefFact, 0)
 	for owner := 0; owner < cut; owner++ {
 		for position, reference := range shapes[owner].refs {
-			p.recordFact()
+			if failure := p.recordFact(); failure != nil {
+				return nil, failure
+			}
 			refs = append(refs, BinaryObjectRefFact{
 				owner: owner, position: position, target: reference.target,
 				span: reference.span,
@@ -428,7 +457,11 @@ func (p *binaryParser) finish(native *PlistDocument, facts *BinaryFacts,
 
 // validateTrailer enforces the mandatory trailer checks (RFC 0013 §5.11)
 // and records a `plist.binary.trailer@1` diagnostic per violated check.
-func (p *binaryParser) validateTrailer(raw *rawTrailer) bool {
+// The result is `(false, failure)` when a configured limit or the checked
+// arithmetic fails — the same fatal outcome as the Rust parser — and
+// `(false, nil)` when a mandatory check merely fails (formation continues
+// as Recovered with exhaustive error-region coverage).
+func (p *binaryParser) validateTrailer(raw *rawTrailer) (bool, *FormationFailure) {
 	ok := true
 	length := p.source.Len()
 	start := length - trailerBytes
@@ -450,8 +483,11 @@ func (p *binaryParser) validateTrailer(raw *rawTrailer) bool {
 				"offset-int-size": itoa(int(raw.offsetIntSize))})
 		ok = false
 	} else if int(raw.offsetIntSize) > p.limits.MaxOffsetIntSize {
-		p.fatalLimit("offset-int-size", int(raw.offsetIntSize), p.limits.MaxOffsetIntSize)
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.fatalLimit("offset-int-size", int(raw.offsetIntSize),
+			p.limits.MaxOffsetIntSize)
 	}
 	if raw.objectRefSize < 1 || raw.objectRefSize > maxFieldWidth {
 		p.recover("plist.binary.trailer@1", p.locationOfRaw(start+7, start+8),
@@ -459,16 +495,22 @@ func (p *binaryParser) validateTrailer(raw *rawTrailer) bool {
 				"object-ref-size": itoa(int(raw.objectRefSize))})
 		ok = false
 	} else if int(raw.objectRefSize) > p.limits.MaxObjectRefSize {
-		p.fatalLimit("object-ref-size", int(raw.objectRefSize), p.limits.MaxObjectRefSize)
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.fatalLimit("object-ref-size", int(raw.objectRefSize),
+			p.limits.MaxObjectRefSize)
 	}
 	if raw.numObjects == 0 {
 		p.recover("plist.binary.trailer@1", p.locationOfRaw(start+8, start+16),
 			map[string]string{"check": "num-objects"})
 		ok = false
 	} else if raw.numObjects > uint64(p.limits.MaxObjectCount) {
-		p.fatalLimit("object-count", int(raw.numObjects), p.limits.MaxObjectCount)
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.fatalLimit("object-count", int(raw.numObjects),
+			p.limits.MaxObjectCount)
 	}
 	if raw.topObject >= raw.numObjects {
 		p.recover("plist.binary.trailer@1", p.locationOfRaw(start+16, start+24),
@@ -500,15 +542,24 @@ func (p *binaryParser) validateTrailer(raw *rawTrailer) bool {
 	}
 	tableBytes, overflow := mulUint(raw.numObjects, uint64(raw.offsetIntSize))
 	if overflow {
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.overflowFailure()
 	}
 	expected, overflow := addUint(raw.offsetTableOffset, tableBytes)
 	if overflow {
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.overflowFailure()
 	}
 	expected, overflow = addUint(expected, trailerBytes)
 	if overflow {
-		return false
+		if !p.headerOK {
+			return false, nil // not a binary plist; the trailer is source text
+		}
+		return false, p.overflowFailure()
 	}
 	if expected != uint64(length) {
 		p.recover("plist.binary.trailer@1", p.locationOfRaw(start, length),
@@ -516,13 +567,14 @@ func (p *binaryParser) validateTrailer(raw *rawTrailer) bool {
 				"expected": strconvUint(expected), "observed": itoa(length)})
 		ok = false
 	}
-	return ok
+	return ok, nil
 }
 
 // readOffsetTable reads and validates the offset table in entry order (RFC
-// 0013 §5.10, §5.11). The first invalid entry cuts the proven prefix.
+// 0013 §5.10, §5.11). The first invalid entry cuts the proven prefix; a
+// binary-facts limit breach is fatal.
 func (p *binaryParser) readOffsetTable(offsetTableOffset, numObjects,
-	offsetIntSize int) ([]BinaryOffsetFact, []int, int) {
+	offsetIntSize int) ([]BinaryOffsetFact, []int, int, *FormationFailure) {
 	bytes := p.source.Bytes()
 	facts := make([]BinaryOffsetFact, 0, numObjects)
 	offsets := make([]int, 0, numObjects)
@@ -548,24 +600,27 @@ func (p *binaryParser) readOffsetTable(offsetTableOffset, numObjects,
 			cut = index
 			break
 		}
-		p.recordFact()
+		if failure := p.recordFact(); failure != nil {
+			return nil, nil, index, failure
+		}
 		facts = append(facts, BinaryOffsetFact{
 			index: index, offset: int(value), span: p.mustSpan(start, end)})
 		offsets = append(offsets, int(value))
 	}
-	return facts, offsets, cut
+	return facts, offsets, cut, nil
 }
 
 // scanObjects scans objects in index order and returns the proven shapes
-// plus the prefix cut (RFC 0013 §5.2-5.9).
+// plus the prefix cut (RFC 0013 §5.2-5.9). A shape's fatal limit failure
+// is propagated; a shape fault only cuts the proven prefix.
 func (p *binaryParser) scanObjects(objectOffsets []int, cut, offsetTableOffset,
-	objectRefSize, numObjects int) ([]objectShape, int) {
+	objectRefSize, numObjects int) ([]objectShape, int, *FormationFailure) {
 	shapes := make([]objectShape, 0, cut)
 	for index := 0; index < cut; index++ {
 		shape, ok, fatal := p.scanObject(index, objectOffsets[index], offsetTableOffset,
 			objectRefSize, numObjects)
 		if fatal != nil {
-			return shapes, index
+			return nil, index, fatal
 		}
 		if !ok {
 			cut = index
@@ -573,7 +628,7 @@ func (p *binaryParser) scanObjects(objectOffsets []int, cut, offsetTableOffset,
 		}
 		shapes = append(shapes, shape)
 	}
-	return shapes, cut
+	return shapes, cut, nil
 }
 
 // scanObject decodes one object's marker, size, extent, and references;
@@ -605,7 +660,10 @@ func (p *binaryParser) scanObject(index, offset, tableEnd, objectRefSize,
 		kind = shapeDate
 	case marker >= 0x40 && marker <= 0x4F:
 		kind = shapeData
-		count, extBytes, ok := p.sizedCount(marker, offset, index)
+		count, extBytes, ok, fatal := p.sizedCount(marker, offset, index)
+		if fatal != nil {
+			return objectShape{}, false, fatal
+		}
 		if !ok {
 			return objectShape{}, false, nil
 		}
@@ -616,7 +674,10 @@ func (p *binaryParser) scanObject(index, offset, tableEnd, objectRefSize,
 			objectRefSize, numObjects, index)
 	case marker >= 0x50 && marker <= 0x5F:
 		kind = shapeAsciiString
-		count, extBytes, ok := p.sizedCount(marker, offset, index)
+		count, extBytes, ok, fatal := p.sizedCount(marker, offset, index)
+		if fatal != nil {
+			return objectShape{}, false, fatal
+		}
 		if !ok {
 			return objectShape{}, false, nil
 		}
@@ -627,7 +688,10 @@ func (p *binaryParser) scanObject(index, offset, tableEnd, objectRefSize,
 			objectRefSize, numObjects, index)
 	case marker >= 0x60 && marker <= 0x6F:
 		kind = shapeUtf16String
-		count, extBytes, ok := p.sizedCount(marker, offset, index)
+		count, extBytes, ok, fatal := p.sizedCount(marker, offset, index)
+		if fatal != nil {
+			return objectShape{}, false, fatal
+		}
 		if !ok {
 			return objectShape{}, false, nil
 		}
@@ -641,7 +705,10 @@ func (p *binaryParser) scanObject(index, offset, tableEnd, objectRefSize,
 		count = int(marker&0x0F) + 1
 	case marker >= 0xA0 && marker <= 0xAF:
 		kind = shapeArray
-		count, extBytes, ok := p.sizedCount(marker, offset, index)
+		count, extBytes, ok, fatal := p.sizedCount(marker, offset, index)
+		if fatal != nil {
+			return objectShape{}, false, fatal
+		}
 		if !ok {
 			return objectShape{}, false, nil
 		}
@@ -652,7 +719,10 @@ func (p *binaryParser) scanObject(index, offset, tableEnd, objectRefSize,
 			objectRefSize, numObjects, index)
 	case marker >= 0xD0 && marker <= 0xDF:
 		kind = shapeDict
-		count, extBytes, ok := p.sizedCount(marker, offset, index)
+		count, extBytes, ok, fatal := p.sizedCount(marker, offset, index)
+		if fatal != nil {
+			return objectShape{}, false, fatal
+		}
 		if !ok {
 			return objectShape{}, false, nil
 		}
@@ -773,44 +843,45 @@ func integerPayloadWidth(marker byte, kind shapeKind) int {
 }
 
 // sizedCount reads a sized construct's count, honoring the extended-size
-// integer rule (RFC 0013 §5.4); ok=false is a fault.
-func (p *binaryParser) sizedCount(marker byte, objectOffset, index int) (int, int, bool) {
+// integer rule (RFC 0013 §5.4); ok=false is a fault, fatal is a limit
+// breach.
+func (p *binaryParser) sizedCount(marker byte, objectOffset, index int) (int, int, bool, *FormationFailure) {
 	nibble := int(marker & 0x0F)
 	if nibble != 0x0F {
-		return nibble, 0, true
+		return nibble, 0, true, nil
 	}
 	return p.readCount(objectOffset, index)
 }
 
 // readCount reads one extended-size integer and enforces its limits (RFC
-// 0013 §5.4, §12); ok=false is a fault.
-func (p *binaryParser) readCount(objectOffset, index int) (int, int, bool) {
+// 0013 §5.4, §12); ok=false is a fault, fatal is a limit breach.
+func (p *binaryParser) readCount(objectOffset, index int) (int, int, bool, *FormationFailure) {
 	bytes := p.source.Bytes()
 	if objectOffset+1 >= len(bytes) {
 		p.recover("plist.binary.offset-table@1",
 			p.locationOfRaw(len(bytes)-1, len(bytes)),
 			map[string]string{"index": itoa(index),
 				"value": "0x" + strconvHexOfUint(uint64(objectOffset))})
-		return 0, 0, false
+		return 0, 0, false, nil
 	}
 	marker := bytes[objectOffset+1]
 	if marker < 0x10 || marker > 0x13 {
 		p.recover("plist.binary.extended-size@1", p.locationOfRaw(objectOffset+1, objectOffset+2),
 			map[string]string{"marker": "0x" + strconvHex(marker), "object": itoa(index)})
-		return 0, 0, false
+		return 0, 0, false, nil
 	}
 	width := 1 << (marker & 0x0F)
 	value := readBEUint(bytes, objectOffset+2, width)
 	if value > uint64(p.limits.MaxExtendedSizeValue) {
-		p.fatalLimit("extended-size-value", int(value), p.limits.MaxExtendedSizeValue)
-		return 0, 0, false
+		return 0, 0, false, p.fatalLimit("extended-size-value", int(value),
+			p.limits.MaxExtendedSizeValue)
 	}
 	p.extended++
 	if p.extended > p.limits.MaxExtendedSizeIntegers {
-		p.fatalLimit("extended-size-integers", p.extended, p.limits.MaxExtendedSizeIntegers)
-		return 0, 0, false
+		return 0, 0, false, p.fatalLimit("extended-size-integers", p.extended,
+			p.limits.MaxExtendedSizeIntegers)
 	}
-	return int(value), 1 + width, true
+	return int(value), 1 + width, true, nil
 }
 
 // verifyDictKeys verifies that every dictionary key target is a string

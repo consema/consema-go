@@ -1475,6 +1475,11 @@ type NonLiteralExpressionError struct{}
 // Error implements error.
 func (e NonLiteralExpressionError) Error() string { return "expression is not literal-complete" }
 
+// Code returns the stable family code of the failure (RFC 0014 §8.1).
+func (e NonLiteralExpressionError) Code() string {
+	return "hcl.projection.non-literal-expression@1"
+}
+
 // LiteralValue extracts the typed literal value of a literal-complete
 // expression (RFC 0014 §8.1-§8.2).
 //

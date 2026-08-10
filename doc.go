@@ -8,11 +8,12 @@
 // (`crates/consema/src/lib.rs` and `conversion.rs`):
 //
 //   - `Document` is the common snapshot handle over the format documents.
-//     Format access is only possible through the typed adapters
-//     (`AsJSON`, `AsTOML`); all returned facts are immutable snapshot
-//     facts. The union is additive: the JSON and TOML families land with
-//     G1.4, the remaining families (yaml/ini/properties/xml/plist/hcl)
-//     land with 0.16.0-0.18.0 without changing this type.
+//     Format access is only possible through the typed adapters (`AsJSON`,
+//     `AsTOML`, `AsYAML`, `AsINI`, `AsProperties`, `AsXML`, `AsPlist`,
+//     `AsHCL`); all returned facts are immutable snapshot facts. The
+//     union is additive: JSON and TOML landed with G1.4, the remaining
+//     families (yaml/ini/properties/xml/plist/hcl) landed with
+//     0.16.0-0.18.0 without changing this type.
 //   - `Families`/`Profiles`/`QueryDomains`/`OperationRegistry` expose the
 //     registry surface of RFC 0015 §6.2 (8 families / 16 profiles / 21
 //     query domains / 16 operation registries), mirroring the Rust
@@ -25,8 +26,10 @@
 //     (Rust facade registry tests precedent). The registry content of
 //     the not-yet-implemented families is declared as capability facts
 //     only and lands with their format milestones.
-//   - `ConvertJSON`/`ConvertTOML` compose one format-owned projection and
-//     the requested target materializer, retaining the intermediate
+//   - The eight `Convert*` entries (`ConvertJSON`/`ConvertTOML`/
+//     `ConvertYAML`/`ConvertINI`/`ConvertProperties`/`ConvertXML`/
+//     `ConvertPlist`/`ConvertHCL`) compose one format-owned projection
+//     and the requested target materializer, retaining the intermediate
 //     portable value, both provenance directions, and the two-stage
 //     report (`crates/consema/src/conversion.rs`). The composition never
 //     invents a cross-format convention: the projection target, the
@@ -71,7 +74,9 @@
 // # context.Context
 //
 // context.Context carries cancellation and deadlines only, never
-// business parameters (docs/go-implementation-plan.md §21.2 line 1827).
-// Only the JSON family parse entry is cancellation-capable; the facade
-// parse entries pass cancellation through where the family supports it.
+// business parameters (roadmap §21.2; docs/go-implementation-plan.md
+// §2.6 G5.5). The JSON, XML, and HCL family parse entries are
+// cancellation-capable; the facade parse entries pass cancellation
+// through where the family supports it (TOML, YAML, INI, Properties,
+// and plist mirror the Rust facade, which has no cancellation).
 package consema

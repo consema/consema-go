@@ -1053,8 +1053,12 @@ func (p *parserState) parseArray(depth int) (int, *FormationFailure) {
 		if _, ok := p.consume(tokenComma); ok {
 			if candidate, ok := p.peek(); ok && candidate.kind == tokenRightBracket &&
 				!p.profile.permitsJSONCExtensions() {
-				p.syntaxDiagnostic("json.strict.trailing-comma@1",
-					candidate.start-1, candidate.start)
+				// The error registry registers this code as Conformance
+				// (mirroring the Rust registry); the category-validated
+				// constructor would panic on a Syntax classification.
+				p.diagnostics.push(sourceDiagnostic(p.authority, "json.strict.trailing-comma@1",
+					protocol.CategoryConformance, protocol.SeverityError,
+					candidate.start-1, candidate.start))
 				p.recovered = true
 			}
 			continue

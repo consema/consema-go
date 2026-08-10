@@ -13,7 +13,7 @@ func parseForms(t *testing.T, source string, profile HclProfile) *Document {
 	doc, failure := Parse(context.Background(), []byte(source), profile,
 		HclEncodingSelectionProfileDefault(), DefaultHclParseLimits())
 	if failure != nil {
-		t.Fatalf("fatal formation for %q: %s", source, failure.Code)
+		t.Fatalf("fatal formation for %q: %s", source, failure.Code())
 	}
 	return doc
 }
@@ -169,7 +169,7 @@ func TestInvalidUTF8IsAFatalFormationFailure(t *testing.T) {
 	for _, profile := range []HclProfile{HclProfileNativeV1, HclProfileTfvarsV1} {
 		_, failure := Parse(context.Background(), []byte("a = \xFF\n"), profile,
 			HclEncodingSelectionProfileDefault(), DefaultHclParseLimits())
-		if failure == nil || failure.DiagnosticCode() != "hcl.parse.invalid-utf8@1" {
+		if failure == nil || failure.Code() != "hcl.parse.invalid-utf8@1" {
 			t.Fatalf("invalid UTF-8 must be fatal with hcl.parse.invalid-utf8@1, got %v", failure)
 		}
 	}
@@ -275,6 +275,22 @@ func TestLiteralCompleteBoundary(t *testing.T) {
 	}
 }
 
+func TestNonLiteralExpressionErrorCode(t *testing.T) {
+	doc := parseForms(t, "a = 1 + 2\n", HclProfileNativeV1)
+	expression := doc.Document().Body().Items()[0].AsAttribute().Expression()
+	_, err := LiteralValue(expression)
+	if err == nil {
+		t.Fatal("derived expression must fail LiteralValue")
+	}
+	typed, ok := err.(NonLiteralExpressionError)
+	if !ok {
+		t.Fatalf("failure type %T, want NonLiteralExpressionError", err)
+	}
+	if typed.Code() != "hcl.projection.non-literal-expression@1" {
+		t.Fatalf("code = %q, want hcl.projection.non-literal-expression@1", typed.Code())
+	}
+}
+
 func TestEncodingSelectionRejectsNonUTF8(t *testing.T) {
 	if _, ok := HclEncodingSelectionProfileDefault().Validate(); !ok {
 		t.Fatal("profile default must validate")
@@ -291,7 +307,7 @@ func TestParseRejectsNonUTF8SelectionBeforeAnyByteIsRead(t *testing.T) {
 	for _, profile := range []HclProfile{HclProfileNativeV1, HclProfileTfvarsV1} {
 		_, failure := Parse(context.Background(), []byte("a = 1\n"), profile,
 			HclEncodingSelectionExplicit(document.Utf16LeEncoding()), DefaultHclParseLimits())
-		if failure == nil || failure.DiagnosticCode() != "hcl.parse.encoding@1" {
+		if failure == nil || failure.Code() != "hcl.parse.encoding@1" {
 			t.Fatalf("non-UTF-8 selection must fail with hcl.parse.encoding@1, got %v", failure)
 		}
 	}
