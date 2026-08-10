@@ -310,22 +310,18 @@ func protocolMatchValue(match ProtocolQueryMatch) (core.Value, error) {
 			core.Entry{Key: "value", Value: match.Value},
 		)
 	case "Native":
+		// Native matches are flat on the wire (query.rs:362-369): the
+		// locator fields sit beside "kind" rather than under a nested
+		// "native_match" record.
 		return core.NewObject(
 			core.Entry{Key: "kind", Value: core.String("Native")},
-			core.Entry{Key: "native_match", Value: nativeLocatorValue(match.Native)},
+			core.Entry{Key: "role", Value: core.String(string(match.Native.role))},
+			core.Entry{Key: "source_id", Value: core.String(match.Native.sourceID)},
+			core.Entry{Key: "node_locator", Value: core.String(match.Native.nodeLocator)},
+			core.Entry{Key: "ordinal", Value: integerValue(match.Native.ordinal)},
 		)
 	}
 	return nil, invalid("$", "unknown query match kind")
-}
-
-func nativeLocatorValue(locator *NativeMatchLocator) core.Value {
-	value, _ := core.NewObject(
-		core.Entry{Key: "source_id", Value: core.String(locator.sourceID)},
-		core.Entry{Key: "node_locator", Value: core.String(locator.nodeLocator)},
-		core.Entry{Key: "role", Value: core.String(string(locator.role))},
-		core.Entry{Key: "ordinal", Value: integerValue(locator.ordinal)},
-	)
-	return value
 }
 
 func parseProtocolMatch(value core.Value, path string) (ProtocolQueryMatch, error) {
@@ -388,46 +384,41 @@ func parseProtocolMatch(value core.Value, path string) (ProtocolQueryMatch, erro
 		return ProtocolQueryMatch{Kind: "EntryMappingEntry", Location: location, KeyPath: keyPath,
 			Key: fields[3], ValuePath: valuePath, Value: fields[5]}, nil
 	case "Native":
-		fields, err := exactFields(value, []string{"kind", "native_match"}, path)
+		// The Native match is flat on the wire (query.rs:422-435): the
+		// locator fields sit beside "kind" in canonical order kind, role,
+		// source_id, node_locator, ordinal.
+		fields, err := exactFields(value,
+			[]string{"kind", "role", "source_id", "node_locator", "ordinal"}, path)
 		if err != nil {
 			return ProtocolQueryMatch{}, err
 		}
-		locator, err := parseNativeLocator(fields[1], path+".native_match")
+		roleText, err := stringOf(fields[1], path+".role")
+		if err != nil {
+			return ProtocolQueryMatch{}, err
+		}
+		role, ok := ParseMatchRole(roleText)
+		if !ok {
+			return ProtocolQueryMatch{}, invalid(path+".role", "unknown match role")
+		}
+		sourceID, err := stringOf(fields[2], path+".source_id")
+		if err != nil {
+			return ProtocolQueryMatch{}, err
+		}
+		nodeLocator, err := stringOf(fields[3], path+".node_locator")
+		if err != nil {
+			return ProtocolQueryMatch{}, err
+		}
+		ordinal, err := unsigned64(fields[4], path+".ordinal")
+		if err != nil {
+			return ProtocolQueryMatch{}, err
+		}
+		locator, err := NewNativeMatchLocator(sourceID, nodeLocator, role, ordinal)
 		if err != nil {
 			return ProtocolQueryMatch{}, err
 		}
 		return ProtocolQueryMatch{Kind: "Native", Native: locator}, nil
 	}
 	return ProtocolQueryMatch{}, invalid(path, "unknown query match kind")
-}
-
-func parseNativeLocator(value core.Value, path string) (*NativeMatchLocator, error) {
-	fields, err := exactFields(value,
-		[]string{"source_id", "node_locator", "role", "ordinal"}, path)
-	if err != nil {
-		return nil, err
-	}
-	sourceID, err := stringOf(fields[0], path+".source_id")
-	if err != nil {
-		return nil, err
-	}
-	nodeLocator, err := stringOf(fields[1], path+".node_locator")
-	if err != nil {
-		return nil, err
-	}
-	roleText, err := stringOf(fields[2], path+".role")
-	if err != nil {
-		return nil, err
-	}
-	role, ok := ParseMatchRole(roleText)
-	if !ok {
-		return nil, invalid(path+".role", "unknown match role")
-	}
-	ordinal, err := unsigned64(fields[3], path+".ordinal")
-	if err != nil {
-		return nil, err
-	}
-	return NewNativeMatchLocator(sourceID, nodeLocator, role, ordinal)
 }
 
 // isV1Role reports whether the role is published by core.query-result@1

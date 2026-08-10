@@ -14,22 +14,21 @@ import (
 // redaction consistency, digest equality, per-status presence rules)
 // instead of trusting the schema discriminator.
 //
-// # Bytes-boundary note (value-level subset, see doc.go)
+// # Bytes note
 //
 // The core.source-patch@2 record nested in a planned batch-plan entry
 // carries Bytes leaves (replacement original/replacement content). The
-// fifteen-kind Go value model does express Bytes (RFC 0016 §4.1), but the
-// value-level source-patch codec deliberately keeps the expressible subset
-// without replacement records. BatchPlanMessage therefore has two codec
-// paths:
+// fifteen-kind Go value model expresses Bytes (RFC 0016 §4.1), and both
+// codec paths carry replacement records with full byte fidelity, exactly as
+// the Rust value-level codec does (source.rs:328-357):
 //
-//   - FromJSON/ToJSON operate on the strict canonical JSON tree and are the
-//     full-fidelity path: replacement bytes travel as hex, exactly as the
-//     Rust transport carries them. This is the primary machine transport of
-//     RFC 0015 §3.2 and the path the shared cli-v1 vectors exercise.
-//   - FromValue/ToValue (and the PVCE transports built on them) cover the
-//     expressible subset: an entry whose source_patch carries any
-//     replacement record fails with KindInvalidValue.
+//   - FromJSON/ToJSON operate on the strict canonical JSON tree: replacement
+//     bytes travel as hex, exactly as the Rust transport carries them. This
+//     is the primary machine transport of RFC 0015 §3.2 and the path the
+//     shared cli-v1 vectors exercise.
+//   - FromValue/ToValue (and the PVCE transports built on them) carry the
+//     same Bytes leaves through the value model; the Rust and Go encodings
+//     are byte-identical on both transports.
 //
 // The plan manifest's other fields, the CLI envelope, and the batch result
 // carry no Bytes leaves and round-trip through all transports.
@@ -354,9 +353,8 @@ func NewBatchPlanFileEntry(path string, status BatchPlanFileStatus,
 	for index, diagnostic := range diagnostics {
 		// The registry binding check mirrors the Rust
 		// DiagnosticMessage::from_value_with_registry re-validation
-		// (cli.rs:470-481); the tree codec of cli_json.go may carry fixes
-		// with bytes that the value codec cannot express, so the binding
-		// check is the code/category rule directly.
+		// (cli.rs:470-481); both codecs carry fix replacement bytes, so the
+		// binding check is the code/category rule directly.
 		if err := validateDiagnosticCode(diagnostic.Code, diagnostic.Category, registry); err != nil {
 			return nil, &ProtocolError{
 				Kind:   err.Kind,
@@ -447,8 +445,8 @@ func (m *BatchPlanMessage) Files() []*BatchPlanFileEntry {
 }
 
 // ToValue encodes the fixed core.batch-plan@1 schema as a PortableValue
-// tree. The value-level subset covers patches without replacement records
-// (doc.go); byte-bearing patches fail with KindInvalidValue.
+// tree. Source-patch replacement bytes travel as Bytes leaves with full
+// fidelity, byte-identical to the Rust value-level encoding.
 func (m *BatchPlanMessage) ToValue() (core.Value, error) {
 	files := make([]core.Value, 0, len(m.files))
 	for index, entry := range m.files {
@@ -555,8 +553,8 @@ func (m *BatchPlanMessage) FromJSON(bytes []byte, limits ProtocolLimits) (*Batch
 	return parsePlanMessageNode(fields[1], NewErrorCodeRegistry(ErrorRegistryV7))
 }
 
-// ToPVCE encodes the manifest as canonical PVCE/1. Byte-bearing patches are
-// Go-unreachable through the value model (doc.go).
+// ToPVCE encodes the manifest as canonical PVCE/1, carrying source-patch
+// replacement bytes as Bytes leaves with full fidelity.
 func (m *BatchPlanMessage) ToPVCE(limits ProtocolLimits) ([]byte, error) {
 	value, err := m.ToValue()
 	if err != nil {
@@ -1085,8 +1083,8 @@ func revalidatePlanEntry(entry *BatchPlanFileEntry, index int, registry ErrorCod
 }
 
 // planEntryValue encodes one plan entry as a PortableValue tree
-// (cli.rs:940-1020). Entries whose source_patch carries replacement records
-// fall outside the value-level subset (doc.go).
+// (cli.rs:940-1020). Source-patch replacement records travel as Bytes
+// leaves with full fidelity.
 func planEntryValue(entry *BatchPlanFileEntry, index int) (core.Value, error) {
 	var profile core.Value = core.NullValue()
 	if entry.profile != nil {

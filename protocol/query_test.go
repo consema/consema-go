@@ -451,3 +451,112 @@ func TestQueryBinding(t *testing.T) {
 		t.Error("executable output role wrong")
 	}
 }
+
+func TestQueryResultNativeMatchWireFormat(t *testing.T) {
+	// Native matches are flat on the wire (query.rs:362-369): kind, role,
+	// source_id, node_locator, ordinal sit beside each other; the nested
+	// "native_match" shape is not a published wire form (G5.3 alignment).
+	locator, err := NewNativeMatchLocator("source:one", "json:path:value", RoleJsonValue, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	message, err := NewQueryResultFromPortableExecution(
+		DomainJSONNativeV1(), RoleJsonValue,
+		[]ProtocolQueryMatch{{Kind: "Native", Native: locator}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := message.ToValue()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fields, err := schemaFields(value, "core.query-result@1",
+		[]string{"schema", "domain_id", "domain_version", "role", "matches",
+			"completion", "diagnostics"}, "$")
+	if err != nil {
+		t.Fatal(err)
+	}
+	matchValues, err := sequenceOf(fields[4], "$.matches")
+	if err != nil {
+		t.Fatal(err)
+	}
+	match, ok := matchValues[0].(*core.Object)
+	if !ok {
+		t.Fatal("match is not an Object")
+	}
+	names := make([]string, 0, match.Len())
+	for _, entry := range match.Entries() {
+		names = append(names, entry.Key)
+	}
+	want := []string{"kind", "role", "source_id", "node_locator", "ordinal"}
+	if len(names) != len(want) {
+		t.Fatalf("native match fields = %v, want %v", names, want)
+	}
+	for index := range want {
+		if names[index] != want[index] {
+			t.Fatalf("native match fields = %v, want %v", names, want)
+		}
+	}
+	if role, err := stringOf(match.Entries()[1].Value, "$.matches[0].role"); err != nil ||
+		string(role) != "JsonValue" {
+		t.Fatalf("native match role: got %v, %v", role, err)
+	}
+	if sourceID, err := stringOf(match.Entries()[2].Value, "$.matches[0].source_id"); err != nil ||
+		string(sourceID) != "source:one" {
+		t.Fatalf("native match source_id: got %v, %v", sourceID, err)
+	}
+	// The record round-trips through the strict decoder.
+	decoded, err := (&QueryResultMessage{}).FromValue(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roundtripped, err := decoded.ToValue()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !core.Equal(roundtripped, value) {
+		t.Fatal("native match record round-trip changed the value")
+	}
+	// The former nested shape is rejected as an unknown field.
+	nestedEntries := []core.Entry{
+		{Key: "kind", Value: core.String("Native")},
+		{Key: "native_match", Value: mustObject(t,
+			core.Entry{Key: "source_id", Value: core.String("source:one")},
+			core.Entry{Key: "node_locator", Value: core.String("json:path:value")},
+			core.Entry{Key: "role", Value: core.String("JsonValue")},
+			core.Entry{Key: "ordinal", Value: core.NewInteger(big.NewInt(0))})},
+	}
+	nested, err := core.NewObject(nestedEntries...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered := make([]core.Entry, 0, len(fields))
+	tampered = append(tampered, fieldsEntries(t, value)...)
+	tampered[4] = core.Entry{Key: "matches", Value: core.NewArray(nested)}
+	bad, err := core.NewObject(tampered...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = (&QueryResultMessage{}).FromValue(bad)
+	if err == nil || protocolCode(err) != "core.protocol.unknown-field@1" {
+		t.Errorf("nested native match: got %v, want core.protocol.unknown-field@1", err)
+	}
+}
+
+func mustObject(t *testing.T, entries ...core.Entry) *core.Object {
+	t.Helper()
+	object, err := core.NewObject(entries...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return object
+}
+
+func fieldsEntries(t *testing.T, value core.Value) []core.Entry {
+	t.Helper()
+	object, ok := value.(*core.Object)
+	if !ok {
+		t.Fatal("value is not an Object")
+	}
+	return append([]core.Entry(nil), object.Entries()...)
+}

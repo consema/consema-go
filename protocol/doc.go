@@ -25,12 +25,12 @@
 //     decoder has ExtendedValue and an ExpectedCoreValue/NestedExtendedValue
 //     classification).
 //   - The core.source-patch@2 record nested in core.batch-plan@1 carries
-//     Bytes leaves (replacement original/replacement content). The value
-//     level deliberately keeps the expressible subset without replacement
-//     records, so BatchPlanMessage has two codec paths: FromJSON/ToJSON
-//     (full fidelity, the primary machine transport of RFC 0015 §3.2) and
-//     FromValue/ToValue/PVCE (which errors when a patch carries non-empty
-//     replacement bytes). See cli.go for the full note.
+//     Bytes leaves (replacement original/replacement content). Both
+//     BatchPlanMessage codec paths — FromJSON/ToJSON (canonical tagged JSON,
+//     the primary machine transport of RFC 0015 §3.2) and
+//     FromValue/ToValue/PVCE — carry the replacement bytes with full
+//     fidelity, byte-identical to the Rust value-level codec. See cli.go
+//     for the full note.
 //
 // # Error classification
 //

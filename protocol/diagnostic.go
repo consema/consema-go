@@ -186,14 +186,10 @@ func (d *Diagnostic) ToValue() (core.Value, error) {
 		notes = append(notes, core.String(note))
 	}
 	fixes := make([]core.Value, 0, len(d.Fixes))
-	for index, fix := range d.Fixes {
-		// The wire replacement field is a Bytes leaf, which the value-level
-		// diagnostic record codec keeps outside its expressible subset
-		// (doc.go). Any fix carrying a replacement is rejected here.
-		if fix.Replacement != nil {
-			return nil, invalid("$.fixes["+uint32String(uint32(index))+".replacement",
-				"fix replacements are outside the value-level diagnostic subset")
-		}
+	for _, fix := range d.Fixes {
+		// The wire replacement field is a Bytes leaf carried with full byte
+		// fidelity (diagnostic.rs:222-223); an empty replacement encodes as
+		// empty Bytes, never Null.
 		var location core.Value = core.NullValue()
 		if fix.Location != nil {
 			location, err = locationValue(fix.Location)
@@ -205,7 +201,7 @@ func (d *Diagnostic) ToValue() (core.Value, error) {
 			core.Entry{Key: "id", Value: core.String(fix.ID)},
 			core.Entry{Key: "applicability", Value: core.String(fix.Applicability.String())},
 			core.Entry{Key: "location", Value: location},
-			core.Entry{Key: "replacement", Value: core.NullValue()},
+			core.Entry{Key: "replacement", Value: core.NewBytes(fix.Replacement)},
 		)
 		if err != nil {
 			return nil, err
@@ -369,34 +365,42 @@ func parseLocation(value core.Value, path string) (*SourceLocation, error) {
 	return NewSourceLocation(sourceID, startByte, endByte)
 }
 
-// decodeFix strictly decodes one fix proposal (diagnostic.rs:395-420). The
-// wire replacement field is a Bytes leaf, which the value-level diagnostic
-// record codec keeps outside its expressible subset (doc.go): any fix
-// present on the wire is rejected here, matching the encoder's symmetric
-// refusal. The other fields are still validated so that malformed records
-// fail with their own errors.
+// decodeFix strictly decodes one fix proposal (diagnostic.rs:395-431). The
+// wire replacement field is a Bytes leaf accepted at the value level with
+// full byte fidelity; any other shape (including Null) is a wrong-type
+// error (diagnostic.rs:424-429).
 func decodeFix(value core.Value, path string) (*FixProposal, error) {
 	fields, err := exactFields(value, []string{"id", "applicability", "location", "replacement"}, path)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := stringOf(fields[0], path+".id"); err != nil {
+	id, err := stringOf(fields[0], path+".id")
+	if err != nil {
 		return nil, err
 	}
 	applicabilityText, err := stringOf(fields[1], path+".applicability")
 	if err != nil {
 		return nil, err
 	}
-	if _, err := ParseFixApplicability(applicabilityText); err != nil {
+	applicability, err := ParseFixApplicability(applicabilityText)
+	if err != nil {
 		return nil, err
 	}
+	var location *SourceLocation
 	if _, isNull := fields[2].(core.Null); !isNull {
-		if _, err := parseLocation(fields[2], path+".location"); err != nil {
+		location, err = parseLocation(fields[2], path+".location")
+		if err != nil {
 			return nil, err
 		}
 	}
-	return nil, invalid(path+".replacement",
-		"fix replacements are outside the value-level diagnostic subset")
+	replacement, ok := fields[3].(core.Bytes)
+	if !ok {
+		return nil, protocolError(KindWrongType, path+".replacement", "expected Bytes")
+	}
+	return &FixProposal{
+		ID: id, Applicability: applicability, Location: location,
+		Replacement: append([]byte(nil), replacement...),
+	}, nil
 }
 
 // stringMapObject encodes a deterministic sorted Object<String, String>.

@@ -13,6 +13,14 @@ package normalized
 // evidence directory: the Go SDK executes the same input set, the two
 // normalized results are compared field by field, and every divergence is
 // reported as case id + field + both values.
+//
+// Since milestone 0.19.0 G5.2 the harness is bidirectional (roadmap §16.6
+// line 1548; docs/go-implementation-plan.md §2.6): TestEmitGoNormalizedResults
+// emits the Go-side evidence files for the same input set (one
+// `<case-id>.txt` per case, the same line-oriented key=value format the
+// forward direction reads), and the Rust example's consume mode compares
+// them with its own results. TestEmitFormatConsistency always runs and
+// proves the emitted files round-trip through the forward reader.
 
 import (
 	_ "embed"
@@ -238,9 +246,90 @@ func readEvidenceFile(t *testing.T, dir, id string) []string {
 	if err != nil {
 		t.Fatalf("case %s: missing Rust evidence file: %v (run scripts/go-verify-normalized-differential.ps1)", id, err)
 	}
-	content := strings.TrimRight(string(text), "\r\n")
+	return splitEvidenceLines(string(text))
+}
+
+// splitEvidenceLines splits one evidence file into fact lines (the shared
+// reader of both directions; the Rust example's consume mode mirrors it).
+func splitEvidenceLines(text string) []string {
+	content := strings.TrimRight(text, "\r\n")
 	if content == "" {
 		return nil
 	}
 	return strings.Split(content, "\n")
+}
+
+// emitFactsToDir writes the Go-side evidence files: one `<case-id>.txt` per
+// case, every fact line as `key=value\n` (byte-identical in shape to the
+// Rust emitter's files, so the Rust consume mode can read them with the
+// same reader). Returns the number of emitted cases.
+func emitFactsToDir(cases []fileCase, dir string) (int, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return 0, err
+	}
+	var emitted int
+	for _, c := range cases {
+		lines, err := runCase(&c)
+		if err != nil {
+			return emitted, fmt.Errorf("case %s: harness bug: %w", c.ID, err)
+		}
+		var content strings.Builder
+		for _, line := range lines {
+			content.WriteString(line)
+			content.WriteByte('\n')
+		}
+		if err := os.WriteFile(filepath.Join(dir, c.ID+".txt"), []byte(content.String()), 0o644); err != nil {
+			return emitted, fmt.Errorf("case %s: %w", c.ID, err)
+		}
+		emitted++
+	}
+	return emitted, nil
+}
+
+// TestEmitGoNormalizedResults emits the Go-side normalized results for the
+// whole input set into the directory named by GoDirEnv (one `<case-id>.txt`
+// per case). It is the reverse direction of the bidirectional differential
+// (milestone 0.19.0 G5.2): the Rust example's consume mode reads this
+// directory and compares it with its own results. It skips without the
+// environment variable (documented skip, never silent) and runs only when
+// scripts/go-verify-normalized-differential.ps1 provisioned the directory.
+func TestEmitGoNormalizedResults(t *testing.T) {
+	cases := loadCaseFile(t)
+	goDir := os.Getenv(GoDirEnv)
+	if goDir == "" {
+		t.Skipf("%s is not set: run scripts/go-verify-normalized-differential.ps1 to provision the Go evidence files", GoDirEnv)
+	}
+	emitted, err := emitFactsToDir(cases, goDir)
+	if err != nil {
+		t.Fatalf("cannot emit the Go evidence files: %v", err)
+	}
+	t.Logf("emitted %d Go normalized results into %s", emitted, goDir)
+}
+
+// TestEmitFormatConsistency proves the Go emitter writes the same format
+// the forward direction reads: the emitted files round-trip through the
+// forward reader (splitEvidenceLines) and compare equal field by field with
+// the computed facts. It always runs, so `go test ./...` guards the
+// reverse-direction file format even without the orchestrator.
+func TestEmitFormatConsistency(t *testing.T) {
+	cases := loadCaseFile(t)
+	dir := t.TempDir()
+	emitted, err := emitFactsToDir(cases, dir)
+	if err != nil {
+		t.Fatalf("cannot emit the Go evidence files: %v", err)
+	}
+	if emitted != len(cases) {
+		t.Fatalf("emitted %d cases, want %d", emitted, len(cases))
+	}
+	for _, c := range cases {
+		lines := readEvidenceFile(t, dir, c.ID)
+		computed, err := runCase(&c)
+		if err != nil {
+			t.Fatalf("case %s: harness bug: %v", c.ID, err)
+		}
+		for _, failure := range compareFacts(c.ID, computed, lines) {
+			t.Error(failure)
+		}
+	}
+	t.Logf("emitted format round-trips through the forward reader for %d/%d cases", emitted, len(cases))
 }

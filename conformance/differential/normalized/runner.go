@@ -9,7 +9,12 @@
 // by this package. Go never imports or calls Rust (RFC 0016 §1.1 cgo ban):
 // the Rust side emits one `<case-id>.txt` evidence file per case, and the
 // Go test computes the same normalized facts and compares them field by
-// field. Orchestration: scripts/go-verify-normalized-differential.ps1.
+// field. Since milestone 0.19.0 G5.2 the comparison is bidirectional
+// (roadmap §16.6 line 1548; docs/go-implementation-plan.md §2.6): the Go
+// side also emits its evidence files for the same input set, and the Rust
+// example's consume mode (--consume) reads them and compares them with its
+// own results field by field. Orchestration:
+// scripts/go-verify-normalized-differential.ps1.
 //
 // The compared facts are exactly the language-neutral behavior surface of
 // roadmap §11.2: parse formation, diagnostic code/order (never text), query
@@ -50,6 +55,11 @@ const MinCaseCount = 104
 
 // RustDirEnv names the directory of the Rust evidence files.
 const RustDirEnv = "CONSEMA_DIFFERENTIAL_NORMALIZED_RUST_DIR"
+
+// GoDirEnv names the directory where the Go emitter writes its own
+// evidence files (the reverse direction of the bidirectional differential,
+// milestone 0.19.0 G5.2; consumed by the Rust example's --consume mode).
+const GoDirEnv = "CONSEMA_DIFFERENTIAL_NORMALIZED_GO_DIR"
 
 // ---------------------------------------------------------------------------
 // Case file schema (data-driven; shared with the Rust example)

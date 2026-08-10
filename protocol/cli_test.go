@@ -402,7 +402,10 @@ func TestBatchPlanVectorRejectionInputs(t *testing.T) {
 		`{"key":"algorithm","value":{"type":"String","value":"sha256"}},` +
 		`{"key":"hex","value":{"type":"String","value":"77b7ea230beae079972e4223c68a0715afcb7e36c3bda4c439e43a4a22630bd6"}}]}},` +
 		`{"key":"encoding","value":{"type":"Object","entries":[` +
-		`{"key":"profile_default","value":{"type":"Null"}},` +
+		`{"key":"profile_default","value":{"type":"Object","entries":[` +
+		`{"key":"schema","value":{"type":"String","value":"core.source-encoding@1"}},` +
+		`{"key":"kind","value":{"type":"String","value":"Utf8"}},` +
+		`{"key":"windows_code_page","value":{"type":"Null"}}]}},` +
 		`{"key":"bom_policy","value":{"type":"String","value":"DetectUnicode"}},` +
 		`{"key":"bom","value":{"type":"Null"}},` +
 		`{"key":"declaration","value":{"type":"Null"}},` +
@@ -449,6 +452,34 @@ func TestBatchPlanVectorRejectionInputs(t *testing.T) {
 			planJSON("plan", validDigest, `{"type":"Null"}`),
 			"core.protocol.wrong-type@1",
 			"",
+		},
+		// profile_default is a required source-encoding record at the value
+		// level (source.rs:697-699); the JSON tree codec mirrors the
+		// rejection instead of accepting Null (G5.3 alignment).
+		{
+			"reject-null-profile-default",
+			planJSON("plan", validDigest, `{"type":"Object","entries":[`+
+				`{"key":"schema","value":{"type":"String","value":"core.source-patch@2"}},`+
+				`{"key":"base_digest","value":{"type":"Object","entries":[`+
+				`{"key":"algorithm","value":{"type":"String","value":"sha256"}},`+
+				`{"key":"hex","value":{"type":"String","value":"`+validDigest+`"}}]}},`+
+				`{"key":"target_digest","value":{"type":"Object","entries":[`+
+				`{"key":"algorithm","value":{"type":"String","value":"sha256"}},`+
+				`{"key":"hex","value":{"type":"String","value":"`+validDigest+`"}}]}},`+
+				`{"key":"encoding","value":{"type":"Object","entries":[`+
+				`{"key":"profile_default","value":{"type":"Null"}},`+
+				`{"key":"bom_policy","value":{"type":"String","value":"DetectUnicode"}},`+
+				`{"key":"bom","value":{"type":"Null"}},`+
+				`{"key":"declaration","value":{"type":"Null"}},`+
+				`{"key":"caller_override","value":{"type":"Null"}},`+
+				`{"key":"selected","value":{"type":"Object","entries":[`+
+				`{"key":"schema","value":{"type":"String","value":"core.source-encoding@1"}},`+
+				`{"key":"kind","value":{"type":"String","value":"Utf8"}},`+
+				`{"key":"windows_code_page","value":{"type":"Null"}}]}}]}},`+
+				`{"key":"replacements","value":{"type":"Sequence","items":[]}},`+
+				`{"key":"metadata","value":{"type":"Object","entries":[]}}]}`),
+			"core.protocol.wrong-type@1",
+			"$.files[0].source_patch.encoding.profile_default",
 		},
 	}
 	limits := DefaultProtocolLimits()

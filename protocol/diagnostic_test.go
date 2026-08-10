@@ -149,8 +149,9 @@ func TestDiagnosticWireSchemaIsStrict(t *testing.T) {
 	if err == nil || protocolCode(err) != "core.protocol.schema-mismatch@1" {
 		t.Errorf("reordered fields: got %v", err)
 	}
-	// A diagnostic carrying a fix is Go-unexpressible: the wire replacement
-	// field is a Bytes leaf (doc.go). The encoder and decoder agree.
+	// A diagnostic carrying a fix is fully expressible: the wire replacement
+	// field is a Bytes leaf carried with byte fidelity (diagnostic.rs:222-223
+	// and 424-429). The encoder and decoder agree.
 	withFix, err := NewDiagnostic("ini.parse.malformed-line@1", CategorySyntax, SeverityError,
 		nil, nil, nil, nil, []FixProposal{
 			{ID: "fix:quote", Applicability: ApplicabilityManual, Replacement: []byte("x")},
@@ -158,8 +159,50 @@ func TestDiagnosticWireSchemaIsStrict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := withFix.ToValue(); err == nil {
-		t.Error("ToValue accepted a fix with replacement bytes")
+	encoded, err := withFix.ToValue()
+	if err != nil {
+		t.Fatalf("ToValue rejected a fix with replacement bytes: %v", err)
+	}
+	decoded, err := (&Diagnostic{}).FromValue(encoded, registry)
+	if err != nil {
+		t.Fatalf("FromValue rejected a Bytes fix: %v", err)
+	}
+	if len(decoded.Fixes) != 1 || string(decoded.Fixes[0].Replacement) != "x" ||
+		decoded.Fixes[0].ID != "fix:quote" || decoded.Fixes[0].Applicability != ApplicabilityManual {
+		t.Fatalf("fix round-trip changed the proposal: %+v", decoded.Fixes)
+	}
+	// Null replacement is a wrong-type error, mirroring the Rust as_bytes
+	// rejection (diagnostic.rs:424-429).
+	tampered = append([]core.Entry(nil), encoded.(*core.Object).Entries()...)
+	fixArray, ok := tampered[8].Value.(*core.Array)
+	if !ok || len(fixArray.Items()) != 1 {
+		t.Fatal("fixes field is not a one-item Array")
+	}
+	fixObject, ok := fixArray.Items()[0].(*core.Object)
+	if !ok {
+		t.Fatal("fix item is not an Object")
+	}
+	fixEntries := fixObject.Entries()
+	nullReplacement := make([]core.Entry, 0, len(fixEntries))
+	for _, entry := range fixEntries {
+		if entry.Key == "replacement" {
+			nullReplacement = append(nullReplacement, core.Entry{Key: "replacement", Value: core.NullValue()})
+			continue
+		}
+		nullReplacement = append(nullReplacement, entry)
+	}
+	badFix, err := core.NewObject(nullReplacement...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered[8] = core.Entry{Key: "fixes", Value: core.NewArray(badFix)}
+	bad, err = core.NewObject(tampered...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = (&Diagnostic{}).FromValue(bad, registry)
+	if err == nil || protocolCode(err) != "core.protocol.wrong-type@1" {
+		t.Errorf("null fix replacement: got %v, want core.protocol.wrong-type@1", err)
 	}
 }
 

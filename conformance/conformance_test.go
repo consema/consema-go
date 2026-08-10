@@ -69,7 +69,7 @@ func TestApplicableSuiteCounts(t *testing.T) {
 		"consema.source.conformance@1":            {28, 0, 0},
 		"consema.syntax-query.conformance@1":      {19, 0, 0},
 		"consema.protocol.conformance@2":          {11, 0, 0},
-		"consema.operations.conformance@1":        {33, 2, 0},
+		"consema.operations.conformance@1":        {35, 0, 0},
 		"consema.json-family.conformance@2":       {33, 0, 0},
 		"consema.portable-graph.conformance@1":    {10, 0, 0},
 		"consema.semantic-model-v5.conformance@1": {22, 0, 0},
