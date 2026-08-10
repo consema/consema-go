@@ -1010,7 +1010,7 @@ func validatePayloadSchema(payload core.Value, command CliCommand) error {
 }
 
 // isSemanticVersion validates the SemVer 2.0 core shape of a product version
-// (RFC 0015 §3.3, 2026-08-10 revision; cli.rs:870-911): MAJOR.MINOR.PATCH
+// (RFC 0015 §3.3, 2026-08-10 revision; cli.rs:870-929): MAJOR.MINOR.PATCH
 // with an optional dot-separated -prerelease suffix; numeric segments and
 // numeric prerelease identifiers carry no leading zeros; build metadata ('+'
 // suffix) is rejected (product_version never carries build metadata or git

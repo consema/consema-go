@@ -126,7 +126,7 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 	if err == nil || protocolCode(err) != "core.protocol.schema-mismatch@1" {
 		t.Errorf("reordered payload: got %v", err)
 	}
-	// Invalid product versions (cli.rs:1568-1618): the MAJOR.MINOR.PATCH pins
+	// Invalid product versions (cli.rs:1612-1646): the MAJOR.MINOR.PATCH pins
 	// are unchanged; the prerelease-shaped rejections cover the 2026-08-10
 	// SemVer extension (empty identifier, numeric identifier leading zero,
 	// empty prerelease, build metadata).
@@ -141,7 +141,7 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 			t.Errorf("version %q: got %v", version, err)
 		}
 	}
-	// Redaction invariant (cli.rs:1581-1585).
+	// Redaction invariant (cli.rs:1641-1645).
 	if _, err := NewRedaction(true, 0); err == nil {
 		t.Error("redacted with count 0 accepted")
 	}
@@ -156,7 +156,7 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 func TestCLIEnvelopeAcceptsPrereleaseProductVersions(t *testing.T) {
 	// RFC 0015 §3.3 (2026-08-10 revision): the product-version check is full
 	// SemVer 2.0 core syntax, so prerelease suffixes are accepted
-	// (cli.rs:1620-1640).
+	// (cli.rs:1649-1667).
 	payload := rfcInspectPayload(t)
 	redaction, err := NewRedaction(false, 0)
 	if err != nil {
