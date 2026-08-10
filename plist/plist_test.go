@@ -698,6 +698,155 @@ func TestOperationRegistryPins(t *testing.T) {
 	}
 }
 
+// provenanceRecord wraps one root value in the exact
+// `plist.value-tree@1` record.
+func provenanceRecord(root core.Value) core.Value {
+	record, _ := core.NewObject(
+		core.Entry{Key: "record", Value: core.String("plist.value-tree@1")},
+		core.Entry{Key: "root", Value: root},
+	)
+	return record
+}
+
+// TestMaterializationProvenanceCoversEveryValueNode asserts that the
+// provenance map covers every input value node, is bound to the target
+// snapshot, and carries Direct PlistValue origins for both styles
+// (materialization.rs provenance_covers_every_value_node_and_is_target_bound).
+func TestMaterializationProvenanceCoversEveryValueNode(t *testing.T) {
+	root, _ := core.NewObject(
+		core.Entry{Key: "a", Value: core.NewInteger(big.NewInt(1))},
+		core.Entry{Key: "b", Value: mustArray(t,
+			core.String("x"), core.String("y"))},
+	)
+	record := provenanceRecord(root)
+	requests := []document.MaterializationRequest{
+		document.NewMaterializationRequest(
+			document.NewProfileId("plist.xml", 1),
+			document.NewMaterializationStyleId("plist.xml-canonical", 1)),
+		document.NewMaterializationRequest(
+			document.NewProfileId("plist.binary", 1),
+			document.NewMaterializationStyleId("plist.binary-canonical", 1)).
+			WithEncoding(document.BinaryEncoding()).
+			WithNewline(document.NewlineNone),
+	}
+	for _, request := range requests {
+		result := plist.Materialize(record, request)
+		if result.Failed != nil {
+			t.Fatalf("materialization failed: %s", result.Failed.Failure.Code())
+		}
+		// Root dict, integer, array, "x", "y": five value nodes.
+		entries := result.Complete.Provenance.Entries()
+		if len(entries) != 5 {
+			t.Fatalf("provenance entries %d != 5", len(entries))
+		}
+		target := result.Complete.Document.SnapshotIdentity()
+		for _, entry := range entries {
+			if len(entry.Outputs) != 1 {
+				t.Fatalf("entry outputs must be exactly one")
+			}
+			origin := entry.Outputs[0]
+			if origin.Snapshot != target ||
+				origin.Node.Snapshot() != target ||
+				origin.Span.Snapshot() != target {
+				t.Fatalf("origin must be bound to the target snapshot")
+			}
+			if origin.Node.Role() != document.RolePlistValue {
+				t.Fatalf("origin node role mismatch: %s", origin.Node.Role())
+			}
+			if origin.Relation != plist.MaterializationRelationDirect {
+				t.Fatalf("origin relation mismatch: %s", origin.Relation)
+			}
+		}
+	}
+}
+
+// TestMaterializationProvenanceSpansExact pins the exact origin spans for
+// both styles (materialization.rs
+// provenance_spans_are_exact_for_both_styles): the XML root dict span
+// covers its open tag through its close tag without the surrounding
+// trivia, and the binary root dict span covers the marker through the
+// references.
+func TestMaterializationProvenanceSpansExact(t *testing.T) {
+	root, _ := core.NewObject(
+		core.Entry{Key: "a", Value: core.NewInteger(big.NewInt(1))},
+	)
+	record := provenanceRecord(root)
+	xmlResult := plist.Materialize(record, document.NewMaterializationRequest(
+		document.NewProfileId("plist.xml", 1),
+		document.NewMaterializationStyleId("plist.xml-canonical", 1)))
+	if xmlResult.Failed != nil {
+		t.Fatalf("xml materialization failed: %s", xmlResult.Failed.Failure.Code())
+	}
+	// Items are recorded in post-order (children first), so the root dict
+	// is the last entry; the span covers the element from its open tag
+	// through its close tag, without the surrounding trivia.
+	xmlEntries := xmlResult.Complete.Provenance.Entries()
+	if len(xmlEntries) != 2 {
+		t.Fatalf("xml provenance entries %d != 2", len(xmlEntries))
+	}
+	xmlRoot := xmlEntries[1].Outputs[0]
+	xmlSource := xmlResult.Complete.Document.Render()
+	if string(xmlSource[xmlRoot.Span.StartByte():xmlRoot.Span.EndByte()]) !=
+		"<dict>\n        <key>a</key>\n        <integer>1</integer>\n    </dict>" {
+		t.Fatalf("xml root dict span mismatch: %q",
+			string(xmlSource[xmlRoot.Span.StartByte():xmlRoot.Span.EndByte()]))
+	}
+	binaryResult := plist.Materialize(record, document.NewMaterializationRequest(
+		document.NewProfileId("plist.binary", 1),
+		document.NewMaterializationStyleId("plist.binary-canonical", 1)).
+		WithEncoding(document.BinaryEncoding()).
+		WithNewline(document.NewlineNone))
+	if binaryResult.Failed != nil {
+		t.Fatalf("binary materialization failed: %s", binaryResult.Failed.Failure.Code())
+	}
+	binaryEntries := binaryResult.Complete.Provenance.Entries()
+	if len(binaryEntries) != 2 {
+		t.Fatalf("binary provenance entries %d != 2", len(binaryEntries))
+	}
+	binaryRoot := binaryEntries[0].Outputs[0]
+	binarySource := binaryResult.Complete.Document.Render()
+	rootSpan := binarySource[binaryRoot.Span.StartByte():binaryRoot.Span.EndByte()]
+	if len(rootSpan) != 3 || rootSpan[0] != 0xD1 || rootSpan[1] != 0x01 || rootSpan[2] != 0x02 {
+		t.Fatalf("binary root dict span mismatch: %v", rootSpan)
+	}
+}
+
+// TestMaterializationProvenanceLimitFailsAtomically asserts that the
+// provenance-entries budget fails the whole materialization with no
+// target document (materialization.rs provenance_limits_fail_atomically).
+func TestMaterializationProvenanceLimitFailsAtomically(t *testing.T) {
+	root, _ := core.NewObject(
+		core.Entry{Key: "a", Value: core.NewInteger(big.NewInt(1))},
+	)
+	record := provenanceRecord(root)
+	limits := document.DefaultMaterializationLimits()
+	limits.MaxProvenanceEntries = 1
+	request := document.NewMaterializationRequest(
+		document.NewProfileId("plist.xml", 1),
+		document.NewMaterializationStyleId("plist.xml-canonical", 1)).
+		WithLimits(limits)
+	result := plist.Materialize(record, request)
+	if result.Complete != nil {
+		t.Fatalf("provenance limit must fail materialization")
+	}
+	if result.Failed.Failure.Code() != "plist.materialization.resource-limit@1" {
+		t.Fatalf("failure code mismatch: %s", result.Failed.Failure.Code())
+	}
+	if result.Failed.Failure.LimitName != "provenance-entries" {
+		t.Fatalf("limit name mismatch: %s", result.Failed.Failure.LimitName)
+	}
+}
+
+// mustArray builds one ordered core.Array of the given items.
+func mustArray(t *testing.T, items ...core.Value) *core.Array {
+	t.Helper()
+	values := make([]core.Value, 0, len(items))
+	for _, item := range items {
+		values = append(values, item)
+	}
+	return core.NewArray(values...)
+}
+
 // TestBinaryExtendedSizeCounts parses an extended-size array count object
 // (RFC 0013 §5.4).
 func TestBinaryExtendedSizeCounts(t *testing.T) {

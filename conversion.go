@@ -278,10 +278,7 @@ func (r ConversionMaterializationReport) EventCodes() []string {
 // ConversionMaterializationProvenance retains the complete format-owned
 // portable-value-to-target-document provenance of the target stage
 // (conversion.rs MaterializationProvenanceMap). Exactly one family
-// provenance is set, matching the target family. Plist targets retain no
-// materialization provenance: the Go plist materializer publishes no
-// provenance map (the Rust plist materializer does; documented divergence
-// finding of 0.18.0 G4.2).
+// provenance is set, matching the target family.
 type ConversionMaterializationProvenance struct {
 	// JSON is the JSON-family materialization provenance.
 	JSON *jsonpkg.MaterializationProvenanceMap
@@ -295,6 +292,8 @@ type ConversionMaterializationProvenance struct {
 	Properties *properties.MaterializationProvenanceMap
 	// XML is the XML-family materialization provenance.
 	XML *xmlpkg.MaterializationProvenanceMap
+	// Plist is the plist-family materialization provenance.
+	Plist *plist.MaterializationProvenanceMap
 	// HCL is the HCL-family materialization provenance.
 	HCL *hclpkg.MaterializationProvenanceMap
 }
@@ -929,13 +928,14 @@ func materializeTarget(value core.Value,
 	case "plist.xml", "plist.binary":
 		result := plist.Materialize(value, request)
 		if result.Complete != nil {
-			// The Go plist materializer publishes no provenance map
-			// (documented divergence finding of 0.18.0 G4.2).
 			return &materializedTarget{
 				document: &Document{inner: documentInner{plist: result.Complete.Document}},
 				fidelity: plistMaterializationFidelity(result.Complete.Fidelity),
 				materializationReport: ConversionMaterializationReport{
 					Plist: &result.Complete.Report,
+				},
+				provenance: ConversionMaterializationProvenance{
+					Plist: &result.Complete.Provenance,
 				},
 			}, nil
 		}

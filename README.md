@@ -615,3 +615,19 @@ powershell -File scripts/go-verify-byte-parity.ps1
 
 Measured 2026-08-07: **byte parity 68/68 equal (51 pvce, 17 pgce), zero
 byte differences**, bidirectional decode/re-encode stable on every case.
+
+## Capability parity (0.18.0 G4.4 hard gate)
+
+The Go mandatory capability set equals the Rust Feature-Complete Manifest
+capability set (roadmap §16.5:1539; `docs/fc-manifest-0.13.0.json`
+capability_set): **8 families / 16 profiles / 21 query domains / 16
+operation registries / 187 error codes**, with no "Rust-only" mandatory
+behavior. Pinned by `go/capability_parity_test.go` — every expected fact
+is transcribed from the Rust published surface (facade registry,
+`consema capabilities` payload, per-crate operation registries) and the
+Go facts are derived from this module's registry surface; nothing is
+re-declared, so drift on either side fails the test.
+
+Runner state at 0.18.0: **506 passed / 2 documented skips / 0 failed**
+(18 suites / 508 cases, aggregate digest `e3d6578858…`); cross-language
+normalized-result differential **108/108**; byte parity **68/68**.

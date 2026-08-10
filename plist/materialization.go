@@ -177,6 +177,62 @@ func (f MaterializationFidelity) String() string {
 	return "Exact"
 }
 
+// MaterializationRelation is the source-to-output relation of one
+// materialization provenance origin (consema-document materialization.rs).
+type MaterializationRelation string
+
+// The three frozen relations.
+const (
+	// MaterializationRelationDirect is a direct native semantic origin.
+	MaterializationRelationDirect MaterializationRelation = "Direct"
+	// MaterializationRelationGenerated is a generated structural origin.
+	MaterializationRelationGenerated MaterializationRelation = "Generated"
+	// MaterializationRelationReencoded is a reversible re-encoding origin.
+	MaterializationRelationReencoded MaterializationRelation = "Reencoded"
+)
+
+// MaterializedOrigin is one exact output origin.
+type MaterializedOrigin struct {
+	// Snapshot is the target document snapshot.
+	Snapshot document.SnapshotIdentity
+	// Node is the exact output structural identity.
+	Node document.NodeRef
+	// Span is the exact output source range.
+	Span document.Span
+	// Relation is the source relation.
+	Relation MaterializationRelation
+}
+
+// MaterializationInputLocation is one input value or association location.
+type MaterializationInputLocation struct {
+	// IsAssociation reports whether the location is an association.
+	IsAssociation bool
+	// Path is the input value location.
+	Path protocol.ValuePath
+	// Association is the input association location.
+	Association protocol.AssociationLocation
+}
+
+// MaterializationProvenanceEntry is one input-to-outputs mapping entry.
+type MaterializationProvenanceEntry struct {
+	// Input is the exact input location.
+	Input MaterializationInputLocation
+	// Outputs are the output origins.
+	Outputs []MaterializedOrigin
+}
+
+// MaterializationProvenanceMap is the immutable input-to-output
+// provenance map (consema-document materialization.rs
+// MaterializationProvenanceMap).
+type MaterializationProvenanceMap struct {
+	entries []MaterializationProvenanceEntry
+}
+
+// Entries returns the ordered entries. The returned slice is a copy.
+func (m *MaterializationProvenanceMap) Entries() []MaterializationProvenanceEntry {
+	return append([]MaterializationProvenanceEntry(nil), m.entries...)
+}
+
 // MaterializationReport is the complete materialization report; the plist
 // report carries the authorized fractional-date truncation events.
 type MaterializationReport struct {
@@ -196,6 +252,8 @@ type CompleteMaterialization struct {
 	Fidelity MaterializationFidelity
 	// Report is the transformation/loss report.
 	Report MaterializationReport
+	// Provenance is the input-to-output provenance map.
+	Provenance MaterializationProvenanceMap
 }
 
 // FailedMaterializationAttempt is a failed attempt without a document.
@@ -251,11 +309,12 @@ func materializeComplete(value core.Value, request document.MaterializationReque
 		return nil, failure
 	}
 	var bytes []byte
+	var items []provenanceItem
 	switch style {
 	case styleXMLValue:
-		bytes, failure = serializeXMLRecord(record, limits)
+		bytes, items, failure = serializeXMLRecord(record, limits)
 	case styleBinaryValue:
-		bytes, failure = serializeBinaryRecord(record, limits)
+		bytes, items, failure = serializeBinaryRecord(record, limits)
 	}
 	if failure != nil {
 		return nil, failure
@@ -276,14 +335,175 @@ func materializeComplete(value core.Value, request document.MaterializationReque
 	if !target.native.Equal(native) {
 		return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
 	}
+	provenance, failure := buildProvenance(items, target, style, limits)
+	if failure != nil {
+		return nil, failure
+	}
 	fidelity := MaterializationFidelityExact
 	if transformed {
 		fidelity = MaterializationFidelityTransformed
 	}
 	return &CompleteMaterialization{
 		Document: target, Fidelity: fidelity,
-		Report: MaterializationReport{events: events},
+		Report:     MaterializationReport{events: events},
+		Provenance: *provenance,
 	}, nil
+}
+
+// provenanceItem is one input value location paired with its exact target
+// ordinal (materialization.rs:915-922): the binary object-table index or the
+// XML arena ordinal assigned in close-tag order.
+type provenanceItem struct {
+	path   protocol.ValuePath
+	target int
+}
+
+// buildProvenance pairs every recorded input item with its exact output
+// origin in the reparsed document and builds the provenance map
+// (materialization.rs:1623-1680). For binary the target ordinal is the
+// object-table index and the origin span is the object's
+// marker-through-payload range; for XML the target ordinal is the arena
+// ordinal (close-tag order) and the origin span is the value element's
+// open-tag-through-close-tag range, reconstructed from the lossless syntax
+// pieces. Every input value node maps to exactly one Direct origin bound to
+// the target snapshot, and the whole map costs two provenance units per
+// entry (materialization.rs:1671-1679).
+func buildProvenance(items []provenanceItem, target *Document, style materializationStyle,
+	limits document.MaterializationLimits) (*MaterializationProvenanceMap, *MaterializationFailure) {
+	identity := target.SnapshotIdentity()
+	origins := make([]MaterializedOrigin, 0, len(items))
+	switch style {
+	case styleBinaryValue:
+		objects := target.BinaryFacts().Objects()
+		for _, item := range items {
+			if item.target < 0 || item.target >= len(objects) {
+				return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+			}
+			fact := objects[item.target]
+			origins = append(origins, MaterializedOrigin{
+				Snapshot: identity,
+				Node:     target.nodeRef(fact.Index(), document.RolePlistValue),
+				Span:     fact.Span(),
+				Relation: MaterializationRelationDirect,
+			})
+		}
+	case styleXMLValue:
+		spans, failure := xmlValueSpans(target)
+		if failure != nil {
+			return nil, failure
+		}
+		for _, item := range items {
+			if item.target < 0 || item.target >= len(spans) {
+				return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+			}
+			origins = append(origins, MaterializedOrigin{
+				Snapshot: identity,
+				Node:     target.nodeRef(item.target, document.RolePlistValue),
+				Span:     spans[item.target],
+				Relation: MaterializationRelationDirect,
+			})
+		}
+	}
+	entries := make([]MaterializationProvenanceEntry, 0, len(items))
+	for index := range items {
+		if (index+1)*2 > limits.MaxProvenanceEntries {
+			return nil, &MaterializationFailure{Kind: MaterializationFailureResourceLimit,
+				LimitName: "provenance-entries"}
+		}
+		entries = append(entries, MaterializationProvenanceEntry{
+			Input:   MaterializationInputLocation{Path: items[index].path},
+			Outputs: []MaterializedOrigin{origins[index]},
+		})
+	}
+	return &MaterializationProvenanceMap{entries: entries}, nil
+}
+
+// xmlValueSpans reconstructs the value element spans of one reparsed XML
+// document, in arena (close-tag) order (materialization.rs:1688-1760). The
+// walk tracks open value elements on a stack, completes each element at its
+// close tag (the parser assigns arena ordinals in the same order), and
+// treats `<true/>`/`<false/>` as self-closing by inspecting the raw bytes.
+func xmlValueSpans(target *Document) ([]document.Span, *MaterializationFailure) {
+	pieces := target.LosslessStructuralIndex().Pieces()
+	kinds := target.LosslessSyntaxKinds()
+	source := target.Source().Bytes()
+	authority := target.documentAuthority()
+	var spans []document.Span
+	type openElement struct {
+		start int
+		kind  PlistSyntaxKind
+	}
+	var stack []openElement
+	for index := range pieces {
+		piece := pieces[index]
+		kind := kinds[index]
+		span := piece.Span()
+		switch kind {
+		case PlistSyntaxKindDictOpen, PlistSyntaxKindArrayOpen, PlistSyntaxKindStringOpen,
+			PlistSyntaxKindIntegerOpen, PlistSyntaxKindRealOpen, PlistSyntaxKindDateOpen,
+			PlistSyntaxKindDataOpen:
+			// An open tag partitions into two pieces of the same kind: the
+			// element name and the closing `>`. Only the name piece opens
+			// the element.
+			raw := source[span.StartByte():span.EndByte()]
+			if len(raw) != 1 || raw[0] != '>' {
+				stack = append(stack, openElement{start: span.StartByte(), kind: kind})
+			}
+		case PlistSyntaxKindDictClose, PlistSyntaxKindArrayClose, PlistSyntaxKindStringClose,
+			PlistSyntaxKindIntegerClose, PlistSyntaxKindRealClose, PlistSyntaxKindDateClose,
+			PlistSyntaxKindDataClose:
+			if len(stack) == 0 {
+				return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+			}
+			opened := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			merged, err := authority.Span(opened.start, span.EndByte())
+			if err != nil {
+				return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+			}
+			spans = append(spans, merged)
+		case PlistSyntaxKindTrue, PlistSyntaxKindFalse:
+			// The boolean elements partition like every other tag: a
+			// self-closing `<true/>` is a name piece plus a `/>` piece, an
+			// explicit close is a `</true>` piece, and a separate `<true>`
+			// open keeps its `>` as its own piece.
+			raw := source[span.StartByte():span.EndByte()]
+			if (len(raw) >= 2 && raw[0] == '<' && raw[1] == '/') || rawEquals(raw, "/>") {
+				if len(stack) == 0 {
+					return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+				}
+				opened := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				if opened.kind != kind {
+					return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+				}
+				merged, err := authority.Span(opened.start, span.EndByte())
+				if err != nil {
+					return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+				}
+				spans = append(spans, merged)
+			} else if len(raw) != 1 || raw[0] != '>' {
+				stack = append(stack, openElement{start: span.StartByte(), kind: kind})
+			}
+		}
+	}
+	if len(stack) != 0 {
+		return nil, &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
+	}
+	return spans, nil
+}
+
+// rawEquals reports whether the raw bytes equal one exact ASCII literal.
+func rawEquals(raw []byte, literal string) bool {
+	if len(raw) != len(literal) {
+		return false
+	}
+	for index := range raw {
+		if raw[index] != literal[index] {
+			return false
+		}
+	}
+	return true
 }
 
 // validateRequest validates the request against the frozen style contracts
@@ -946,23 +1166,30 @@ func formatFloat(value float64) string {
 // deterministic four-space indentation (the root value element at depth 1),
 // LF line endings, keys in input association order, decimal integers,
 // shortest-round-trip reals, whole-second dates, and base64 wrapped at
-// `76 - 8 * depth` characters per line.
+// `76 - 8 * depth` characters per line. Every emitted value node is paired
+// with its post-order rank, mirroring the arena ordinals the parser assigns
+// in close-tag order (materialization.rs:1094-1114).
 func serializeXMLRecord(record *materializationRecord,
-	limits document.MaterializationLimits) ([]byte, *MaterializationFailure) {
+	limits document.MaterializationLimits) ([]byte, []provenanceItem, *MaterializationFailure) {
 	var out strings.Builder
 	out.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
 	out.WriteString("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n")
 	out.WriteString("<plist version=\"1.0\">\n")
-	failure := emitValue(&out, &record.root, 1, limits)
+	items := make([]provenanceItem, 0, 16)
+	rank := 0
+	failure := emitValue(&out, &record.root, 1, &items, &rank, limits)
 	if failure != nil {
-		return nil, failure
+		return nil, nil, failure
 	}
 	out.WriteString("</plist>\n")
-	return []byte(out.String()), nil
+	return []byte(out.String()), items, nil
 }
 
-// emitValue emits one value element at the given depth.
+// emitValue emits one value element at the given depth; the node's target
+// ordinal is its post-order rank, mirroring the arena ordinals the parser
+// assigns in close-tag order (materialization.rs:1116-1205).
 func emitValue(out *strings.Builder, node *materializationValueNode, depth int,
+	items *[]provenanceItem, rank *int,
 	limits document.MaterializationLimits) *MaterializationFailure {
 	switch node.kind {
 	case valueKindDict:
@@ -981,7 +1208,7 @@ func emitValue(out *strings.Builder, node *materializationValueNode, depth int,
 				}
 				out.WriteString(escapeXMLText(keyText))
 				out.WriteString("</key>\n")
-				if failure := emitValue(out, &entry.value, depth+1, limits); failure != nil {
+				if failure := emitValue(out, &entry.value, depth+1, items, rank, limits); failure != nil {
 					return failure
 				}
 			}
@@ -995,7 +1222,7 @@ func emitValue(out *strings.Builder, node *materializationValueNode, depth int,
 		} else {
 			out.WriteString("<array>\n")
 			for index := range node.elements {
-				if failure := emitValue(out, &node.elements[index], depth+1, limits); failure != nil {
+				if failure := emitValue(out, &node.elements[index], depth+1, items, rank, limits); failure != nil {
 					return failure
 				}
 			}
@@ -1045,6 +1272,8 @@ func emitValue(out *strings.Builder, node *materializationValueNode, depth int,
 	case valueKindUID:
 		return &MaterializationFailure{Kind: MaterializationFailureFormationFailed}
 	}
+	*items = append(*items, provenanceItem{path: node.path, target: *rank})
+	*rank++
 	if out.Len() > limits.MaxOutputBytes {
 		return &MaterializationFailure{Kind: MaterializationFailureResourceLimit,
 			LimitName: "output-bytes"}
@@ -1125,9 +1354,10 @@ type plannedObject struct {
 // bytes, Float32 width facts are preserved, identical deduplicable scalars
 // share one object at first occurrence, UIDs use the minimal width, and the
 // offset/ref sizes are the minimal widths satisfying the trailer
-// sufficiency checks.
+// sufficiency checks. Every planned value node is paired with its
+// object-table index (materialization.rs:990-1092).
 func serializeBinaryRecord(record *materializationRecord,
-	limits document.MaterializationLimits) ([]byte, *MaterializationFailure) {
+	limits document.MaterializationLimits) ([]byte, []provenanceItem, *MaterializationFailure) {
 	objects, items := planBinary(&record.root)
 	numObjects := len(objects)
 	refSize := refSizeFor(numObjects)
@@ -1137,7 +1367,7 @@ func serializeBinaryRecord(record *materializationRecord,
 		offsets = append(offsets, len(out))
 		out = writePlannedObject(out, object, refSize)
 		if len(out) > limits.MaxOutputBytes {
-			return nil, &MaterializationFailure{Kind: MaterializationFailureResourceLimit,
+			return nil, nil, &MaterializationFailure{Kind: MaterializationFailureResourceLimit,
 				LimitName: "output-bytes"}
 		}
 	}
@@ -1153,8 +1383,7 @@ func serializeBinaryRecord(record *materializationRecord,
 	out = writeBE(out, uint64(numObjects), 8)
 	out = writeBE(out, 0, 8) // topObject: the root value is always object 0
 	out = writeBE(out, uint64(offsetTableOffset), 8)
-	_ = items
-	return out, nil
+	return out, items, nil
 }
 
 // planBinary plans the document-ordered binary object table (RFC 0013
@@ -1162,8 +1391,11 @@ func serializeBinaryRecord(record *materializationRecord,
 // value tree where a dictionary is written first, then its key objects,
 // then its values recursively; identical deduplicable scalars share one
 // object at first occurrence, and containers are always written fresh.
-func planBinary(root *materializationValueNode) ([]plannedObject, []int) {
+// Every value node is paired with its target object index, deduplicated
+// scalars included (materialization.rs:1020-1082).
+func planBinary(root *materializationValueNode) ([]plannedObject, []provenanceItem) {
 	var objects []plannedObject
+	var items []provenanceItem
 	cache := map[string]int{}
 	var planNode func(node *materializationValueNode) int
 	planNode = func(node *materializationValueNode) int {
@@ -1171,6 +1403,7 @@ func planBinary(root *materializationValueNode) ([]plannedObject, []int) {
 		case valueKindDict:
 			index := len(objects)
 			objects = append(objects, plannedObject{isDict: true})
+			items = append(items, provenanceItem{path: node.path, target: index})
 			keyRefs := make([]int, 0, len(node.dictEntries))
 			for index := range node.dictEntries {
 				key := scalarKey{kind: valueKindString, str: node.dictEntries[index].key}
@@ -1193,6 +1426,7 @@ func planBinary(root *materializationValueNode) ([]plannedObject, []int) {
 		case valueKindArray:
 			index := len(objects)
 			objects = append(objects, plannedObject{isArray: true})
+			items = append(items, provenanceItem{path: node.path, target: index})
 			elementRefs := make([]int, 0, len(node.elements))
 			for index := range node.elements {
 				elementRefs = append(elementRefs, planNode(&node.elements[index]))
@@ -1204,20 +1438,23 @@ func planBinary(root *materializationValueNode) ([]plannedObject, []int) {
 			if key.deduplicates() {
 				cacheKey := scalarCacheKey(&key)
 				if existing, exists := cache[cacheKey]; exists {
+					items = append(items, provenanceItem{path: node.path, target: existing})
 					return existing
 				}
 				index := len(objects)
 				objects = append(objects, plannedObject{scalar: &key})
 				cache[cacheKey] = index
+				items = append(items, provenanceItem{path: node.path, target: index})
 				return index
 			}
 			index := len(objects)
 			objects = append(objects, plannedObject{scalar: &key})
+			items = append(items, provenanceItem{path: node.path, target: index})
 			return index
 		}
 	}
 	planNode(root)
-	return objects, nil
+	return objects, items
 }
 
 // scalarCacheKey renders one scalar content key as a stable string; only

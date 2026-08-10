@@ -809,6 +809,18 @@ func TestPlistConvertsBetweenProfilesExactly(t *testing.T) {
 	if complete.Report.TargetProfile() != document.NewProfileId("plist.binary", 1) {
 		t.Fatalf("plist.binary target profile differs")
 	}
+	// The target-stage provenance must be retained for the plist family
+	// (G4.2 divergence finding closed: the Go plist materializer now
+	// publishes the same provenance surface as the Rust materializer).
+	if complete.MaterializationProvenance.Plist == nil ||
+		len(complete.MaterializationProvenance.Plist.Entries()) == 0 {
+		t.Fatalf("plist materialization provenance must be retained")
+	}
+	for _, entry := range complete.MaterializationProvenance.Plist.Entries() {
+		if len(entry.Outputs) != 1 || entry.Outputs[0].Relation != plist.MaterializationRelationDirect {
+			t.Fatalf("plist provenance entries must be Direct single-origin")
+		}
+	}
 	rendered := complete.Document.Render()
 	if !strings.HasPrefix(string(rendered), "bplist00") {
 		t.Fatalf("binary output header missing: %q", rendered[:8])
