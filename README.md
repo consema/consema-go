@@ -125,7 +125,7 @@ materialization requests, and verifiable source patches).
   - `materialization.go` —`Materialize` (canonical compact/pretty, JSON5
     non-finite literals, two-phase formation, provenance map) with the
     frozen failure codes;
-  - `edit.go`/`placement.go`/`change_set.go`/`untouched.go` —    `EditTransaction` (+ builder, seven operations), atomic `Commit`/
+  - `edit.go`/`placement.go`/`change_set.go`/`untouched.go` —    `EditTransaction` (+ builder, eight operations), atomic `Commit`/
     `DryRun` with `ChangeSet`, `EditPlan`, `SourcePatch` derivation,
     `UntouchedByteProof`, and `FormatOperationRegistry`. The shared edit
     records come from go/document (0.16.0 G2.4); the operation registry
