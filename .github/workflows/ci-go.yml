@@ -2,8 +2,14 @@
 # 一致", §16.2, §16.6; docs/go-implementation-plan.md §4.4; the §14.12
 # "differential" gate plan). Two jobs:
 #
-#   go-1-26: the Go 1.26 minimum-version gates (gofmt/vet/build/test/race,
-#            §21.2 "最低版本 CI 验证"). `go test ./...` runs the conformance
+#   go-1-26: the Go minimum-version gates (gofmt/vet/build/test/race,
+#            §21.2 "最低版本 CI 验证"), now a 3-version matrix
+#            (1.24.x / 1.25.x / 1.26.5, fail-fast: false). Note: go.mod
+#            declares `go 1.26`, so under the default GOTOOLCHAIN=auto the
+#            1.24/1.25 legs auto-switch to a go1.26 toolchain — a genuine
+#            pre-1.26 run requires lowering the go.mod directive (manifest
+#            change, out of scope here); the legs still pin each setup-go
+#            version explicitly. `go test ./...` runs the conformance
 #            runner (go/conformance, repository-relative paths), so this job
 #            also uses the multi-repo checkout mode: it checks out
 #            consema/consema (the spec repository) beside this repository
@@ -39,11 +45,21 @@ concurrency:
   group: ci-go-${{ github.ref }}
   cancel-in-progress: true
 
+# Top-tier P0: minimal token scope. Every job here only reads repository
+# contents (checkout + multi-repo checkouts + running repo scripts); none
+# uploads artifacts or writes check runs, so the global minimum suffices.
+permissions:
+  contents: read
+
 jobs:
   go-1-26:
-    name: Go 1.26 gates (gofmt + vet + build + test + race)
+    name: Go ${{ matrix.go }} gates (gofmt + vet + build + test + race)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.24.x', '1.25.x', '1.26.5']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -52,7 +68,7 @@ jobs:
           path: consema-repo
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.26.5'
+          go-version: ${{ matrix.go }}
       - name: provision conformance data from the consema spec repository
         shell: pwsh
         run: |
@@ -75,8 +91,8 @@ jobs:
           # Cargo.toml is provisioned anymore.
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
-      - name: gofmt -l . && go vet && go build && go test && go test -race
-        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race ./...
+      - name: gofmt -l . && go vet && go build && go test && go test -race -shuffle=on
+        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
 
   go-differential:
     name: go differential vs Rust (byte parity + normalized + protocol exchange)
@@ -142,3 +158,46 @@ jobs:
           $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-protocol-exchange.ps1'
           & $script
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # Version-consistency gate (tokio check-readme pattern): go.mod declares no
+  # package version (module consema.dev/consema), so the README "Version:"
+  # line rides the release train (currently 1.0.0-rc.1) and must be present
+  # — a train bump that forgets the README line fails CI.
+  check-version-consistency:
+    name: check README Version line (version consistency)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: assert README.md declares the release-train Version line
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qF 'Version: 1.0.0-rc.1' README.md || {
+            echo "::error::README.md does not declare 'Version: 1.0.0-rc.1'"
+            exit 1
+          }
+          echo 'README version line present: 1.0.0-rc.1'
+
+  # Alls-green aggregate gate (tokio/pydantic pattern): `check (all gates
+  # green)` is the SINGLE required check for branch protection on this
+  # repository; every other job stays non-required. `if: always()` is
+  # mandatory — otherwise GitHub skips this job when a dependency fails and
+  # a skipped check can be treated as success. `jobs: ${{ toJSON(needs) }}`
+  # is the action's mandatory input (it does not read the needs context
+  # automatically). No job here uses continue-on-error, so the
+  # allowed-failures list is empty.
+  check:
+    name: check (all gates green)
+    if: always()
+    needs: [go-1-26, go-differential, check-version-consistency]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@v1
+        with:
+          allowed-failures: ''
+          jobs: ${{ toJSON(needs) }}

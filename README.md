@@ -5,6 +5,9 @@ Consema 语言中立契约（RFC 0016）的 **Go 实现**仓库。本仓库是 C
 [github.com/consema/consema](https://github.com/consema/consema)；本仓承载
 Go 实现与跨语言差分验证工具。
 
+Version: 1.0.0-rc.1（随 release train；`go.mod` 无版本声明，CI
+check-version-consistency job 断言本行存在）。
+
 ## 布局
 
 - `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.26）。完整文档
