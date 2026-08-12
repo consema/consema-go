@@ -14,7 +14,7 @@ Go proxy（proxy.golang.org）自动从 tag 收录模块版本（模块
 2. **CHANGELOG 策展**：记录本版本变更；跨语言变更同步到
    consema 仓库 `docs/CHANGELOG.md`。
 3. **质量门禁全绿**：main 分支 CI `check (all gates green)` 通过
-   （go-1-26 / go-differential / check-version-consistency）。
+   （go-matrix / go-differential / coverage / check-version-consistency）。
 4. **打 tag 并推送**（发布动作的唯一触发点）：
    ```bash
    git tag vX.Y.Z

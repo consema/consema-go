@@ -14,15 +14,16 @@ check-version-consistency job 断言本行存在）。
 
 ## 布局
 
-- `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.26）。完整文档
+- `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.24）。完整文档
   见 [go/README.md](go/README.md)（全部里程碑 0.14.0-0.19.0 G0.1-G5.6 已交付：
   core / graph / protocol / document + 八格式家族 + CLI）。
 - `scripts/`：跨语言差分验证脚本（byte parity / normalized differential /
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
   conformance 数据来自规范仓 checkout。
-- `.github/workflows/ci-go.yml`：Go 1.26 门禁（gofmt/vet/build/test/race）
-  与 Go-Rust 差分门禁（windows-latest 多仓 checkout）。
+- `.github/workflows/ci-go.yml`：Go 门禁（go-matrix：1.24.x / 1.25.x /
+  1.26.5 三版本 gofmt/vet/build/test/race，与 go.mod 声明的 `go 1.24` 最小
+  版本真实对齐）与 Go-Rust 差分门禁（windows-latest 多仓 checkout）。
 
 ## 构建与测试
 

@@ -9,7 +9,10 @@ and verifiable source patches); the remaining milestones delivered the
 eight format families and the CLI (per-milestone delivery records below).
 ## Layout
 - `go.mod` —the single module `consema.dev/consema` (RFC 0016 §3.1;
-  plan §0.2). Minimum Go version frozen at `go 1.26` for 0.14.0 (plan §1.3).
+  plan §0.2). Minimum Go version declared as `go 1.24` — the empirically
+  verified floor (2026-08-12: gofmt/vet/build/test/race all green on
+  go1.24.13 and go1.25.12; plan §1.3 had suggested 1.26, see the go.mod
+  header comment).
 - `core/` —the value model and PVCE/1 codec:
   - `value.go` —`Value` (closed fifteen-kind interface), `Kind`, `Null`,
     `Boolean`, `String`, `Bytes`, `Object`/`ObjectBuilder` (ordered,
@@ -492,11 +495,17 @@ The Go public API is held to the six stability policies of roadmap §21.2
    exhaustion with a nil match and errors (including cancellation) with
    a `QueryFailure`. A failure never yields a partial result that could
    be mistaken for a complete one.
-6. **Minimum Go version.** `go.mod` freezes `go 1.26` (plan §1.3; the
-   hcl-go-v1 oracle's older `go` directive is its own manifest-pinned
-   legacy, not SDK policy). The roadmap §21.2 CI verification leg —   the gates below running in CI on the frozen minimum version —is
-   the `go-1-26` job (ci.yml:316-331; G5.5 finding F1, **closed** in
-   937b330); locally they are the commands in the next section.
+6. **Minimum Go version.** `go.mod` declares `go 1.24` — the empirically
+   verified minimum (2026-08-12: gofmt/vet/build/test/race all green on
+   go1.24.13 and go1.25.12; plan §1.3 had suggested 1.26, see the go.mod
+   header comment). The hcl-go-v1 oracle's older `go` directive is its own
+   manifest-pinned legacy, not SDK policy. The roadmap §21.2 CI
+   verification leg — the gates below running in CI on the declared
+   minimum version — is the `go-matrix` job (ci-go.yml: a 3-version matrix
+   1.24.x / 1.25.x / 1.26.5, fail-fast: false, each leg pinning its
+   setup-go version and running genuinely under GOTOOLCHAIN=auto; G5.5
+   finding F1, **closed** in 937b330); locally they are the commands in
+   the next section.
 ## Go CLI（0.19.0 G5.6；productVersion 1.0.0-rc.1）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
@@ -830,9 +839,10 @@ G5.4 close-out: `gofmt -l .` clean, `go vet ./...` clean, `go build ./...`
 clean, `go test -count=1 ./...` all green, `go test -race -count=1 ./...`
 all green, `go mod tidy` no-op, all 16 fuzz targets 30s clean-run PASS,
 and all 8×2 benchmarks measured above.
-The Go gates run in CI as gatekeeper-landed jobs: `go-1-26` (ci.yml:316-331,
-ubuntu-latest, closed G5.5 finding F1 in 937b330) and `go-differential`
-(ci.yml:333-376, windows-latest, added 2026-08-12 — runs the
+The Go gates run in CI as gatekeeper-landed jobs: `go-matrix` (ci-go.yml,
+ubuntu-latest, a 3-version matrix 1.24.x / 1.25.x / 1.26.5 with each leg
+pinned — the G5.5 finding F1 was closed in 937b330) and `go-differential`
+(ci-go.yml, windows-latest, added 2026-08-12 — runs the
 go-verify-byte-parity / normalized-differential / protocol-exchange
 harnesses). plan §3's file-domain table still keeps `.github` off-limits to
 Go agents (the jobs are landed by the gatekeeper), so the remaining
