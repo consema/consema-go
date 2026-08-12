@@ -35,6 +35,8 @@ func runPlistV1(runner *Runner, data *suiteData) *SuiteReport {
 			runPlistXMLFormation(vector, report)
 		case "plist.binary-formation@1":
 			runPlistBinaryFormation(vector, report)
+		case "plist.limit@1":
+			runPlistLimit(vector, report)
 		case "plist.query@1":
 			runPlistQuery(vector, report)
 		case "plist.projection@1":
@@ -53,6 +55,94 @@ func runPlistV1(runner *Runner, data *suiteData) *SuiteReport {
 		}
 	}
 	return report
+}
+
+// ---------------------------------------------------------------------------
+// Limit
+// ---------------------------------------------------------------------------
+
+// runPlistLimit executes one `plist.limit@1` case: the parse must fail
+// fatally under the declared limits and the failure must carry the expected
+// plist.limit.*@1 code (RFC 0013 §11; mirror of plist_v1.rs run_limit).
+func runPlistLimit(vector *caseData, report *SuiteReport) {
+	profile, message := plistProfileOf(vector.Input)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	bytes, message := plistSourceBytes(vector.Input, profile)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	limits, message := plistLimitsOf(vector.Input)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	_, failure := plist.Parse(bytes, profile, plist.PlistEncodingProfileDefault(), limits)
+	if failure == nil {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "parse must fail fatally under the declared limits"})
+		return
+	}
+	if status, ok := stringField(vector.Expected, "status"); ok && status != "FatalFormationFailure" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "limit case status must be FatalFormationFailure"})
+		return
+	}
+	expectedCode, ok := stringField(vector.Expected, "diagnostic")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.diagnostic"})
+		return
+	}
+	for _, diagnostic := range failure.Diagnostics {
+		if diagnostic.Code == expectedCode {
+			report.Passed = append(report.Passed, vector.ID)
+			return
+		}
+	}
+	report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+		Message: "diagnostic " + expectedCode + " not found"})
+}
+
+// plistLimitsOf reads the `input.limits` object into a PlistParseLimits;
+// every vector limit name is the Go limits field spelling.
+func plistLimitsOf(value core.Value) (plist.PlistParseLimits, string) {
+	limits := plist.DefaultPlistParseLimits()
+	entries, ok := objectField(value, "limits")
+	if !ok {
+		return limits, ""
+	}
+	object, ok := entries.(*core.Object)
+	if !ok {
+		return limits, "input.limits must be an object"
+	}
+	for _, entry := range object.Entries() {
+		integer, ok := entry.Value.(core.Integer)
+		if !ok {
+			return limits, "limit " + entry.Key + " must be a non-negative integer"
+		}
+		number := integer.Int()
+		if number.Sign() < 0 || !number.IsInt64() {
+			return limits, "limit " + entry.Key + " must be a non-negative integer"
+		}
+		value := int(number.Int64())
+		switch entry.Key {
+		case "max_container_depth":
+			limits.MaxContainerDepth = value
+		case "max_object_count":
+			limits.MaxObjectCount = value
+		case "max_string_code_units":
+			limits.MaxStringCodeUnits = value
+		case "max_data_bytes":
+			limits.MaxDataBytes = value
+		default:
+			return limits, "unknown plist limit " + entry.Key
+		}
+	}
+	return limits, ""
 }
 
 // ---------------------------------------------------------------------------

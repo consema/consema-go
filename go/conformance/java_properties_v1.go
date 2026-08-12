@@ -49,6 +49,10 @@ func runJavaPropertiesV1(runner *Runner, data *suiteData) *SuiteReport {
 			runPropertiesFormationLatin1(vector, report)
 		case "formation.recovery-never-publishes-partial-operation":
 			runPropertiesRecoveredIsAtomic(vector, report)
+		case "formation.malformed-escape-in-key":
+			runPropertiesMalformedEscapeInKey(vector, report)
+		case "formation.invalid-encoding-sequence", "formation.bom-conflict":
+			runPropertiesFatalEncoding(vector, report)
 		case "query.native-duplicates-and-escape-ownership":
 			runPropertiesNativeQuery(vector, report)
 		case "query.logical-and-syntax-order":
@@ -582,6 +586,104 @@ func runPropertiesFormationRecoveryMatrix(vector *caseData, report *SuiteReport)
 				return
 			}
 		}
+	}
+	report.Passed = append(report.Passed, vector.ID)
+}
+
+// runPropertiesMalformedEscapeInKey executes one
+// `formation.malformed-escape-in-key` case: a malformed `\uXXXX` escape in
+// the KEY position recovers the logical line without a partial property and
+// the error line carries the family parse code (parser.rs:626-666).
+func runPropertiesMalformedEscapeInKey(vector *caseData, report *SuiteReport) {
+	doc, message := propertiesParseCase(vector)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	expectedFormation, ok := stringField(vector.Expected, "formation")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.formation"})
+		return
+	}
+	expectedProperties, ok := integerField(vector.Expected, "properties")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.properties"})
+		return
+	}
+	expectedErrors, ok := integerField(vector.Expected, "error_lines")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.error_lines"})
+		return
+	}
+	expectedCode, ok := stringField(vector.Expected, "code")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.code"})
+		return
+	}
+	errorLines := doc.ErrorLines()
+	if doc.FormationStatus().String() != expectedFormation ||
+		uint64(len(doc.Properties())) != expectedProperties ||
+		uint64(len(errorLines)) != expectedErrors ||
+		len(errorLines) == 0 || errorLines[0].Code() != expectedCode {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "malformed escape in key facts differed"})
+		return
+	}
+	report.Passed = append(report.Passed, vector.ID)
+}
+
+// runPropertiesFatalEncoding executes one fatal encoding failure of the
+// Reader profile: bytes that cannot be decoded under the explicit encoding
+// (`core.source.invalid-sequence@1`) or a BOM that contradicts it
+// (`core.source.encoding-conflict@1`) fail the whole parse before any
+// document forms (parser.rs:24-33).
+func runPropertiesFatalEncoding(vector *caseData, report *SuiteReport) {
+	encodingName, ok := stringField(vector.Input, "encoding")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing input.encoding"})
+		return
+	}
+	encoding, ok := propertiesSourceEncoding(encodingName)
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "unknown source encoding"})
+		return
+	}
+	hexText, ok := stringField(vector.Input, "source_hex")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing input.source_hex"})
+		return
+	}
+	raw, err := hex.DecodeString(hexText)
+	if err != nil {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "invalid source hex"})
+		return
+	}
+	_, failure := properties.ParseReader(raw, encoding,
+		properties.DefaultPropertiesParseLimits())
+	if failure == nil {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "parse must fail fatally"})
+		return
+	}
+	expectedCode, ok := stringField(vector.Expected, "code")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.code"})
+		return
+	}
+	diagnostics := failure.Diagnostics()
+	if len(diagnostics) == 0 || diagnostics[0].Code != expectedCode {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "fatal encoding code differed"})
+		return
 	}
 	report.Passed = append(report.Passed, vector.ID)
 }

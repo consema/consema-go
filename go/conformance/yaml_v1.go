@@ -37,7 +37,8 @@ func runYamlV1(runner *Runner, data *suiteData) *SuiteReport {
 			runYamlSyntaxFacts(vector, report)
 		case "native.arbitrary-duplicate-mapping":
 			runYamlMappingFacts(vector, report)
-		case "formation.undefined-alias":
+		case "formation.undefined-alias", "formation.undefined-anchor-block",
+			"formation.version-directive-rejection":
 			runYamlFormationRejection(vector, report)
 		case "graph.shared-cycle":
 			runYamlGraphFacts(vector, report)
@@ -71,8 +72,12 @@ func runYamlV1(runner *Runner, data *suiteData) *SuiteReport {
 			runYamlEditAnchorDependency(vector, report)
 		case "resource.parse-source-bytes":
 			runYamlParseLimit(vector, report)
+		case "resource.parse-nesting-depth":
+			runYamlParseDepthLimit(vector, report)
 		case "resource.graph-provenance":
 			runYamlGraphProvenanceLimit(vector, report)
+		case "projection.alias-amplification":
+			runYamlProjectionAmplificationLimit(vector, report)
 		case "regression.plain-property-characters":
 			runYamlPlainPropertyRegression(vector, report)
 		default:
@@ -1271,6 +1276,87 @@ func runYamlParseLimit(vector *caseData, report *SuiteReport) {
 	if len(diagnostics) == 0 || diagnostics[0].Code != expectedCode {
 		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
 			Message: "parse limit code differed"})
+		return
+	}
+	report.Passed = append(report.Passed, vector.ID)
+}
+
+// runYamlParseDepthLimit executes one `resource.parse-nesting-depth` case:
+// syntax nesting above `max_nesting_depth` is a fatal resource-limit failure.
+func runYamlParseDepthLimit(vector *caseData, report *SuiteReport) {
+	source, ok := stringField(vector.Input, "source")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing input.source"})
+		return
+	}
+	maxDepth, ok := integerField(vector.Input, "max_nesting_depth")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing input.max_nesting_depth"})
+		return
+	}
+	profile, message := yamlProfile(vector)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	limits := document.DefaultParseLimits()
+	limits.MaxNestingDepth = int(maxDepth)
+	_, failure := yaml.Parse([]byte(source), profile, limits)
+	if failure == nil {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "parse limit unexpectedly succeeded"})
+		return
+	}
+	expectedCode, ok := stringField(vector.Expected, "code")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.code"})
+		return
+	}
+	diagnostics := failure.Diagnostics()
+	if len(diagnostics) == 0 || diagnostics[0].Code != expectedCode {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "parse depth limit code differed"})
+		return
+	}
+	report.Passed = append(report.Passed, vector.ID)
+}
+
+// runYamlProjectionAmplificationLimit executes one
+// `projection.alias-amplification` case: the alias-amplification budget
+// (`max_alias_amplification_ratio`, RFC 0007 §9) is checked before any node
+// is visited, so a zero budget is a hard denial of the value projection.
+func runYamlProjectionAmplificationLimit(vector *caseData, report *SuiteReport) {
+	doc, message := parseYamlCase(vector)
+	if message != "" {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID, Message: message})
+		return
+	}
+	ratio, ok := integerField(vector.Input, "max_amplification_ratio")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing input.max_amplification_ratio"})
+		return
+	}
+	limits := yaml.DefaultValueProjectionLimits()
+	limits.MaxAmplificationRatio = int(ratio)
+	result := doc.ProjectValue(yaml.BestExactValueV1().WithLimits(limits))
+	if result.Failed == nil {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "projection unexpectedly completed"})
+		return
+	}
+	expectedCode, ok := stringField(vector.Expected, "code")
+	if !ok {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "missing expected.code"})
+		return
+	}
+	if result.Failed.Code() != expectedCode {
+		report.Failed = append(report.Failed, CaseFailure{ID: vector.ID,
+			Message: "projection amplification code differed"})
 		return
 	}
 	report.Passed = append(report.Passed, vector.ID)

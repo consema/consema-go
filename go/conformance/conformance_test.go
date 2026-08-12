@@ -32,8 +32,8 @@ func TestRunIsConformant(t *testing.T) {
 		t.Fatalf("aggregate digest mismatch: computed %s, recorded %s (%d suites, %d cases)",
 			report.Digest.Computed, report.Digest.Recorded, report.Digest.Suites, report.Digest.Cases)
 	}
-	if report.Total != 508 {
-		t.Fatalf("case inventory %d != 508", report.Total)
+	if report.Total != 519 {
+		t.Fatalf("case inventory %d != 519", report.Total)
 	}
 	for _, suite := range report.Suites {
 		if !suite.Conformant() {
@@ -73,12 +73,12 @@ func TestApplicableSuiteCounts(t *testing.T) {
 		"consema.json-family.conformance@2":       {33, 0, 0},
 		"consema.portable-graph.conformance@1":    {10, 0, 0},
 		"consema.semantic-model-v5.conformance@1": {22, 0, 0},
-		"consema.yaml.conformance@1":              {27, 0, 0},
+		"consema.yaml.conformance@1":              {31, 0, 0},
 		"consema.semantic-model-v6.conformance@1": {25, 0, 0},
 		"consema.ini.conformance@1":               {20, 0, 0},
-		"consema.java-properties.conformance@1":   {22, 0, 0},
+		"consema.java-properties.conformance@1":   {25, 0, 0},
 		"consema.xml-1-0-safe.conformance@1":      {34, 0, 0},
-		"consema.plist.conformance@1":             {45, 0, 0},
+		"consema.plist.conformance@1":             {49, 0, 0},
 		"consema.hcl.conformance@1":               {57, 0, 0},
 		"consema.cli.conformance@1":               {40, 0, 0},
 	}
@@ -103,14 +103,14 @@ func TestDigestAlgorithmMatchesManifest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const recorded = "35bebc8d384d71740f7c1a886bc50f4e095ff52fe05d2a407f04b842ee6922fa"
+	const recorded = "cfd6e296da5b22b62d37b076d35bf6bbf58b0678ceddb37eea51a8b47200ab6a"
 	if digest.Recorded != recorded {
 		t.Fatalf("manifest record changed: %s", digest.Recorded)
 	}
 	if digest.Computed != recorded {
 		t.Fatalf("aggregate digest %s != %s", digest.Computed, recorded)
 	}
-	if digest.Suites != 18 || digest.Cases != 508 {
-		t.Fatalf("inventory %d suites / %d cases != 18 / 508", digest.Suites, digest.Cases)
+	if digest.Suites != 18 || digest.Cases != 519 {
+		t.Fatalf("inventory %d suites / %d cases != 18 / 519", digest.Suites, digest.Cases)
 	}
 }
