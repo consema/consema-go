@@ -122,6 +122,42 @@ func TestXMLMalformedRecoveryClassification(t *testing.T) {
 	}
 }
 
+// TestXMLMismatchedAndExtraEndTagsAreRecovered pins the recovery of an end
+// tag that mismatches the open root and of a stray end tag after the root
+// closed (parser_xml.rs mismatched_and_extra_end_tags_are_recovered). The
+// tokenizer error after the root closes must not overlap the previous
+// close-tag piece: the error region is the last source byte (xmlparser
+// jumps its stream to the end on error), so the lossless index coverage
+// holds and the formation is Recovered, never a fatal coverage failure.
+func TestXMLMismatchedAndExtraEndTagsAreRecovered(t *testing.T) {
+	cases := []struct {
+		source string
+		codes  []string
+	}{
+		// `</dict>` mismatches the open `<plist>` and pops the root frame;
+		// the trailing `</plist>` is then a tokenizer well-formedness error.
+		{`<plist version="1.0"><string>x</string></dict></plist>`, []string{
+			"plist.parse.mismatched-end-tag@1",
+			"plist.parse.well-formedness@1",
+		}},
+		// The extra `</plist>` after the root closed is a tokenizer
+		// well-formedness error; the empty root also reports its count.
+		{`<plist version="1.0"></plist></plist>`, []string{
+			"plist.parse.well-formedness@1",
+		}},
+		// Mismatch below the root: the plist frame closes normally.
+		{`<plist version="1.0"><dict></array></plist>`, []string{
+			"plist.parse.mismatched-end-tag@1",
+		}},
+	}
+	for _, test := range cases {
+		doc := parseXMLExpectRecovered(t, test.source, test.codes[0])
+		for _, code := range test.codes[1:] {
+			assertDiagnostic(t, doc, code)
+		}
+	}
+}
+
 // TestXMLRecoveryBoundaryDataExplicitEmpty pins the classification
 // boundary of the data value: `<data/>` is Recovered (empty-value) while
 // `<data></data>` is a Complete zero-length value (RFC 0013 §4.8).

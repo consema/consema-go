@@ -1078,42 +1078,22 @@ func (p *xmlParser) parse() (*Document, *FormationFailure) {
 			if errPos < 0 {
 				break
 			}
-			// xmlparser jumps its stream on an error; the deterministic
-			// error region is the last byte before the error position, and
-			// every byte before it stays covered by handler pieces and gap
-			// assembly (RFC 0013 §3).
-			end := errPos
-			if end > len(p.decoded) {
-				end = len(p.decoded)
-			}
-			start := end - 1
-			if start < 0 {
-				start = 0
-			}
-			if end > start {
-				if failure := p.recoverErrorRegion(start, end); failure != nil {
+			// xmlparser jumps its stream to the end on any error (xmlparser
+			// 0.13.6 lib.rs Iterator::next), so the deterministic error
+			// region is the last byte of the source and scanning stops; the
+			// bytes between the last handler piece and that region stay
+			// covered by gap assembly (RFC 0013 §3). Using the tokenizer's
+			// token-start position here would overlap the previous close-tag
+			// piece whenever the error sits at a markup boundary (e.g. a
+			// stray `</plist>` after the root closed) and fail the
+			// lossless-index coverage check.
+			end := len(p.decoded)
+			if end > 0 {
+				if failure := p.recoverErrorRegion(end-1, end); failure != nil {
 					return nil, failure
 				}
 			}
-			next := strings.IndexByte(p.decoded[end:], '<')
-			if next < 0 {
-				break
-			}
-			resume := end + next
-			if resume <= end {
-				// The error is at the resume `<` itself (e.g. `<!` markup
-				// the fragment state cannot start): restarting there would
-				// loop forever on the same position. Skip the byte — it
-				// becomes part of the gap coverage in finish() (RFC 0013
-				// §8.2), and the deterministic error region already covered
-				// the byte before it.
-				resume = end + 1
-			}
-			if resume >= len(p.decoded) {
-				break
-			}
-			tokenizer = newFragmentTokenizer(p.decoded, resume)
-			continue
+			break
 		}
 		if failure := p.token(token); failure != nil {
 			return nil, failure
