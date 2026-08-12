@@ -1,10 +1,12 @@
 # Consema Go SDK (`go/`)
 The Go implementation of the language-neutral Consema contracts (RFC 0016;
-`docs/go-implementation-plan.md`). Milestone 0.14.0 G0.1 delivers the
-scaffold and the `core` package; G0.2 delivers the `graph` package; G0.3
-delivers the `protocol` package; 0.15.0 G1.1 delivers the `document`
-package (source snapshots, structural locations, formation status, limits,
-materialization requests, and verifiable source patches).
+`docs/go-implementation-plan.md`). All milestones 0.14.0-0.19.0
+(G0.1-G5.6) are delivered: G0.1 delivered the scaffold and the `core`
+package; G0.2 delivered the `graph` package; G0.3 delivered the `protocol`
+package; 0.15.0 G1.1 delivered the `document` package (source snapshots,
+structural locations, formation status, limits, materialization requests,
+and verifiable source patches); the remaining milestones delivered the
+eight format families and the CLI (per-milestone delivery records below).
 ## Layout
 - `go.mod` —the single module `consema.dev/consema` (RFC 0016 §3.1;
   plan §0.2). Minimum Go version frozen at `go 1.26` for 0.14.0 (plan §1.3).
@@ -495,7 +497,7 @@ The Go public API is held to the six stability policies of roadmap §21.2
    legacy, not SDK policy). The roadmap §21.2 CI verification leg —   the gates below running in CI on the frozen minimum version —is
    the `go-1-26` job (ci.yml:316-331; G5.5 finding F1, **closed** in
    937b330); locally they are the commands in the next section.
-## Go CLI beta (0.19.0 G5.6)
+## Go CLI（0.19.0 G5.6；productVersion 1.0.0-rc.1）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
 0015; mirror of the Rust `crates/consema` bin). It is stdlib-only (self-
