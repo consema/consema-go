@@ -323,9 +323,13 @@ func TestCorpusDocuments(t *testing.T) {
 			t.Fatalf("%s projection failed", name)
 		}
 	}
-	// The repository root Cargo.toml is the corpus case
-	// (toml.corpus.cargo-manifest).
-	for _, candidate := range []string{"../Cargo.toml", "../../Cargo.toml"} {
+	// The corpus Cargo.toml (toml.corpus.cargo-manifest) is the
+	// conformance fixture conformance/fixtures/toml/Cargo.toml.
+	for _, candidate := range []string{
+		"../Cargo.toml",
+		"../../Cargo.toml",
+		"../../conformance/fixtures/toml/Cargo.toml",
+	} {
 		bytes, err := os.ReadFile(candidate)
 		if err != nil {
 			continue

@@ -82,9 +82,11 @@ func tomlFixtureBytes(runner *Runner, name string) ([]byte, string) {
 	return bytes, ""
 }
 
-// cargoManifestBytes reads the repository root Cargo.toml.
+// cargoManifestBytes reads the toml.corpus.cargo-manifest fixture
+// (conformance/fixtures/toml/Cargo.toml, the single authority for the
+// corpus case since the six-repo split).
 func cargoManifestBytes(runner *Runner) ([]byte, string) {
-	path := filepath.Join(filepath.Dir(filepath.Dir(runner.VectorsDir)), "Cargo.toml")
+	path := filepath.Join(runner.FixturesDir, "toml", "Cargo.toml")
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, "Cargo.toml is unreadable: " + err.Error()

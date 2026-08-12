@@ -8,9 +8,9 @@
 #            also uses the multi-repo checkout mode: it checks out
 #            consema/consema (the spec repository) beside this repository
 #            and provisions the conformance data (conformance/vectors +
-#            fixtures, the docs/fc-manifest-0.13.0.json and the
-#            workspace-root Cargo.toml for the toml.corpus.cargo-manifest
-#            case).
+#            fixtures, the docs/fc-manifest-0.13.0.json; the
+#            toml.corpus.cargo-manifest corpus reads the committed fixture
+#            conformance/fixtures/toml/Cargo.toml).
 #   go-differential: the cross-language differential gates. This repository
 #            carries the Go implementation only, so the job uses the
 #            multi-repo checkout mode: it checks out consema/consema-rs
@@ -69,16 +69,12 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
-          # The toml.corpus.cargo-manifest case reads the workspace-root
-          # Cargo.toml by repository-relative path (go/conformance/toml_v1.go),
-          # so the workspace manifest is provisioned too.
-          $cargoToml = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\Cargo.toml'
-          if (-not (Test-Path -LiteralPath $cargoToml)) {
-            throw "Cargo.toml not found in the consema checkout: $cargoToml"
-          }
-          Copy-Item -LiteralPath $cargoToml -Destination (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -Force
+          # The toml.corpus.cargo-manifest case reads the committed fixture
+          # conformance/fixtures/toml/Cargo.toml (single authority), which is
+          # included in the conformance/ copy above; no workspace-root
+          # Cargo.toml is provisioned anymore.
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
-          Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json + Cargo.toml"
+          Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
       - name: gofmt -l . && go vet && go build && go test && go test -race
         run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race ./...
 
@@ -119,16 +115,12 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
-          # The toml.corpus.cargo-manifest case reads the workspace-root
-          # Cargo.toml by repository-relative path (go/conformance/toml_v1.go),
-          # so the workspace manifest is provisioned too.
-          $cargoToml = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\Cargo.toml'
-          if (-not (Test-Path -LiteralPath $cargoToml)) {
-            throw "Cargo.toml not found in the consema checkout: $cargoToml"
-          }
-          Copy-Item -LiteralPath $cargoToml -Destination (Join-Path $env:GITHUB_WORKSPACE 'Cargo.toml') -Force
+          # The toml.corpus.cargo-manifest case reads the committed fixture
+          # conformance/fixtures/toml/Cargo.toml (single authority), which is
+          # included in the conformance/ copy above; no workspace-root
+          # Cargo.toml is provisioned anymore.
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
-          Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json + Cargo.toml"
+          Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
       - name: scripts/go-verify-byte-parity.ps1
         shell: pwsh
         run: |
