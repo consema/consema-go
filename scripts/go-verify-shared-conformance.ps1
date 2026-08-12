@@ -103,8 +103,10 @@ if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
 # checkout bytes (LF; .gitattributes eol=lf), not the working-tree bytes.
 # The 2026-08-07 recorded value e3d6578858... was computed on a CRLF working
 # tree (core.autocrlf=true) and has been replaced by the canonical-state
-# value 35bebc8d...; on a CRLF working tree this step fails as expected —
-# run with `git config core.autocrlf false` (or a clean LF checkout).
+# value 35bebc8d...; the 2026-08-12 P2-B vector reinforcement (508 -> 519
+# cases) replaced it again with cfd6e296... (fc-manifest-0.13.0.json:38). On
+# a CRLF working tree this step fails as expected — run with
+# `git config core.autocrlf false` (or a clean LF checkout).
 Write-Host "[1/6] verifying the conformance/vectors aggregate digest against the Feature-Complete Manifest..."
 $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $record = $manifest.digests.conformance_suite

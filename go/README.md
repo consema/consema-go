@@ -829,9 +829,11 @@ Runner state at 0.18.0: **506 passed / 2 documented skips / 0 failed**
 canonical LF checkout — the 2026-08-07 CRLF-working-tree value
 `e3d6578858…` was replaced on 2026-08-10). This is the 0.18.0 historical
 state: the G5.3 exchange findings (ada5020) later flipped the 2 documented
-skips to executed, so the runner is now 508/508 with zero skips (the same
-count the Rust/TS/Python/Kotlin runners pin); cross-language
-normalized-result differential **108/108**; byte parity **68/68**.
+skips to executed, and the 2026-08-12 P2-B vector reinforcement grew the
+inventory to **519/519 cases with zero skips** (18 suites, aggregate digest
+`cfd6e296…` — the same count the Rust/TS/Python/Kotlin runners pin);
+cross-language normalized-result differential **108/108**; byte parity
+**68/68**.
 ## Three-platform verification (0.19.0 G5.4)
 Roadmap §22.4:1907 requires the Go side to pass on Windows/Linux/macOS.
 This machine (Windows 11, go 1.26.5) is the measured platform for the
