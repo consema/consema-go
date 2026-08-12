@@ -1,0 +1,67 @@
+# Consema Go release: tag-triggered verification + GitHub release.
+#
+# Go has no build/publish step — pushing tag vX.Y.Z IS the release: the Go
+# proxy (proxy.golang.org) picks the version up automatically from the tag
+# (module consema.dev/consema; module docs come from go/README.md). This
+# workflow therefore only (1) re-runs the gate suite on the exact tag
+# (gofmt + vet + build + test + race, with the conformance data provisioned
+# from the consema spec repository exactly like ci-go.yml) and (2) creates
+# a GitHub release with auto-generated notes. goreleaser binary releases
+# are a P2 option (see RELEASING.md §3), deliberately not wired here.
+name: Release (Go proxy tag + GitHub release)
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: go gates on tag (gofmt + vet + build + test + race)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: consema/consema
+          path: consema-repo
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+      - name: provision conformance data from the consema spec repository
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\conformance'
+          $target = Join-Path $env:GITHUB_WORKSPACE 'conformance'
+          if (-not (Test-Path -LiteralPath $source)) {
+            throw "conformance data not found in the consema checkout: $source"
+          }
+          Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
+          New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
+          $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
+          if (-not (Test-Path -LiteralPath $manifest)) {
+            throw "fc-manifest not found in the consema checkout: $manifest"
+          }
+          Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
+          Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
+      - name: gofmt -l . && go vet && go build && go test && go test -race -shuffle=on
+        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
+
+  github-release:
+    name: create GitHub release (auto-generated notes)
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: create GitHub release for the tag
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
