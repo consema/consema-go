@@ -15,7 +15,7 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// This file drives all 22 published cases of the shared
+// This file drives all 25 published cases of the shared
 // `consema.java-properties.conformance@1` vector suite through the public
 // package API (docs/go-implementation-plan.md §4.2; the conformance runner
 // in go/conformance/java_properties_v1.go executes the same facts through
@@ -50,8 +50,8 @@ func loadPropertiesVector(t *testing.T) map[string]map[string]interface{} {
 	if err := decodeVectorJSON(raw, &suite); err != nil {
 		t.Fatal(err)
 	}
-	if len(suite.Cases) != 22 {
-		t.Fatalf("case count %d != 22", len(suite.Cases))
+	if len(suite.Cases) != 25 {
+		t.Fatalf("case count %d != 25", len(suite.Cases))
 	}
 	cases := make(map[string]map[string]interface{}, len(suite.Cases))
 	for _, vector := range suite.Cases {
@@ -119,7 +119,7 @@ func exactVectorJSON(value interface{}) (interface{}, error) {
 	return value, nil
 }
 
-func TestPropertiesVectorsAllTwentyTwo(t *testing.T) {
+func TestPropertiesVectorsAllTwentyFive(t *testing.T) {
 	cases := loadPropertiesVector(t)
 	for id, vector := range cases {
 		t.Run(id, func(t *testing.T) {
@@ -152,6 +152,10 @@ func runPropertiesVectorCase(t *testing.T, id string,
 		vectorFormationLatin1(t, input, expected)
 	case "formation.recovery-never-publishes-partial-operation":
 		vectorRecoveredIsAtomic(t, input, expected)
+	case "formation.malformed-escape-in-key":
+		vectorFormationMalformedEscapeInKey(t, input, expected)
+	case "formation.invalid-encoding-sequence", "formation.bom-conflict":
+		vectorFormationFatalEncoding(t, input, expected)
 	case "query.native-duplicates-and-escape-ownership":
 		vectorNativeQuery(t, input, expected)
 	case "query.logical-and-syntax-order":
@@ -611,6 +615,36 @@ func vectorFormationReaderEncodings(t *testing.T, input, expected map[string]int
 			t.Fatalf("sample %d coverage", index)
 		}
 	}
+}
+
+// vectorFormationMalformedEscapeInKey drives formation.malformed-escape-
+// in-key: a malformed `\uXXXX` escape in the KEY position recovers the
+// logical line without a partial property and the error line carries the
+// family parse code (parser.rs:626-666).
+func vectorFormationMalformedEscapeInKey(t *testing.T, input, expected map[string]interface{}) {
+	doc := vectorParseCase(t, input)
+	requireEqual(t, doc.formationStatus.String(), vString(t, expected, "formation"))
+	requireEqual(t, len(doc.properties), int(vInt(t, expected, "properties")))
+	requireEqual(t, len(doc.errorLines), int(vInt(t, expected, "error_lines")))
+	if len(doc.errorLines) == 0 {
+		t.Fatalf("missing error line")
+	}
+	requireEqual(t, doc.errorLines[0].code, vString(t, expected, "code"))
+}
+
+// vectorFormationFatalEncoding drives formation.invalid-encoding-sequence /
+// formation.bom-conflict: bytes that cannot be decoded under the explicit
+// Reader encoding (`core.source.invalid-sequence@1`) or a BOM that
+// contradicts it (`core.source.encoding-conflict@1`) fail the whole parse
+// fatally before any document forms (parser.rs:24-33).
+func vectorFormationFatalEncoding(t *testing.T, input, expected map[string]interface{}) {
+	raw := vDecodeHex(t, vString(t, input, "source_hex"))
+	_, failure := ParseReader(raw, vectorSourceEncoding(t, vString(t, input, "encoding")),
+		DefaultPropertiesParseLimits())
+	if failure == nil {
+		t.Fatalf("parse must fail fatally")
+	}
+	requireEqual(t, failure.Code(), vString(t, expected, "code"))
 }
 
 func vectorFormationLatin1(t *testing.T, input, expected map[string]interface{}) {
