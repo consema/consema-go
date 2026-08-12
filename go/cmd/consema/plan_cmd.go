@@ -47,11 +47,11 @@ const defaultMaxFiles uint64 = 1000
 func runPlan(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	policy, policyErr := compileRedactPolicy(parsed)
 	if policyErr != nil {
-		return emitFailure(protocol.CommandPlan, parsed, policyErr, stdout, stderr)
+		return emitFailure(protocol.CommandPlan, parsed, policyErr, nil, stdout, stderr)
 	}
 	request, err := readRequestBytes(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandPlan, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandPlan, parsed, err, nil, stdout, stderr)
 	}
 	return runPlanWithRequest(parsed, request, policy, stdout, stderr)
 }
@@ -61,7 +61,7 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 	policy *redactPolicy, stdout, stderr io.Writer) uint8 {
 	input, err := decodeEditRequest(request, parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandPlan, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandPlan, parsed, err, nil, stdout, stderr)
 	}
 	cap := defaultMaxFiles
 	if parsed.maxFiles != nil {
@@ -71,7 +71,7 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 		error := newFlowError("cli.limit.batch-count@1",
 			fmt.Sprintf("batch of %d files exceeds the %d-file cap (--max-files)",
 				len(parsed.positionals), cap))
-		return emitFailure(protocol.CommandPlan, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandPlan, parsed, error, nil, stdout, stderr)
 	}
 	planner := consema.NewBatchPlanner(productVersion)
 	renderItems := make([]PlanRenderItem, 0, len(parsed.positionals))
@@ -90,7 +90,7 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 				return emitFailure(protocol.CommandPlan, parsed,
 					newFlowError("cli.internal.unclassified@1",
 						"plan entry construction failed: "+entryErr.Error()),
-					stdout, stderr)
+					nil, stdout, stderr)
 			}
 			renderItems = append(renderItems, PlanRenderItem{
 				Path: path, Planned: false, FailureCode: failure.Code})
@@ -103,7 +103,7 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 			return emitFailure(protocol.CommandPlan, parsed,
 				newFlowError("cli.internal.unclassified@1",
 					"plan entry construction failed: "+entryErr.Error()),
-				stdout, stderr)
+				nil, stdout, stderr)
 		}
 		renderItems = append(renderItems, planRenderItemFromPlan(input, plan, path, policy))
 	}
@@ -116,11 +116,11 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 	// --output, to the manifest file (RFC 0015 §8.3).
 	bytes, err := encodeManifest(manifest)
 	if err != nil {
-		return emitFailure(protocol.CommandPlan, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandPlan, parsed, err, nil, stdout, stderr)
 	}
 	if parsed.output != nil {
 		if writeErr := persistManifest(*parsed.output, bytes); writeErr != nil {
-			return emitFailure(protocol.CommandPlan, parsed, writeErr, stdout, stderr)
+			return emitFailure(protocol.CommandPlan, parsed, writeErr, nil, stdout, stderr)
 		}
 	}
 	value, encodeErr := manifest.ToValue()
@@ -129,7 +129,7 @@ func runPlanWithRequest(parsed *ParsedArgs, request []byte,
 	}
 	if parsed.json {
 		if emitErr := emitCommandEnvelope(protocol.CommandPlan, protocol.ExitSuccess,
-			value, nil, parsed, stdout); emitErr != nil {
+			value, nil, parsed, nil, stdout); emitErr != nil {
 			return internalFailure("plan", emitErr.Error(), stderr)
 		}
 		return protocol.ExitSuccess.ExitCode()

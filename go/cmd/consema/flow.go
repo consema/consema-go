@@ -644,15 +644,31 @@ func stableFailureFlowError(failure error, message string) *FlowError {
 // (RFC 0015 §4). Without --json this writes nothing and returns success, so
 // envelope-class failure paths leave stdout at zero bytes while stderr
 // keeps the human diagnostic and the caller keeps the classified exit code.
+//
+// Presentation redaction (RFC 0015 §11.1/§11.3): with a non-nil policy the
+// payload is redacted through redactValue and the envelope's `redaction`
+// facts are built from the real replacement count (`redacted == (count > 0)`
+// by construction); `--show-secrets` disables matching inside the policy
+// (RFC 0015 §11.4). With a nil policy the payload is emitted untouched with
+// zero redaction facts — the plan/apply manifest payload exemption of RFC
+// 0015 §8.3/§11.4 (their records and files are never redacted).
 func emitCommandEnvelope(command protocol.CliCommand, exitClass protocol.ExitClass,
 	payload core.Value, diagnostics []*protocol.Diagnostic,
-	parsed *ParsedArgs, stdout io.Writer) error {
+	parsed *ParsedArgs, policy *redactPolicy, stdout io.Writer) error {
 	if !parsed.json {
 		// RFC 0015 §3.3: without --json, stdout carries only command-result
 		// data; the envelope is never written in human mode.
 		return nil
 	}
-	redaction, err := protocol.NewRedaction(false, 0)
+	var redaction *protocol.Redaction
+	var err error
+	if policy == nil {
+		redaction, err = protocol.NewRedaction(false, 0)
+	} else {
+		redacted, facts := redactValue(policy, payload)
+		payload = redacted
+		redaction, err = protocol.NewRedaction(facts.count > 0, facts.count)
+	}
 	if err != nil {
 		return fmt.Errorf("%s envelope construction failed: %s", command.Name(), err)
 	}
@@ -686,7 +702,7 @@ func minimalRecord(command protocol.CliCommand) core.Value {
 // code. The envelope is written only under --json; in human mode the
 // failure writes zero stdout bytes (RFC 0015 §3.3).
 func emitFailure(command protocol.CliCommand, parsed *ParsedArgs,
-	error *FlowError, stdout io.Writer, stderr io.Writer) uint8 {
+	error *FlowError, policy *redactPolicy, stdout io.Writer, stderr io.Writer) uint8 {
 	fmt.Fprintf(stderr, "consema: error: %s: %s (code %s)\n",
 		command.Name(), error.Message, error.Code)
 	if error.exitClass() == protocol.ExitUsage {
@@ -697,7 +713,7 @@ func emitFailure(command protocol.CliCommand, parsed *ParsedArgs,
 		payload = minimalRecord(command)
 	}
 	if err := emitCommandEnvelope(command, error.exitClass(), payload,
-		error.Diagnostics, parsed, stdout); err != nil {
+		error.Diagnostics, parsed, policy, stdout); err != nil {
 		return internalFailure(command.Name(), err.Error(), stderr)
 	}
 	return error.exitCode()

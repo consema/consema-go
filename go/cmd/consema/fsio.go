@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"consema.dev/consema/protocol"
 )
@@ -53,17 +54,15 @@ func (e *WriteError) Error() string { return e.Message }
 func writeAtomic(target string, bytes []byte,
 	options writeOptions) (protocol.ContentDigest, *WriteError) {
 	// Symlink/junction policy (RFC 0015 §10): write paths reject
-	// symlink/junction targets by default; --follow-symlinks authorizes
-	// explicitly. The check uses the same raw facts the inspect command
-	// reports (Lstat plus the Windows reparse-point attribute).
+	// symlink/junction targets AND every ancestor component by default;
+	// --follow-symlinks authorizes explicitly. The walk uses the same raw
+	// facts the inspect command reports (Lstat plus the Windows reparse-point
+	// attribute), so a junction directory in the middle of the path is
+	// refused, not just a final-component link (mirror of the Rust bin's
+	// refuse_symlink_components; audit P1).
 	if !options.followSymlinks {
-		if isSymlinkPath(target) {
-			return protocol.ContentDigest{}, &WriteError{
-				Code: "cli.write.symlink-policy@1",
-				Message: fmt.Sprintf("refusing to write through symlink or junction target '%s' "+
-					"(--follow-symlinks authorizes explicitly)", target),
-				Target: target,
-			}
+		if err := refuseSymlinkComponents(target); err != nil {
+			return protocol.ContentDigest{}, err
 		}
 	}
 	// Directory targets are refused before any temp file is created.
@@ -178,6 +177,87 @@ func isSymlinkPath(path string) bool {
 		return true
 	}
 	return isReparsePoint(path)
+}
+
+// refuseSymlinkComponents refuses any symlink or junction component in the
+// write path (R-4; mirror of the Rust bin's refuse_symlink_components,
+// fsio.rs:548-591): the target itself and every ancestor prefix are
+// inspected with Lstat plus the Windows reparse-point attribute, so a
+// junction directory in the middle of the path is refused, not just a
+// final-component link. A prefix that does not exist (a missing parent) is
+// skipped — the temporary-file creation surfaces the real failure with its
+// own classification; any other inspection failure (e.g. permission denial)
+// is a refusal-worthy condition and classifies as cli.write.io@1 (Rust's
+// classify: permission denial → cli.write.permission@1, everything else →
+// cli.write.io@1).
+//
+// macOS system-temp carve-out (Rust fsio.rs:557-607): the walk stops once it
+// reaches the system temp root, whose ancestors are exempt. On macOS
+// os.TempDir() returns /var/folders/... and /var → /private/var is a system
+// symlink sitting in every temp-dir path, so without the carve-out every
+// write under the system temp tree would be refused. Components strictly
+// inside the temp tree are still inspected, so user-controlled symlink and
+// junction components — including the probe tests' symlinks created under
+// the temp dir — are refused exactly as before; paths outside the temp root
+// are walked to the filesystem root.
+func refuseSymlinkComponents(target string) *WriteError {
+	prefix := target
+	for {
+		// R-4 macOS system-temp carve-out: the walk reached the temp root —
+		// every component strictly below it has already been inspected, and
+		// the root and its ancestors are system-owned (macOS /var →
+		// /private/var).
+		if isSystemTempPrefix(prefix) {
+			return nil
+		}
+		info, err := os.Lstat(prefix)
+		switch {
+		case err == nil:
+			if info.Mode()&os.ModeSymlink != 0 || isReparsePoint(prefix) {
+				return &WriteError{
+					Code: "cli.write.symlink-policy@1",
+					Message: fmt.Sprintf("refusing to write through symlink or junction target '%s' "+
+						"(--follow-symlinks authorizes explicitly)", prefix),
+					Target: prefix,
+				}
+			}
+		case !os.IsNotExist(err):
+			code := "cli.write.io@1"
+			if os.IsPermission(err) {
+				code = "cli.write.permission@1"
+			}
+			return &WriteError{
+				Code:    code,
+				Message: fmt.Sprintf("cannot inspect '%s': %v", prefix, err),
+				Target:  target,
+			}
+		}
+		parent := filepath.Dir(prefix)
+		if parent == prefix {
+			break
+		}
+		prefix = parent
+	}
+	return nil
+}
+
+// isSystemTempPrefix reports whether prefix is the system temp root or one
+// of its ancestors — the exempt region of the R-4 walk (see
+// refuseSymlinkComponents). Both spellings are compared: the raw
+// os.TempDir() path (on macOS /var/folders/..., from $TMPDIR) and its
+// canonical form (/private/var/folders/..., after resolving the /var →
+// /private/var system symlink). Resolved once per process.
+func isSystemTempPrefix(prefix string) bool {
+	raw := os.TempDir()
+	if strings.HasPrefix(raw, prefix) {
+		return true
+	}
+	if resolved, err := filepath.EvalSymlinks(raw); err == nil {
+		if strings.HasPrefix(resolved, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // randomNonce returns one 16-byte hex nonce for the temporary file name.

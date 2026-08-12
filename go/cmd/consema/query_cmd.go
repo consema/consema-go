@@ -28,7 +28,7 @@ import (
 func runQuery(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	request, err := readRequestBytes(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandQuery, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandQuery, parsed, err, nil, stdout, stderr)
 	}
 	return runQueryWithRequest(parsed, request, stdout, stderr)
 }
@@ -37,13 +37,19 @@ func runQuery(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 // bytes (testable without stdin or fixture files).
 func runQueryWithRequest(parsed *ParsedArgs, request []byte,
 	stdout, stderr io.Writer) uint8 {
+	// The presentation redaction policy of RFC 0015 §11 (an invalid
+	// `--redact-keys` pattern is a usage failure, like plan/apply/edit).
+	policy, policyErr := compileRedactPolicy(parsed)
+	if policyErr != nil {
+		return emitFailure(protocol.CommandQuery, parsed, policyErr, nil, stdout, stderr)
+	}
 	input, err := decodeRequest(request, parsed, "core.query-definition@1")
 	if err != nil {
-		return emitFailure(protocol.CommandQuery, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandQuery, parsed, err, policy, stdout, stderr)
 	}
 	result, err := executeQuery(input)
 	if err != nil {
-		return emitFailure(protocol.CommandQuery, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandQuery, parsed, err, policy, stdout, stderr)
 	}
 	if parsed.json {
 		resultValue, valueErr := result.ToValue()
@@ -51,12 +57,12 @@ func runQueryWithRequest(parsed *ParsedArgs, request []byte,
 			return internalFailure("query", valueErr.Error(), stderr)
 		}
 		if emitErr := emitCommandEnvelope(protocol.CommandQuery, protocol.ExitSuccess,
-			resultValue, nil, parsed, stdout); emitErr != nil {
+			resultValue, nil, parsed, policy, stdout); emitErr != nil {
 			return internalFailure("query", emitErr.Error(), stderr)
 		}
 		return protocol.ExitSuccess.ExitCode()
 	}
-	if writeErr := writeQueryReport(result, stdout); writeErr != nil {
+	if writeErr := writeQueryReport(result, policy, stdout); writeErr != nil {
 		return internalFailure("query", writeErr.Error(), stderr)
 	}
 	return protocol.ExitSuccess.ExitCode()
@@ -174,7 +180,15 @@ func failedQueryResult(code string) core.Value {
 
 // writeQueryReport writes the deterministic human query report (same facade
 // result as the machine payload).
-func writeQueryReport(result *protocol.QueryResultMessage, stdout io.Writer) error {
+//
+// Presentation redaction (RFC 0015 §11.1): the value of every match whose
+// key name matches the policy is replaced by the placeholder via redactText;
+// `--show-secrets` disables matching. For value matches the candidate key is
+// the last object-key path segment (a value matched through `$.password`
+// redacts under `password`); matches without a key name (sequence elements,
+// native locators) are never redacted.
+func writeQueryReport(result *protocol.QueryResultMessage, policy *redactPolicy,
+	stdout io.Writer) error {
 	matches := result.Matches()
 	if len(matches) == 0 {
 		_, err := io.WriteString(stdout, "no matches\n")
@@ -184,14 +198,23 @@ func writeQueryReport(result *protocol.QueryResultMessage, stdout io.Writer) err
 		var line string
 		switch item.Kind {
 		case "Value":
+			rendered := renderValue(item.Value)
+			if key := lastObjectKey(item.Path); key != "" {
+				rendered = redactText(policy, key, rendered).text
+			}
 			line = fmt.Sprintf("match %d: %s = %s", index,
-				renderPath(item.Path), renderValue(item.Value))
+				renderPath(item.Path), rendered)
 		case "ObjectEntry":
+			rendered := redactText(policy, renderKey(item.Key), renderValue(item.Value)).text
 			line = fmt.Sprintf("match %d: %s (key %s) = %s", index,
-				renderPath(item.ValuePath), renderKey(item.Key), renderValue(item.Value))
+				renderPath(item.ValuePath), renderKey(item.Key), rendered)
 		case "EntryMappingEntry":
+			rendered := renderValue(item.Value)
+			if key, ok := item.Key.(core.String); ok {
+				rendered = redactText(policy, string(key), rendered).text
+			}
 			line = fmt.Sprintf("match %d: %s (key %v) = %s", index,
-				renderPath(item.ValuePath), renderValue(item.Key), renderValue(item.Value))
+				renderPath(item.ValuePath), renderValue(item.Key), rendered)
 		case "Native":
 			line = fmt.Sprintf("match %d: native %s %s", index,
 				item.Native.NodeLocator(), item.Native.Role())
@@ -203,6 +226,21 @@ func writeQueryReport(result *protocol.QueryResultMessage, stdout io.Writer) err
 		}
 	}
 	return nil
+}
+
+// lastObjectKey returns the candidate redaction key of one value match: the
+// last object-key path segment (the key whose value the match carries), or
+// "" when the path ends in a sequence or entry-mapping segment.
+func lastObjectKey(path protocol.ValuePath) string {
+	segments := path.Segments()
+	if len(segments) == 0 {
+		return ""
+	}
+	last := segments[len(segments)-1]
+	if last.Kind == "ObjectValue" {
+		return last.Key
+	}
+	return ""
 }
 
 func renderKey(key core.Value) string {

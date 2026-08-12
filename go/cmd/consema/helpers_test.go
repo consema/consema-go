@@ -193,14 +193,14 @@ func runRequestCommand(t *testing.T, args []string, request []byte) (uint8, []by
 	case protocol.CommandEdit:
 		policy, policyErr := compileRedactPolicy(parsed)
 		if policyErr != nil {
-			code = emitFailure(protocol.CommandEdit, parsed, policyErr, &stdout, &stderr)
+			code = emitFailure(protocol.CommandEdit, parsed, policyErr, nil, &stdout, &stderr)
 			break
 		}
 		code = runEditWithRequest(parsed, request, policy, &stdout, &stderr)
 	case protocol.CommandPlan:
 		policy, policyErr := compileRedactPolicy(parsed)
 		if policyErr != nil {
-			code = emitFailure(protocol.CommandPlan, parsed, policyErr, &stdout, &stderr)
+			code = emitFailure(protocol.CommandPlan, parsed, policyErr, nil, &stdout, &stderr)
 			break
 		}
 		code = runPlanWithRequest(parsed, request, policy, &stdout, &stderr)

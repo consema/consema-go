@@ -166,7 +166,7 @@ type batchOutcome struct {
 func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	policy, err := compileRedactPolicy(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandApply, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}
 	planPath := parsed.positionals[0]
 	cap := uint64(protocol.DefaultProtocolLimits().MaxBytes)
@@ -175,11 +175,11 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	}
 	planBytes, err := readPlanFile(planPath, cap)
 	if err != nil {
-		return emitFailure(protocol.CommandApply, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}
 	plan, err := decodePlanManifest(planBytes)
 	if err != nil {
-		return emitFailure(protocol.CommandApply, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}
 	fileCap := defaultMaxFiles
 	if parsed.maxFiles != nil {
@@ -189,7 +189,7 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 		error := newFlowError("cli.limit.batch-count@1",
 			fmt.Sprintf("plan batch of %d files exceeds the %d-file cap (--max-files)",
 				len(plan.Files()), fileCap))
-		return emitFailure(protocol.CommandApply, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, error, nil, stdout, stderr)
 	}
 	resultPath := planPath + ".result.json"
 	if parsed.output != nil {
@@ -201,7 +201,7 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	outcome, err := runBatch(plan, resultPath, cap, policy, &injections, stderr)
 	applyActive = false
 	if err != nil {
-		return emitFailure(protocol.CommandApply, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}
 	if outcome.Interrupted {
 		// RFC 0015 §5.4/§4.2: after interruption stdout receives no further
@@ -219,7 +219,7 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	}
 	message, err := resultMessage(outcome.Entries)
 	if err != nil {
-		return emitFailure(protocol.CommandApply, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}
 	if parsed.json {
 		value, valueErr := message.ToValue()
@@ -227,7 +227,7 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 			return internalFailure("apply", valueErr.Error(), stderr)
 		}
 		if emitErr := emitCommandEnvelope(protocol.CommandApply, exitClass,
-			value, nil, parsed, stdout); emitErr != nil {
+			value, nil, parsed, nil, stdout); emitErr != nil {
 			return internalFailure("apply", emitErr.Error(), stderr)
 		}
 		return exitClass.ExitCode()

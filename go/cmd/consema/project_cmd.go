@@ -177,7 +177,7 @@ func buildWireRequest(family, targetID string,
 func runProject(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	request, err := readRequestBytes(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandProject, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandProject, parsed, err, nil, stdout, stderr)
 	}
 	return runProjectWithRequest(parsed, request, stdout, stderr)
 }
@@ -186,13 +186,19 @@ func runProject(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 // bytes.
 func runProjectWithRequest(parsed *ParsedArgs, request []byte,
 	stdout, stderr io.Writer) uint8 {
+	// The presentation redaction policy of RFC 0015 §11 (an invalid
+	// `--redact-keys` pattern is a usage failure, like plan/apply/edit).
+	policy, policyErr := compileRedactPolicy(parsed)
+	if policyErr != nil {
+		return emitFailure(protocol.CommandProject, parsed, policyErr, nil, stdout, stderr)
+	}
 	input, err := decodeRequest(request, parsed, "core.projection-request@1")
 	if err != nil {
-		return emitFailure(protocol.CommandProject, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandProject, parsed, err, policy, stdout, stderr)
 	}
 	result, err := executeProject(input)
 	if err != nil {
-		return emitFailure(protocol.CommandProject, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandProject, parsed, err, policy, stdout, stderr)
 	}
 	if parsed.json {
 		resultValue, valueErr := result.ToValue()
@@ -200,7 +206,7 @@ func runProjectWithRequest(parsed *ParsedArgs, request []byte,
 			return internalFailure("project", valueErr.Error(), stderr)
 		}
 		if emitErr := emitCommandEnvelope(protocol.CommandProject, protocol.ExitSuccess,
-			resultValue, nil, parsed, stdout); emitErr != nil {
+			resultValue, nil, parsed, policy, stdout); emitErr != nil {
 			return internalFailure("project", emitErr.Error(), stderr)
 		}
 		return protocol.ExitSuccess.ExitCode()

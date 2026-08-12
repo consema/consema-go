@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -147,6 +148,126 @@ func TestQueryJSONSuccessRoundTrips(t *testing.T) {
 	}
 	if len(result.Matches()) != 1 {
 		t.Fatalf("matches = %d", len(result.Matches()))
+	}
+}
+
+func TestQueryJSONRedactsMatchingKeyValuesAndShowSecretsRecovers(t *testing.T) {
+	// RFC 0015 §11.1/§11.3 (P1 audit): machine output redacts values under
+	// matching key names — the payload carries `$REDACTED$` and the
+	// envelope's redaction facts are real (`redacted == (count > 0)`);
+	// `--show-secrets` is the sole opt-out and restores the plaintext with
+	// zero facts (RFC 0015 §11.4).
+	//
+	// The Go portable domain implements only the bare Input operator
+	// (query_exec.go:188-192), so the match carries the whole document
+	// object; the envelope redaction walks the payload tree and replaces the
+	// password entry inside the match value (the Rust bin runs the same
+	// assertion with ObjectEntry matches in query_cmd.rs).
+	request := queryRequestBytes(t,
+		"7b2270617373776f7264223a2268756e74657232222c22686f7374223a2264622e696e7465726e616c227d",
+		"json.strict")
+	code, stdout, stderr := runRequestCommand(t,
+		[]string{"query", "--profile", "json.strict", "--json"}, request)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, stderr)
+	}
+	envelope := envelopeOf(t, stdout)
+	if !envelope.Redaction().Redacted() || envelope.Redaction().Count() != 1 {
+		t.Fatalf("redaction facts = redacted %v count %d",
+			envelope.Redaction().Redacted(), envelope.Redaction().Count())
+	}
+	result := &protocol.QueryResultMessage{}
+	result, err := result.FromValue(envelope.Payload())
+	if err != nil {
+		t.Fatalf("query-result record: %v", err)
+	}
+	if len(result.Matches()) != 1 {
+		t.Fatalf("matches = %d", len(result.Matches()))
+	}
+	object, ok := result.Matches()[0].Value.(*core.Object)
+	if !ok {
+		t.Fatalf("match value = %T", result.Matches()[0].Value)
+	}
+	entries := object.Entries()
+	if entries[0].Key != "password" || entries[0].Value != core.String(placeholder) {
+		t.Fatalf("password entry = %v, want %s", entries[0], placeholder)
+	}
+	if entries[1].Key != "host" || entries[1].Value != core.String("db.internal") {
+		t.Fatalf("host entry = %v", entries[1])
+	}
+	// --show-secrets restores the plaintext and zeroes the facts.
+	code, stdout, _ = runRequestCommand(t,
+		[]string{"query", "--profile", "json.strict", "--json", "--show-secrets"}, request)
+	if code != 0 {
+		t.Fatalf("exit = %d", code)
+	}
+	envelope = envelopeOf(t, stdout)
+	if envelope.Redaction().Redacted() || envelope.Redaction().Count() != 0 {
+		t.Fatalf("--show-secrets facts = redacted %v count %d",
+			envelope.Redaction().Redacted(), envelope.Redaction().Count())
+	}
+	result, err = result.FromValue(envelope.Payload())
+	if err != nil {
+		t.Fatalf("query-result record: %v", err)
+	}
+	object = result.Matches()[0].Value.(*core.Object)
+	if object.Entries()[0].Value != core.String("hunter2") {
+		t.Fatalf("password value = %v, want hunter2", object.Entries()[0].Value)
+	}
+}
+
+func TestQueryHumanReportRedactsMatchingKeyValues(t *testing.T) {
+	// RFC 0015 §11.1: the human report redacts the value of every match
+	// whose key name matches, via redactText; --show-secrets reveals.
+	// The Go portable domain cannot produce ObjectEntry matches end-to-end
+	// (query_exec.go:188-192), so the report is exercised at the unit level
+	// with one synthetic record; the Rust bin runs the same report
+	// end-to-end in query_cmd.rs.
+	root := protocol.RootValuePath()
+	passwordPath := root.Child(protocol.ValuePathSegment{Kind: "ObjectValue", Key: "password"})
+	hostPath := root.Child(protocol.ValuePathSegment{Kind: "ObjectValue", Key: "host"})
+	matches := []protocol.ProtocolQueryMatch{
+		{Kind: "ObjectEntry", Key: core.String("password"), ValuePath: passwordPath,
+			Value: core.String("hunter2")},
+		{Kind: "ObjectEntry", Key: core.String("host"), ValuePath: hostPath,
+			Value: core.String("db.internal")},
+	}
+	completion, err := protocol.NewCompletion(protocol.CompletionSuccess, 2, 2, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := protocol.NewQueryResultMessage(protocol.DomainPortableValueV1(),
+		protocol.RoleObjectEntry, matches, completion, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	policy := conservativePolicy()
+	if err := writeQueryReport(result, &policy, &buf); err != nil {
+		t.Fatal(err)
+	}
+	text := buf.String()
+	if !strings.Contains(text, placeholder) {
+		t.Fatalf("report misses the placeholder:\n%s", text)
+	}
+	if strings.Contains(text, "hunter2") {
+		t.Fatalf("the secret value is visible:\n%s", text)
+	}
+	if !strings.Contains(text, "db.internal") {
+		t.Fatalf("non-matching values must stay:\n%s", text)
+	}
+	// --show-secrets is the sole opt-out.
+	buf.Reset()
+	shown := showSecretsPolicy()
+	if err := writeQueryReport(result, &shown, &buf); err != nil {
+		t.Fatal(err)
+	}
+	text = buf.String()
+	if !strings.Contains(text, "hunter2") {
+		t.Fatalf("--show-secrets must reveal:\n%s", text)
+	}
+	if strings.Contains(text, placeholder) {
+		t.Fatalf("--show-secrets must not redact:\n%s", text)
 	}
 }
 

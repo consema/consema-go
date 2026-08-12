@@ -757,21 +757,21 @@ func runEdit(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--write' is not available in this build: edit is dry-run only "+
 				"(the batch commit path is the apply command)")
-		return emitFailure(protocol.CommandEdit, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, error, nil, stdout, stderr)
 	}
 	if parsed.output != nil {
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--output' is not available for edit: the dry-run result is "+
 				"emitted to stdout only")
-		return emitFailure(protocol.CommandEdit, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, error, nil, stdout, stderr)
 	}
 	policy, err := compileRedactPolicy(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandEdit, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, err, nil, stdout, stderr)
 	}
 	request, err := readRequestBytes(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandEdit, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, err, policy, stdout, stderr)
 	}
 	return runEditWithRequest(parsed, request, policy, stdout, stderr)
 }
@@ -783,26 +783,26 @@ func runEditWithRequest(parsed *ParsedArgs, request []byte,
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--write' is not available in this build: edit is dry-run only "+
 				"(the batch commit path is the apply command)")
-		return emitFailure(protocol.CommandEdit, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, error, policy, stdout, stderr)
 	}
 	if parsed.output != nil {
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--output' is not available for edit: the dry-run result is "+
 				"emitted to stdout only")
-		return emitFailure(protocol.CommandEdit, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, error, policy, stdout, stderr)
 	}
 	input, decodeErr := decodeEditRequest(request, parsed)
 	if decodeErr != nil {
-		return emitFailure(protocol.CommandEdit, parsed, decodeErr, stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, decodeErr, policy, stdout, stderr)
 	}
 	path := parsed.positionals[0]
 	prepared, prepareErr := prepareEdit(input, path, parsed)
 	if prepareErr != nil {
-		return emitFailure(protocol.CommandEdit, parsed, prepareErr.intoFlowError(), stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, prepareErr.intoFlowError(), policy, stdout, stderr)
 	}
 	plan, planErr := dryRunPlan(prepared, path)
 	if planErr != nil {
-		return emitFailure(protocol.CommandEdit, parsed, planErr.intoFlowError(), stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, planErr.intoFlowError(), policy, stdout, stderr)
 	}
 	planValue, err := editPlanValue(plan)
 	if err != nil {
@@ -810,7 +810,7 @@ func runEditWithRequest(parsed *ParsedArgs, request []byte,
 	}
 	changeSet, changeSetErr := changeSetValue(prepared, path)
 	if changeSetErr != nil {
-		return emitFailure(protocol.CommandEdit, parsed, changeSetErr.intoFlowError(), stdout, stderr)
+		return emitFailure(protocol.CommandEdit, parsed, changeSetErr.intoFlowError(), policy, stdout, stderr)
 	}
 	changeSetValue, err := changeSet.ToValue()
 	if err != nil {
@@ -819,7 +819,7 @@ func runEditWithRequest(parsed *ParsedArgs, request []byte,
 	payload := cliEditPayload(planValue, changeSetValue)
 	if parsed.json {
 		if emitErr := emitCommandEnvelope(protocol.CommandEdit, protocol.ExitSuccess,
-			payload, nil, parsed, stdout); emitErr != nil {
+			payload, nil, parsed, policy, stdout); emitErr != nil {
 			return internalFailure("edit", emitErr.Error(), stderr)
 		}
 		return protocol.ExitSuccess.ExitCode()

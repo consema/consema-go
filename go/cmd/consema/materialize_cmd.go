@@ -44,11 +44,11 @@ func runMaterialize(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--output' is not available in this build: materialize writes only to "+
 				"stdout (file writing lands with the CLI fsio milestone)")
-		return emitFailure(protocol.CommandMaterialize, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandMaterialize, parsed, error, nil, stdout, stderr)
 	}
 	request, err := readRequestBytes(parsed)
 	if err != nil {
-		return emitFailure(protocol.CommandMaterialize, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandMaterialize, parsed, err, nil, stdout, stderr)
 	}
 	return runMaterializeWithRequest(parsed, request, stdout, stderr)
 }
@@ -61,19 +61,25 @@ func runMaterializeWithRequest(parsed *ParsedArgs, request []byte,
 		error := usageFlowError("cli.usage.invalid-argument@1",
 			"flag '--output' is not available in this build: materialize writes only to "+
 				"stdout (file writing lands with the CLI fsio milestone)")
-		return emitFailure(protocol.CommandMaterialize, parsed, error, stdout, stderr)
+		return emitFailure(protocol.CommandMaterialize, parsed, error, nil, stdout, stderr)
+	}
+	// The presentation redaction policy of RFC 0015 §11 (an invalid
+	// `--redact-keys` pattern is a usage failure, like plan/apply/edit).
+	policy, policyErr := compileRedactPolicy(parsed)
+	if policyErr != nil {
+		return emitFailure(protocol.CommandMaterialize, parsed, policyErr, nil, stdout, stderr)
 	}
 	input, err := decodeRequest(request, parsed, "core.materialization-request@2")
 	if err != nil {
-		return emitFailure(protocol.CommandMaterialize, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandMaterialize, parsed, err, policy, stdout, stderr)
 	}
 	payload, targetBytes, err := executeMaterialize(input)
 	if err != nil {
-		return emitFailure(protocol.CommandMaterialize, parsed, err, stdout, stderr)
+		return emitFailure(protocol.CommandMaterialize, parsed, err, policy, stdout, stderr)
 	}
 	if parsed.json {
 		if emitErr := emitCommandEnvelope(protocol.CommandMaterialize, protocol.ExitSuccess,
-			payload, nil, parsed, stdout); emitErr != nil {
+			payload, nil, parsed, policy, stdout); emitErr != nil {
 			return internalFailure("materialize", emitErr.Error(), stderr)
 		}
 		return protocol.ExitSuccess.ExitCode()
