@@ -2,14 +2,14 @@
 # 一致", §16.2, §16.6; docs/go-implementation-plan.md §4.4; the §14.12
 # "differential" gate plan). Three jobs:
 #
-#   go-1-26: the Go minimum-version gates (gofmt/vet/build/test/race,
-#            §21.2 "最低版本 CI 验证"), now a 3-version matrix
-#            (1.24.x / 1.25.x / 1.26.5, fail-fast: false). Note: go.mod
-#            declares `go 1.26`, so under the default GOTOOLCHAIN=auto the
-#            1.24/1.25 legs auto-switch to a go1.26 toolchain — a genuine
-#            pre-1.26 run requires lowering the go.mod directive (manifest
-#            change, out of scope here); the legs still pin each setup-go
-#            version explicitly. `go test ./...` runs the conformance
+#   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race,
+#            §21.2 "最低版本 CI 验证"), a 3-version matrix
+#            (1.24.x / 1.25.x / 1.26.5, fail-fast: false). go.mod declares
+#            `go 1.24` — the empirical minimum (verified 2026-08-12:
+#            gofmt/vet/build/test/race all green on go1.24.13 and go1.25.12,
+#            which is what setup-go's 1.24.x/1.25.x resolve to), so each leg
+#            pins its setup-go version and runs genuinely, with no
+#            GOTOOLCHAIN auto-switch. `go test ./...` runs the conformance
 #            runner (go/conformance, repository-relative paths), so this job
 #            also uses the multi-repo checkout mode: it checks out
 #            consema/consema (the spec repository) beside this repository
@@ -31,7 +31,7 @@
 #            reverse directions, and fail on any divergence.
 #   coverage: the statement-coverage gate (go test -coverprofile +
 #            go tool cover -func; initial threshold 60% — conservative,
-#            tightened as coverage improves). Like go-1-26, `go test ./...`
+#            tightened as coverage improves). Like go-matrix, `go test ./...`
 #            runs the conformance runner, so the job uses the multi-repo
 #            checkout mode and provisions the conformance data the same way.
 #
@@ -57,7 +57,7 @@ permissions:
   contents: read
 
 jobs:
-  go-1-26:
+  go-matrix:
     name: Go ${{ matrix.go }} gates (gofmt + vet + build + test + race)
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -106,10 +106,10 @@ jobs:
   # "Coverage 不替代语义证明"): go test measures the whole module with the
   # profile flag and `go tool cover -func` reports the statement total; the
   # awk assertion fails the job when the total drops below 60% (initial
-  # threshold, tightened as coverage improves). Like go-1-26, `go test
+  # threshold, tightened as coverage improves). Like go-matrix, `go test
   # ./...` runs the conformance runner (go/conformance, repository-relative
   # paths), so this job uses the multi-repo checkout mode and provisions the
-  # conformance data exactly as the go-1-26 job does.
+  # conformance data exactly as the go-matrix job does.
   coverage:
     name: coverage (go test -coverprofile, total >= 60%)
     runs-on: ubuntu-latest
@@ -288,7 +288,7 @@ jobs:
   check:
     name: check (all gates green)
     if: always()
-    needs: [go-1-26, go-differential, coverage, check-version-consistency, examples]
+    needs: [go-matrix, go-differential, coverage, check-version-consistency, examples]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
