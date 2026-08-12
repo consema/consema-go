@@ -13,14 +13,16 @@ Go proxy（proxy.golang.org）自动从 tag 收录模块版本（模块
    当前 1.0.0-rc.1）。
 2. **CHANGELOG 策展**：记录本版本变更；跨语言变更同步到
    consema 仓库 `docs/CHANGELOG.md`。
-3. **质量门禁全绿**：main 分支 CI `check (all gates green)` 通过
-   （go-matrix / go-differential / coverage / check-version-consistency）。
+3. **质量门禁全绿**：main 分支 CI `check (all gates green)` 全绿
+   （清单见各仓 ci 配置）。
 4. **打 tag 并推送**（发布动作的唯一触发点）：
    ```bash
    git tag vX.Y.Z
    git push origin vX.Y.Z
    ```
-   推送后 `.github/workflows/release.yml` 做两件事：
+   推送后 `.github/workflows/release.yml` 先校验 tag↔版本一致（tag 去掉
+   `v` 前缀必须等于仓根 `README.md` 的 `Version:` 行，不一致即 exit 1
+   中止），再做两件事：
    - `verify` job：在 tag 上重跑完整门禁
      （gofmt + vet + build + test + race，含 conformance 数据 provision，
      与 ci-go.yml 同款）；

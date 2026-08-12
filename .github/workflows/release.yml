@@ -57,6 +57,26 @@ jobs:
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
+      # Release guard (rc 前六角色审计 P1, 2026-08-12): Go has no go.mod
+      # package version — the tag minus the leading v must equal the
+      # repo-root README.md "Version:" line (the check-version-consistency
+      # authority), otherwise a mismatched tag could publish the wrong
+      # version through the Go proxy.
+      - name: verify tag matches manifest version (README Version line)
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="$(sed -n 's/^Version: *//p' README.md | sed 's/[（(].*//' | head -n 1)"
+          tag="${GITHUB_REF_NAME#v}"
+          if [[ -z "$manifest" ]]; then
+            echo "::error::could not read Version from README.md"
+            exit 1
+          fi
+          if [[ "$tag" != "$manifest" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match README.md Version $manifest"
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME matches README Version $manifest"
       - name: gofmt -l . && go vet && go build && go test && go test -race -shuffle=on
         run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
 
