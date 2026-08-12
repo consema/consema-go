@@ -2,7 +2,6 @@ package protocolexchange
 
 import (
 	"bytes"
-	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -23,8 +22,10 @@ import (
 // §22.2 line 1882: "protocol cross-encode/decode 100%").
 //
 // The harness never imports or calls Rust (RFC 0016 §1.1 cgo ban): the
-// checked-in case set (cases.json, this directory) is decoded and re-encoded
-// by both sides, and the other side's bytes are compared as files.
+// checked-in case set (cases.json, the shared conformance/differential/
+// protocol-exchange directory of the consema repository — single authority,
+// docs/five-language-ci-design.md §3.5) is decoded and re-encoded by both
+// sides, and the other side's bytes are compared as files.
 // Orchestration: scripts/go-verify-protocol-exchange.ps1 runs the Rust
 // example (crates/consema-conformance/examples/emit_protocol_exchange.rs)
 // over the case set into a directory, then runs this test with
@@ -50,8 +51,56 @@ import (
 // skip, never silent) and only the case-file integrity checks run.
 // ---------------------------------------------------------------------------
 
-//go:embed cases.json
-var casesJSON []byte
+// casesDirEnv names the shared differential case directory (the directory
+// that contains cases.json directly — here that is
+// conformance/differential/protocol-exchange of the consema repository).
+const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
+
+// resolveCasesDir locates the shared differential case directory: the
+// CONSEMA_DIFFERENTIAL_CASES_DIR environment variable (the
+// conformance/differential root; each harness joins its own subdirectory),
+// or — like the Kotlin runner's resolveRepoRoot probe (Runner.kt:447-460) —
+// the nearest ancestor of the package directory that carries a
+// `conformance/differential` directory, either in this checkout or in a
+// sibling consema checkout (consema and consema-go side by side). Without
+// either the harness skips (documented skip, never silent).
+func resolveCasesDir(t *testing.T) string {
+	t.Helper()
+	if dir := os.Getenv(casesDirEnv); dir != "" {
+		return dir
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot determine the working directory: %v", err)
+	}
+	for dir := cwd; ; dir = filepath.Dir(dir) {
+		for _, candidate := range []string{
+			filepath.Join(dir, "conformance", "differential"),
+			filepath.Join(dir, "consema", "conformance", "differential"),
+		} {
+			if _, err := os.Stat(filepath.Join(candidate, "cases.json")); err == nil {
+				return candidate
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+	}
+	t.Skipf("%s is not set and no conformance/differential case set is reachable from this package: run scripts/go-verify-protocol-exchange.ps1 (which sets %s) or set %s to the shared case directory", casesDirEnv, casesDirEnv, casesDirEnv)
+	return ""
+}
+
+// loadCaseJSON reads the checked-in protocol-exchange case file from the
+// shared differential directory.
+func loadCaseJSON(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(resolveCasesDir(t), "protocol-exchange", "cases.json"))
+	if err != nil {
+		t.Fatalf("cannot read protocol-exchange/cases.json: %v", err)
+	}
+	return data
+}
 
 const caseFileManifest = "consema.differential.protocol-exchange@1"
 
@@ -133,7 +182,7 @@ func loadCaseFile(t *testing.T) []fileCase {
 		Manifest string     `json:"manifest"`
 		Cases    []fileCase `json:"cases"`
 	}
-	if err := json.Unmarshal(casesJSON, &file); err != nil {
+	if err := json.Unmarshal(loadCaseJSON(t), &file); err != nil {
 		t.Fatalf("cases.json is not valid JSON: %v", err)
 	}
 	if file.Manifest != caseFileManifest {

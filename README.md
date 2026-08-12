@@ -775,16 +775,23 @@ bidirectional direction (Rust bytes →Go decode →Go re-encode).
 Go never imports or calls Rust (RFC 0016 §1.1 cgo ban): both sides encode
 the same checked-in case set, and the Rust encoder's bytes are compared as
 files.
-- `go/conformance/differential/cases.json` —the shared input set: 68 cases
+- `conformance/differential/cases.json` —the shared input set: 68 cases
   (51 PVCE transport values + 17 PGCE graphs) covering all fifteen kinds,
   golden vectors, integer/varint/container boundaries, nesting, sharing, and
   cycles (≤40 required by the milestone; the integrity test fails if the
-  file drifts below that or loses kind coverage).
+  file drifts below that or loses kind coverage). Single-authority location
+  of the consema repository (migrated from go/ on 2026-08-12,
+  docs/five-language-ci-design.md §3.5): the normalized and protocol-exchange
+  case files live at `conformance/differential/normalized/cases.json` and
+  `conformance/differential/protocol-exchange/cases.json`.
 - `go/conformance/differential/differential_test.go` —the Go side: parses
-  `cases.json` (embedded), encodes each case, compares byte-for-byte with
-  the Rust hex files, decodes the Rust bytes and re-encodes them. Without
-  `CONSEMA_DIFFERENTIAL_RUST_DIR` the byte-parity test skips (documented
-  skip, never silent) and the case-file integrity test still runs.
+  `cases.json` (loaded at runtime from the shared case directory:
+  `CONSEMA_DIFFERENTIAL_CASES_DIR`, or the default walk-up probe for a
+  `conformance/differential` checkout — this repo or a sibling consema),
+  encodes each case, compares byte-for-byte with the Rust hex files, decodes
+  the Rust bytes and re-encodes them. Without `CONSEMA_DIFFERENTIAL_RUST_DIR`
+  the byte-parity test skips (documented skip, never silent) and the
+  case-file integrity test still runs (when the case set is reachable).
 - `crates/consema-conformance/examples/emit_parity_bytes.rs` —the minimal
   Rust encoder driver (justification: no existing Rust entry point encodes
   arbitrary values to PVCE/PGCE and prints bytes; it reuses the published

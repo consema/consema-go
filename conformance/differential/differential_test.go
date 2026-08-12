@@ -2,7 +2,6 @@ package differential
 
 import (
 	"bytes"
-	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,8 +21,10 @@ import (
 // 的 PVCE/PGCE bytes 完全一致").
 //
 // The harness never imports or calls Rust (RFC 0016 §1.1 cgo ban): the
-// checked-in case set (cases.json, this directory) is encoded by both sides,
-// and the Rust encoder's bytes are compared as files. Orchestration:
+// checked-in case set (cases.json, the shared conformance/differential/
+// directory of the consema repository — single authority,
+// docs/five-language-ci-design.md §3.5) is encoded by both sides, and the
+// Rust encoder's bytes are compared as files. Orchestration:
 // scripts/go-verify-byte-parity.ps1 drives the Rust example
 // (crates/consema-conformance/examples/emit_parity_bytes.rs) into a
 // directory of `<case-id>.hex` files, then runs this test with
@@ -32,8 +33,55 @@ import (
 // case-file integrity checks run.
 // ---------------------------------------------------------------------------
 
-//go:embed cases.json
-var casesJSON []byte
+// casesDirEnv names the shared differential case directory (the directory
+// that contains cases.json directly — for the byte-parity harness that is
+// conformance/differential of the consema repository).
+const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
+
+// resolveCasesDir locates the shared differential case directory: the
+// CONSEMA_DIFFERENTIAL_CASES_DIR environment variable, or — like the Kotlin
+// runner's resolveRepoRoot probe (Runner.kt:447-460) — the nearest ancestor
+// of the package directory that carries a `conformance/differential`
+// directory, either in this checkout or in a sibling consema checkout
+// (consema and consema-go side by side). Without either the harness skips
+// (documented skip, never silent).
+func resolveCasesDir(t *testing.T) string {
+	t.Helper()
+	if dir := os.Getenv(casesDirEnv); dir != "" {
+		return dir
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot determine the working directory: %v", err)
+	}
+	for dir := cwd; ; dir = filepath.Dir(dir) {
+		for _, candidate := range []string{
+			filepath.Join(dir, "conformance", "differential"),
+			filepath.Join(dir, "consema", "conformance", "differential"),
+		} {
+			if _, err := os.Stat(filepath.Join(candidate, "cases.json")); err == nil {
+				return candidate
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+	}
+	t.Skipf("%s is not set and no conformance/differential case set is reachable from this package: run scripts/go-verify-byte-parity.ps1 (which sets %s) or set %s to the shared case directory", casesDirEnv, casesDirEnv, casesDirEnv)
+	return ""
+}
+
+// loadCaseJSON reads the checked-in byte-parity case file from the shared
+// differential directory.
+func loadCaseJSON(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(resolveCasesDir(t), "cases.json"))
+	if err != nil {
+		t.Fatalf("cannot read cases.json: %v", err)
+	}
+	return data
+}
 
 const caseFileManifest = "consema.differential.byte-parity@1"
 
@@ -92,7 +140,7 @@ func loadCaseFile(t *testing.T) []fileCase {
 		Manifest string     `json:"manifest"`
 		Cases    []fileCase `json:"cases"`
 	}
-	if err := json.Unmarshal(casesJSON, &file); err != nil {
+	if err := json.Unmarshal(loadCaseJSON(t), &file); err != nil {
 		t.Fatalf("cases.json is not valid JSON: %v", err)
 	}
 	if file.Manifest != caseFileManifest {
