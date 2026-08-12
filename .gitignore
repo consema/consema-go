@@ -1,0 +1,2 @@
+# consema-go: minimal .gitignore. The Go toolchain builds into its own cache
+# and produces no in-tree artifacts, so nothing needs ignoring here.

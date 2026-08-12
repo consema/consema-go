@@ -1,0 +1,101 @@
+# Consema Go SDK gates (roadmap §16.1 "Rust 与 Go 的 PVCE/PGCE bytes 完全
+# 一致", §16.2, §16.6; docs/go-implementation-plan.md §4.4; the §14.12
+# "differential" gate plan). Two jobs:
+#
+#   go-1-26: the Go 1.26 minimum-version gates (gofmt/vet/build/test/race,
+#            §21.2 "最低版本 CI 验证").
+#   go-differential: the cross-language differential gates. This repository
+#            carries the Go implementation only, so the job uses the
+#            multi-repo checkout mode: it checks out consema/consema-rs
+#            (the Rust emitter workspace) and consema/consema (the spec
+#            repository, whose conformance/differential case sets are the
+#            single authority) beside this repository, copies the conformance
+#            data into the workspace root, and runs the go-verify-*.ps1
+#            harnesses. The scripts build the pinned Rust emitter examples
+#            (cargo build --locked -p consema-conformance --example …),
+#            provision the golden/evidence directories, run the Go
+#            differential tests with the golden env vars set, close the
+#            reverse directions, and fail on any divergence.
+#
+# The scripts are Windows PowerShell 5.1 compatible and locate the Rust
+# example binary under <consema-rs checkout>\target\debug\examples, so the
+# job runs on windows-latest (the ts-differential precedent,
+# ci-typescript.yml). A script failure fails the job (no continue-on-error).
+name: CI Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-go-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-1-26:
+    name: Go 1.26 gates (gofmt + vet + build + test + race)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+      - name: gofmt -l . && go vet && go build && go test && go test -race
+        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race ./...
+
+  go-differential:
+    name: go differential vs Rust (byte parity + normalized + protocol exchange)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: consema/consema-rs
+          path: consema-rs
+      - uses: actions/checkout@v4
+        with:
+          repository: consema/consema
+          path: consema-repo
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: consema-rs
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+      - name: provision conformance data from the consema spec repository
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\conformance'
+          $target = Join-Path $env:GITHUB_WORKSPACE 'conformance'
+          if (-not (Test-Path -LiteralPath $source)) {
+            throw "conformance data not found in the consema checkout: $source"
+          }
+          Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
+          $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
+          Write-Output "provisioned conformance/: $count files"
+      - name: scripts/go-verify-byte-parity.ps1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-byte-parity.ps1'
+          & $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: scripts/go-verify-normalized-differential.ps1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-normalized-differential.ps1'
+          & $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: scripts/go-verify-protocol-exchange.ps1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-protocol-exchange.ps1'
+          & $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

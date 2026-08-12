@@ -1,0 +1,300 @@
+param(
+    [string]$RustOutDir = '',
+    [string]$GoReportFile = '',
+    [switch]$StrictSkips,
+    # consema-rs checkout directory (multi-repo mode); default: <repo root>\consema-rs
+    [string]$RustWorkspace = ''
+)
+
+# ---------------------------------------------------------------------------
+# Shared dual-runner conformance verification (milestone 0.19.0 G5.1;
+# docs/go-implementation-plan.md §2.6 and §4.1/§4.5; roadmap §16.6 line
+# 1547).
+#
+# Runs the same 18 vector suites with both independent runners in one batch
+# and compares them case by case:
+#   1. verifies the conformance/vectors aggregate sha256 against the
+#      Feature-Complete Manifest independently (the Go runner verifies it
+#      itself; the Rust runner embeds its vectors and has no digest check,
+#      so this script does the one independent verification — §4.5);
+#   2. runs the Rust reference runner over all 18 embedded suites via the
+#      auxiliary example emit_conformance_reports.rs (the example reuses the
+#      published run_* entry points only; it exists because no other entry
+#      point prints the runner's per-case verdicts) into <RustOutDir> as the
+#      shared report shared-conformance.json;
+#   3. runs the Go runner CLI (go run ./cmd/consema-conformance) over the
+#      same 18 suites from the repository vectors;
+#   4. runs the Go comparison core (go/conformance/shared.go, integration
+#      hook shared_run_test.go) which converts the Go report to the shared
+#      contract and compares the two sides case by case — the same case must
+#      get the same verdict on both sides; a skip must be the same skip on
+#      both sides;
+#   5. prints the per-suite two-side counts table from the two shared report
+#      files and the overall judgment.
+#
+# Comparison semantics: passed/passed, skipped/skipped (same case and
+# capability claim, both documented), and failed/failed are consistent. A
+# case skipped on exactly one side with the required documentation
+# (capability + reason, RFC 0016 §7) while the other side passes it is a
+# recorded documented-skip asymmetry: reported case by case, and blocking
+# only with -StrictSkips (the "skip 必须两侧同 skip" rule). An undocumented
+# skip, a pass-vs-fail or skip-vs-fail disagreement, and any inventory
+# divergence (suite or case present on one side only, per-file suite
+# identifier disagreement) are hard mismatches.
+#
+# Exit code: 0 = both runners conformant on all 18 suites, no hard
+# mismatches, digest verified (documented-skip asymmetries are reported,
+# not blocking by default); non-zero = any side failed, any hard mismatch,
+# digest mismatch, or a harness error. The Go runner's RFC 0015 exit class
+# (2 = non-conformant data) is propagated.
+#
+# Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
+# workspace is the consema-rs checkout (<repo root>\consema-rs by default,
+# -RustWorkspace overrides). Windows
+# PowerShell 5.1 compatible, no third-party dependencies.
+# ---------------------------------------------------------------------------
+
+$ErrorActionPreference = 'Stop'
+$workspaceRoot = Split-Path -Parent $PSScriptRoot
+$goDir = Join-Path $workspaceRoot 'go'
+# The Rust emitter workspace lives in the consema-rs repository checkout
+# (multi-repo mode): this repository carries the Go implementation only.
+# -RustWorkspace overrides the default sibling checkout <repo root>\consema-rs.
+if (-not $RustWorkspace) { $RustWorkspace = Join-Path $workspaceRoot 'consema-rs' }
+$RustWorkspace = [IO.Path]::GetFullPath($RustWorkspace)
+$vectorsDir = Join-Path $workspaceRoot 'conformance\vectors'
+$fixturesDir = Join-Path $workspaceRoot 'conformance\fixtures'
+# The Feature-Complete Manifest is authoritative in the consema spec repository
+# checkout (multi-repo mode).
+$manifestPath = Join-Path $workspaceRoot 'consema-repo\docs\fc-manifest-0.13.0.json'
+
+# --- repo layout sanity ------------------------------------------------------
+if (-not (Test-Path (Join-Path $RustWorkspace 'Cargo.toml')) -or
+    -not (Test-Path (Join-Path $RustWorkspace 'consema-conformance\Cargo.toml'))) {
+    Write-Error "consema-rs workspace not found: $RustWorkspace (checkout consema/consema-rs beside this repository, or pass -RustWorkspace)"
+    exit 1
+}
+if (-not (Test-Path (Join-Path $goDir 'go.mod'))) {
+    Write-Error "Go module not found: $goDir"
+    exit 1
+}
+if (-not (Test-Path $vectorsDir) -or -not (Test-Path $fixturesDir)) {
+    Write-Error "conformance vectors/fixtures not found under $workspaceRoot"
+    exit 1
+}
+if (-not (Test-Path $manifestPath)) {
+    Write-Error "Feature-Complete Manifest not found: $manifestPath"
+    exit 1
+}
+if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+    Write-Error 'go is not on PATH'
+    exit 1
+}
+
+# --- [1/6] independent aggregate digest verification (§4.5) ------------------
+# The aggregate algorithm (fc-manifest conformance_suite.note): file-name
+# byte-order sort, per-file sha256 lowercase hex, lines `{basename}:{digest}`
+# joined with '\n' without a trailing newline, then sha256 of that UTF-8
+# string. The Go runner performs the same check itself; the Rust runner has
+# no digest check, so this script verifies the inventory once for both sides
+# before either runner executes.
+#
+# NOTE (2026-08-10 revision): the digest is defined against the canonical
+# checkout bytes (LF; .gitattributes eol=lf), not the working-tree bytes.
+# The 2026-08-07 recorded value e3d6578858... was computed on a CRLF working
+# tree (core.autocrlf=true) and has been replaced by the canonical-state
+# value 35bebc8d...; on a CRLF working tree this step fails as expected —
+# run with `git config core.autocrlf false` (or a clean LF checkout).
+Write-Host "[1/6] verifying the conformance/vectors aggregate digest against the Feature-Complete Manifest..."
+$manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$record = $manifest.digests.conformance_suite
+if ($null -eq $record -or $record.aggregate_sha256 -eq '') {
+    Write-Error "manifest conformance_suite record is absent"
+    exit 1
+}
+$names = @(Get-ChildItem -LiteralPath $vectorsDir -Filter '*.json' | ForEach-Object { $_.Name })
+[System.Array]::Sort($names, [System.StringComparer]::Ordinal)
+$lines = @()
+$caseTotal = 0
+foreach ($name in $names) {
+    $path = Join-Path $vectorsDir $name
+    $vector = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    $caseTotal += @($vector.cases).Count
+    $digest = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+    $lines += "$name`:$digest"
+}
+$aggregateText = [string]::Join("`n", $lines)
+$sha = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $aggregateBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($aggregateText))
+}
+finally {
+    $sha.Dispose()
+}
+$computed = ([System.BitConverter]::ToString($aggregateBytes)).Replace('-', '').ToLowerInvariant()
+if ($names.Count -ne $record.suites -or $caseTotal -ne $record.cases -or $computed -ne $record.aggregate_sha256) {
+    Write-Error ("vectors digest mismatch: computed $computed, recorded $($record.aggregate_sha256) " +
+        "($($names.Count) suites / $caseTotal cases vs manifest $($record.suites) / $($record.cases))")
+    exit 1
+}
+Write-Host "vectors digest: $computed (recorded $($record.aggregate_sha256), $($names.Count) suites, $caseTotal cases)"
+
+# --- [2/6] Rust side: run all 18 embedded suites -----------------------------
+$cargo = if ($env:CONSEMA_CARGO) { $env:CONSEMA_CARGO } else { 'cargo' }
+if (-not (Get-Command $cargo -ErrorAction SilentlyContinue)) {
+    Write-Error "cargo is not available ('$cargo')"
+    exit 1
+}
+$buildWatch = [System.Diagnostics.Stopwatch]::StartNew()
+Write-Host "[2/6] building the Rust conformance report example (emit_conformance_reports)..."
+Push-Location $RustWorkspace
+try {
+    & $cargo build --locked -p consema-conformance --example emit_conformance_reports
+    $buildExit = $LASTEXITCODE
+}
+finally {
+    Pop-Location
+}
+if ($buildExit -ne 0) { exit $buildExit }
+$buildWatch.Stop()
+
+$targetDir = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $RustWorkspace 'target' }
+$example = Join-Path $targetDir 'debug\examples\emit_conformance_reports.exe'
+if (-not (Test-Path $example)) {
+    Write-Error "Rust example binary not found: $example"
+    exit 1
+}
+if ($RustOutDir -eq '') {
+    $RustOutDir = Join-Path $targetDir 'go-shared-conformance'
+}
+$RustOutDir = [System.IO.Path]::GetFullPath($RustOutDir)
+if (Test-Path $RustOutDir) { Remove-Item $RustOutDir -Recurse -Force }
+New-Item -ItemType Directory -Force $RustOutDir | Out-Null
+
+$runWatch = [System.Diagnostics.Stopwatch]::StartNew()
+Write-Host "running the Rust runner over all 18 suites -> $RustOutDir"
+& $example $RustOutDir
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "emit_conformance_reports failed (exit $LASTEXITCODE)"
+    exit $LASTEXITCODE
+}
+$runWatch.Stop()
+Write-Host ("Rust side: build {0}s, run {1}s" -f
+    [math]::Round($buildWatch.Elapsed.TotalSeconds, 1),
+    [math]::Round($runWatch.Elapsed.TotalSeconds, 1))
+$rustReport = Join-Path $RustOutDir 'shared-conformance.json'
+if (-not (Test-Path $rustReport)) {
+    Write-Error "Rust shared report not found: $rustReport"
+    exit 1
+}
+
+# --- [3/6] Go side: run the same 18 suites with the Go runner CLI ------------
+$logDir = Join-Path $env:TEMP 'consema-shared-conformance'
+New-Item -ItemType Directory -Force $logDir | Out-Null
+if ($GoReportFile -eq '') {
+    $GoReportFile = Join-Path $logDir 'go-shared-conformance.json'
+}
+$GoReportFile = [System.IO.Path]::GetFullPath($GoReportFile)
+$cliOutFile = Join-Path $logDir 'go-cli.stdout.txt'
+$cliErrFile = Join-Path $logDir 'go-cli.stderr.txt'
+$cliWatch = [System.Diagnostics.Stopwatch]::StartNew()
+Write-Host "[3/6] running the Go runner CLI over the same 18 suites..."
+Push-Location $goDir
+try {
+    & go run ./cmd/consema-conformance -vectors $vectorsDir -fixtures $fixturesDir -manifest $manifestPath 1> $cliOutFile 2> $cliErrFile
+    $goCliCode = $LASTEXITCODE
+}
+finally {
+    Pop-Location
+}
+$cliWatch.Stop()
+Get-Content $cliOutFile | ForEach-Object { Write-Host $_ }
+if (Test-Path $cliErrFile) {
+    Get-Content $cliErrFile | ForEach-Object { Write-Host $_ }
+}
+if ($goCliCode -ne 0) {
+    Write-Error "Go conformance runner failed (exit $goCliCode)"
+    exit $goCliCode
+}
+Write-Host ("Go side: run {0}s" -f [math]::Round($cliWatch.Elapsed.TotalSeconds, 1))
+
+# --- [4/6] case-id-level comparison (the Go compare core) --------------------
+$stdoutFile = Join-Path $logDir 'go-test.stdout.txt'
+$stderrFile = Join-Path $logDir 'go-test.stderr.txt'
+$env:CONSEMA_SHARED_CONFORMANCE_RUST_DIR = $RustOutDir
+$env:CONSEMA_SHARED_CONFORMANCE_GO_REPORT = $GoReportFile
+if ($StrictSkips) {
+    $env:CONSEMA_SHARED_CONFORMANCE_STRICT = '1'
+}
+else {
+    $env:CONSEMA_SHARED_CONFORMANCE_STRICT = ''
+}
+$testWatch = [System.Diagnostics.Stopwatch]::StartNew()
+Write-Host "[4/6] comparing the two sides case by case (shared_run_test.go)..."
+Push-Location $goDir
+try {
+    & go test -count=1 -v ./conformance/ -run '^TestSharedConformanceDualRunner$' 1> $stdoutFile 2> $stderrFile
+    $testCode = $LASTEXITCODE
+}
+finally {
+    Pop-Location
+}
+$testWatch.Stop()
+Get-Content $stdoutFile | ForEach-Object { Write-Host $_ }
+if (Test-Path $stderrFile) {
+    Get-Content $stderrFile | ForEach-Object { Write-Host $_ }
+}
+
+# The comparison must have RUN (not skipped) and passed.
+$output = Get-Content $stdoutFile -Raw
+if ($output -match '--- SKIP: TestSharedConformanceDualRunner') {
+    Write-Error 'the shared conformance test skipped: the Rust shared report was not provisioned'
+    exit 1
+}
+if ($output -notmatch '--- PASS: TestSharedConformanceDualRunner') {
+    Write-Error "the shared conformance test did not pass (go test exit $testCode)"
+    if ($testCode -eq 0) { exit 1 } else { exit $testCode }
+}
+if ($testCode -ne 0) {
+    exit $testCode
+}
+$summary = [regex]::Match($output, 'shared conformance: \d+/\d+ cases agree, \d+ hard mismatches, \d+ documented-skip asymmetries \(\d+ suites\)')
+if (-not $summary.Success) {
+    Write-Error 'cannot find the shared conformance summary line in the test output'
+    exit 1
+}
+Write-Host ("comparison: {0}s" -f [math]::Round($testWatch.Elapsed.TotalSeconds, 1))
+
+# --- [5/6] per-suite two-side counts table (from the two report files) -------
+if (-not (Test-Path $GoReportFile)) {
+    Write-Error "Go shared report not found: $GoReportFile"
+    exit 1
+}
+$goShared = Get-Content $GoReportFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$rustShared = Get-Content $rustReport -Raw -Encoding UTF8 | ConvertFrom-Json
+$rustByFile = @{}
+foreach ($rustSuite in @($rustShared.suites)) {
+    $rustByFile[$rustSuite.file] = $rustSuite
+}
+Write-Host ''
+Write-Host 'per-suite two-side counts (go passed/skipped/failed | rust passed/skipped/failed):'
+foreach ($goSuite in @($goShared.suites)) {
+    $rustSuite = $rustByFile[$goSuite.file]
+    $rustPassed = 0
+    $rustSkipped = 0
+    $rustFailed = 0
+    if ($null -ne $rustSuite) {
+        $rustPassed = @($rustSuite.passed).Count
+        $rustSkipped = @($rustSuite.skipped).Count
+        $rustFailed = @($rustSuite.failed).Count
+    }
+    Write-Host ("  {0}: go {1}/{2}/{3} | rust {4}/{5}/{6}" -f
+        $goSuite.file,
+        @($goSuite.passed).Count, @($goSuite.skipped).Count, @($goSuite.failed).Count,
+        $rustPassed, $rustSkipped, $rustFailed)
+}
+
+# --- [6/6] overall verdict ---------------------------------------------------
+Write-Host "RESULT: $($summary.Value)"
+Write-Host 'shared conformance verification complete (exit 0)'
+exit 0
