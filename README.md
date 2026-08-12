@@ -1,5 +1,9 @@
 # Consema Go SDK（consema-go）
 
+![CI](https://img.shields.io/github/actions/workflow/status/consema/consema-go/ci-go.yml?branch=main)
+![Version](https://img.shields.io/github/v/tag/consema/consema-go)
+![License](https://img.shields.io/github/license/consema/consema-go)
+
 Consema 语言中立契约（RFC 0016）的 **Go 实现**仓库。本仓库是 Consema 六仓
 拆分中的 Go 仓：规范权威（RFC、docs、路线图、跨语言 conformance suites）在
 [github.com/consema/consema](https://github.com/consema/consema)；本仓承载
