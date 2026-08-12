@@ -492,9 +492,9 @@ The Go public API is held to the six stability policies of roadmap §21.2
    be mistaken for a complete one.
 6. **Minimum Go version.** `go.mod` freezes `go 1.26` (plan §1.3; the
    hcl-go-v1 oracle's older `go` directive is its own manifest-pinned
-   legacy, not SDK policy). The roadmap §21.2 CI verification leg —   the gates below running in CI on the frozen minimum version —is an
-   open 0.19.0 gate item (G5.5 review finding F1); locally they are the
-   commands in the next section.
+   legacy, not SDK policy). The roadmap §21.2 CI verification leg —   the gates below running in CI on the frozen minimum version —is
+   the `go-1-26` job (ci.yml:316-331; G5.5 finding F1, **closed** in
+   937b330); locally they are the commands in the next section.
 ## Go CLI beta (0.19.0 G5.6)
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
@@ -809,7 +809,10 @@ re-declared, so drift on either side fails the test.
 Runner state at 0.18.0: **506 passed / 2 documented skips / 0 failed**
 (18 suites / 508 cases, aggregate digest `35bebc8d…`, defined against the
 canonical LF checkout — the 2026-08-07 CRLF-working-tree value
-`e3d6578858…` was replaced on 2026-08-10); cross-language
+`e3d6578858…` was replaced on 2026-08-10). This is the 0.18.0 historical
+state: the G5.3 exchange findings (ada5020) later flipped the 2 documented
+skips to executed, so the runner is now 508/508 with zero skips (the same
+count the Rust/TS/Python/Kotlin runners pin); cross-language
 normalized-result differential **108/108**; byte parity **68/68**.
 ## Three-platform verification (0.19.0 G5.4)
 Roadmap §22.4:1907 requires the Go side to pass on Windows/Linux/macOS.
@@ -818,9 +821,14 @@ G5.4 close-out: `gofmt -l .` clean, `go vet ./...` clean, `go build ./...`
 clean, `go test -count=1 ./...` all green, `go test -race -count=1 ./...`
 all green, `go mod tidy` no-op, all 16 fuzz targets 30s clean-run PASS,
 and all 8×2 benchmarks measured above.
-`.github/workflows/ci.yml` has no Go job (it is the Rust gate domain;
-plan §3 file-domain table keeps `.github` off-limits to Go agents), so the
-Linux/macOS legs are completed on demand with the exact same commands —the full matrix is reproducible on any of the three OSes:
+The Go gates run in CI as gatekeeper-landed jobs: `go-1-26` (ci.yml:316-331,
+ubuntu-latest, closed G5.5 finding F1 in 937b330) and `go-differential`
+(ci.yml:333-376, windows-latest, added 2026-08-12 — runs the
+go-verify-byte-parity / normalized-differential / protocol-exchange
+harnesses). plan §3's file-domain table still keeps `.github` off-limits to
+Go agents (the jobs are landed by the gatekeeper), so the remaining
+Linux/macOS legs below are completed on demand with the exact same
+commands —the full matrix is reproducible on any of the three OSes:
 ```
 cd go
 gofmt -l .                 # must be empty

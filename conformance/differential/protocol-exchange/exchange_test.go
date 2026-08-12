@@ -55,9 +55,10 @@ var casesJSON []byte
 
 const caseFileManifest = "consema.differential.protocol-exchange@1"
 
-// minCaseCount is the task's lower bound for the input set ("至少 40 个
-// case"). The integrity test fails if the checked-in file drops below it.
-const minCaseCount = 40
+// expectedCaseCount is the exact size of the checked-in input set (frozen
+// test data; measured from cases.json: 83 cases). The integrity test fails
+// if the checked-in file's case count drifts from it.
+const expectedCaseCount = 83
 
 // rustDirEnv names the directory of the Rust encoder's per-case files.
 const rustDirEnv = "CONSEMA_EXCHANGE_RUST_DIR"
@@ -138,8 +139,8 @@ func loadCaseFile(t *testing.T) []fileCase {
 	if file.Manifest != caseFileManifest {
 		t.Fatalf("cases.json manifest = %q, want %q", file.Manifest, caseFileManifest)
 	}
-	if len(file.Cases) < minCaseCount {
-		t.Fatalf("cases.json has %d cases, want >= %d", len(file.Cases), minCaseCount)
+	if len(file.Cases) != expectedCaseCount {
+		t.Fatalf("cases.json has %d cases, want %d", len(file.Cases), expectedCaseCount)
 	}
 	known := make(map[string]bool, len(allRecords))
 	for _, record := range allRecords {

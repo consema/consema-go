@@ -35,6 +35,12 @@ import (
 //go:embed cases.json
 var casesJSON []byte
 
+// expectedCaseCount is the exact size of the checked-in input set (frozen
+// test data; measured from cases.json: 108 cases). The integrity test fails
+// if the checked-in file's case count drifts from it. (MinCaseCount in
+// runner.go is the legacy lower bound and stays untouched.)
+const expectedCaseCount = 108
+
 // loadCaseFile parses and validates the checked-in case set.
 func loadCaseFile(t *testing.T) []fileCase {
 	t.Helper()
@@ -48,8 +54,8 @@ func loadCaseFile(t *testing.T) []fileCase {
 	if file.Manifest != CaseFileManifest {
 		t.Fatalf("cases.json manifest = %q, want %q", file.Manifest, CaseFileManifest)
 	}
-	if len(file.Cases) < MinCaseCount {
-		t.Fatalf("cases.json has %d cases, want >= %d (the differential input set)", len(file.Cases), MinCaseCount)
+	if len(file.Cases) != expectedCaseCount {
+		t.Fatalf("cases.json has %d cases, want %d (the differential input set)", len(file.Cases), expectedCaseCount)
 	}
 	seen := make(map[string]bool, len(file.Cases))
 	for _, c := range file.Cases {

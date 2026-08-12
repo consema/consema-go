@@ -184,6 +184,12 @@ type Graph struct {
 	edges    int
 }
 
+// PortableGraph is the RFC 0006 contract name of the immutable graph value;
+// it aliases Graph so the API freezes the same vocabulary across languages
+// (RFC 0006 §2; the TS `export type PortableGraph = Graph` and Kotlin
+// `typealias PortableGraph = Graph` counterparts).
+type PortableGraph = Graph
+
 // Roots returns a copy of the ordered roots. An empty slice represents an
 // empty root stream (RFC 0006 §2).
 func (g *Graph) Roots() []NodeID {
