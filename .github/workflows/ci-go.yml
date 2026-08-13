@@ -33,10 +33,15 @@
 #            (cargo build --locked -p consema-conformance --example …),
 #            provision the golden/evidence directories, run the Go
 #            differential tests with the golden env vars set, close the
-#            reverse directions, and fail on any divergence.
+#            reverse directions, and fail on any divergence. The fourth
+#            harness (go-verify-shared-conformance.ps1) runs the same 18
+#            vector suites with both runners in one batch and compares the
+#            reports case by case — the roadmap §16.6 hard gate — so it is
+#            wired into this job's PR/release execution path.
 #   check-version-consistency: asserts the README release-train "Version:"
 #            line (go.mod declares no package version, so the line is the
-#            train bump's CI hook).
+#            train bump's CI hook) and that the conformance CLI pins the
+#            same value in go/cmd/consema-conformance/main.go.
 #   examples: vets and runs the committed go/examples/sdk_chain example (no
 #            conformance data, so no multi-repo checkout or provision step).
 #   check: the alls-green aggregate gate ("check (all gates green)", the
@@ -170,7 +175,7 @@ jobs:
           }
 
   go-differential:
-    name: go differential vs Rust (byte parity + normalized + protocol exchange)
+    name: go differential vs Rust (byte parity + normalized + protocol exchange + shared conformance)
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -237,6 +242,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-protocol-exchange.ps1'
+          & $script
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: scripts/go-verify-shared-conformance.ps1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-shared-conformance.ps1'
           & $script
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
