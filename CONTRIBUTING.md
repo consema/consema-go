@@ -34,7 +34,9 @@ go test -race ./...
   `go-verify-protocol-exchange.ps1`、`go-verify-shared-conformance.ps1`。
   脚本构建 consema-rs 的 Rust emitter 对拍本实现。
 - **Conformance 数据同步**：conformance 数据来自规范仓 checkout（CI 多仓
-  模式），权威在规范仓，改动必须回规范仓提交后再同步。
+  模式），权威在规范仓，改动必须回规范仓提交后再同步。本地手动 provision：
+  从规范仓拷贝 `conformance/` 至本仓根、`docs/fc-manifest-0.13.0.json` 至
+  `docs/`（不入库，见 `.gitignore`）。
 
 ## CI 门禁
 

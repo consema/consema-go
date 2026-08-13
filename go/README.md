@@ -864,6 +864,9 @@ go test -fuzz='^FuzzParse$' -fuzztime=30s ./json/
 go test -fuzz='^FuzzAlias$' -fuzztime=30s ./yaml/
 go test -fuzz='^FuzzParseBinary$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParse$' -fuzztime=30s ./hcl/
+**Note: the 6-target table below is the 0.14.0 historical state (2026-08-07
+record); the current 16-target 30s clean-run PASS is in the "Fuzz targets"
+section above. The table is kept as historical fact.**
 Measured 2026-08-07 (go 1.26.5, Windows 11): every target ran 30s of
 fuzzing with no panic, no hang, and no limit bypass:
 | Target | execs in 30s | result |

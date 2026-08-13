@@ -1,6 +1,6 @@
 # Consema Go SDK gates (roadmap §16.1 "Rust 与 Go 的 PVCE/PGCE bytes 完全
 # 一致", §16.2, §16.6; docs/go-implementation-plan.md §4.4; the §14.12
-# "differential" gate plan). Three jobs:
+# "differential" gate plan). Six jobs:
 #
 #   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race,
 #            §21.2 "最低版本 CI 验证"), a 3-version matrix
@@ -17,6 +17,11 @@
 #            fixtures, the docs/fc-manifest-0.13.0.json; the
 #            toml.corpus.cargo-manifest corpus reads the committed fixture
 #            conformance/fixtures/toml/Cargo.toml).
+#   coverage: the statement-coverage gate (go test -coverprofile +
+#            go tool cover -func; initial threshold 60% — conservative,
+#            tightened as coverage improves). Like go-matrix, `go test ./...`
+#            runs the conformance runner, so the job uses the multi-repo
+#            checkout mode and provisions the conformance data the same way.
 #   go-differential: the cross-language differential gates. This repository
 #            carries the Go implementation only, so the job uses the
 #            multi-repo checkout mode: it checks out consema/consema-rs
@@ -29,11 +34,14 @@
 #            provision the golden/evidence directories, run the Go
 #            differential tests with the golden env vars set, close the
 #            reverse directions, and fail on any divergence.
-#   coverage: the statement-coverage gate (go test -coverprofile +
-#            go tool cover -func; initial threshold 60% — conservative,
-#            tightened as coverage improves). Like go-matrix, `go test ./...`
-#            runs the conformance runner, so the job uses the multi-repo
-#            checkout mode and provisions the conformance data the same way.
+#   check-version-consistency: asserts the README release-train "Version:"
+#            line (go.mod declares no package version, so the line is the
+#            train bump's CI hook).
+#   examples: vets and runs the committed go/examples/sdk_chain example (no
+#            conformance data, so no multi-repo checkout or provision step).
+#   check: the alls-green aggregate gate ("check (all gates green)", the
+#            SINGLE required check for branch protection; depends on the
+#            other five jobs and runs with `if: always()`).
 #
 # The scripts are Windows PowerShell 5.1 compatible and locate the Rust
 # example binary under <consema-rs checkout>\target\debug\examples, so the

@@ -117,14 +117,14 @@ func TestSharedConformanceDualRunner(t *testing.T) {
 		t.Errorf("suite inventories: go %d, rust %d; want 18 both sides",
 			len(goShared.Suites), len(rustShared.Suites))
 	}
-	if goReport.Total != 508 {
-		t.Errorf("Go case inventory %d != 508", goReport.Total)
+	if goReport.Total != 519 {
+		t.Errorf("Go case inventory %d != 519", goReport.Total)
 	}
 	rustTotal := 0
 	for _, suite := range rustShared.Suites {
 		rustTotal += len(suite.Passed) + len(suite.Skipped) + len(suite.Failed)
 	}
-	if rustTotal != 508 {
-		t.Errorf("Rust case inventory %d != 508", rustTotal)
+	if rustTotal != 519 {
+		t.Errorf("Rust case inventory %d != 519", rustTotal)
 	}
 }

@@ -162,7 +162,7 @@ type suiteDefinition struct {
 	// SemanticModel is the required semantic-model identifier; empty when
 	// the suite carries none.
 	SemanticModel string
-	// ExpectedCases is the frozen case count (fc-manifest 508 inventory).
+	// ExpectedCases is the frozen case count (fc-manifest 519 inventory).
 	ExpectedCases int
 	// Run executes the suite.
 	Run func(*Runner, *suiteData) *SuiteReport

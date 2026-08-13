@@ -7,3 +7,13 @@
 *.swp
 .DS_Store
 Thumbs.db
+
+# Conformance data: test-run-time provision. CI multi-repo checkouts copy it
+# from the consema/consema spec repository; local runs require a manual copy
+# (see CONTRIBUTING.md "Conformance 数据同步"). The spec repository is the
+# single authority — kept out of git here to avoid a second authority.
+conformance/
+docs/fc-manifest-0.13.0.json
+
+# Go coverage profile (generated at go/coverage.out by the CI coverage job)
+go/coverage.out
