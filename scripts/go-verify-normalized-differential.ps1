@@ -52,8 +52,9 @@ param(
 #      the integrity guards are automatic and enforced by
 #      TestCaseFileIntegrity on every `go test ./...` run: the manifest id
 #      must stay consema.differential.normalized@1, ids must be unique, and
-#      the case count must stay >= 104. The case then runs in both
-#      directions of this script forever.
+#      the case count must stay exactly 108 (normalized_test.go
+#      expectedCaseCount). The case then runs in both directions of this
+#      script forever.
 #   3. a language-neutral defect exposed by the finding (a real bug, not a
 #      harness artifact) additionally goes into the regression corpus: the
 #      `regressions` array of conformance/corpora/mutation-v1.json,
@@ -103,8 +104,8 @@ if (-not (Test-Path $CaseFile)) {
 # UTF8 explicit: PowerShell 5.1 Get-Content defaults to the ANSI codepage.
 $cases = Get-Content $CaseFile -Raw -Encoding UTF8 | ConvertFrom-Json
 $caseCount = @($cases.cases).Count
-if ($caseCount -lt 40) {
-    Write-Error "normalized differential case file has $caseCount cases, want >= 40"
+if ($caseCount -ne 108) {
+    Write-Error "normalized differential case file has $caseCount cases, want exactly 108 (normalized_test.go expectedCaseCount)"
     exit 1
 }
 

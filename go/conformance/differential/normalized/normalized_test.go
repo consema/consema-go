@@ -84,8 +84,7 @@ func loadCaseJSON(t *testing.T) []byte {
 
 // expectedCaseCount is the exact size of the checked-in input set (frozen
 // test data; measured from cases.json: 108 cases). The integrity test fails
-// if the checked-in file's case count drifts from it. (MinCaseCount in
-// runner.go is the legacy lower bound and stays untouched.)
+// if the checked-in file's case count drifts from it.
 const expectedCaseCount = 108
 
 // loadCaseFile parses and validates the checked-in case set.

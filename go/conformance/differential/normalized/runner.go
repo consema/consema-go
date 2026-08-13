@@ -5,7 +5,7 @@
 //
 // The harness compares the language-neutral normalized results of the same
 // data-driven input set (`cases.json`, this directory) executed by the Rust
-// SDK (crates/consema-conformance/examples/emit_normalized_results.rs) and
+// SDK (consema-rs/crates/consema-conformance/examples/emit_normalized_results.rs) and
 // by this package. Go never imports or calls Rust (RFC 0016 §1.1 cgo ban):
 // the Rust side emits one `<case-id>.txt` evidence file per case, and the
 // Go test computes the same normalized facts and compares them field by
@@ -47,11 +47,6 @@ import (
 
 // CaseFileManifest is the frozen manifest id of the differential input set.
 const CaseFileManifest = "consema.differential.normalized@1"
-
-// MinCaseCount is the task's lower bound for the input set (79 json/toml
-// cases + 25+ yaml/ini/properties cases, milestone 0.16.0 G2.4); the
-// integrity test fails if the checked-in file drops below it.
-const MinCaseCount = 104
 
 // RustDirEnv names the directory of the Rust evidence files.
 const RustDirEnv = "CONSEMA_DIFFERENTIAL_NORMALIZED_RUST_DIR"
