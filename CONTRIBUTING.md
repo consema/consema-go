@@ -24,6 +24,12 @@ go test ./...
 go test -race ./...
 ```
 
+前置：conformance 数据不入 git（见 `.gitignore`），`go test ./...` 的
+conformance 用例（go/conformance，固定仓库相对路径，无 skip 直接失败）
+在干净克隆上会失败——先按下方「Conformance 数据同步」provision（并排检出
+母仓 conformance 数据），或直接运行 CI 同款脚本
+（`scripts/go-verify-shared-conformance.ps1` 等，见「贡献点」）。
+
 ## 贡献点
 
 - **Go 实现**：`go/` 模块（core / graph / protocol / document + 八格式家族

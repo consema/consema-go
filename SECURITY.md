@@ -13,13 +13,13 @@ Consema 将资源上限作为执行策略，不把截断包装成成功：
 - `SourcePatchLimits` 限制 result source、replacement count 与 patch bytes。
 - `MaterializationLimits` 限制 input nodes/depth、output bytes、report entries 与 provenance entries。
 
-超限分别返回 `FatalFormationFailure`、`DecodeError::ResourceLimit`、`QueryFailure::ResourceLimitExceeded` 或 failed projection。取消不会被报告为完成。
+超限分别返回 `FormationFailure`（parse）、`ProtocolError`（PVCE/transport decode，`KindResourceLimit`）、`QueryFailure`（`FailureResourceLimit`）或 failed projection；每种 typed error 都实现 `Code() string` 携带冻结注册码（如 `core.parse.resource-limit@1`、`core.protocol.resource-limit@1`；错误码与消息分离，见 go/README.md「Error code is separate from the message」）。取消不会被报告为完成。
 
-解析器和 decoder 禁止 `unsafe`，严格检查 UTF‑8、长度溢出、非最短 varint、非规范整数/Decimal、容器计数和嵌套深度。`consema-conformance` 包含 55 个恶意/边界 property tests（hardening.rs 12 个、yaml_hardening.rs 5 个、line_formats_hardening.rs 6 个、xml_hardening.rs 10 个、xml_encoding_corpus.rs 7 个、plist_hardening.rs 7 个、hcl_hardening.rs 8 个）；如果发现 panic、无界分配或规范绕过，请附最小输入与触发的 capability contract 报告。
+解析器和 decoder 禁止 `unsafe`（纯标准库，go.mod 零第三方依赖），严格检查 UTF‑8、长度溢出、非最短 varint、非规范整数/Decimal、容器计数和嵌套深度。Go 侧对抗/边界覆盖：`go/conformance/security_matrix_test.go`（XML/plist limits matrix 共 32 行精确边界断言，另含 HCL matrix 与实体膨胀、别名炸弹等威胁测试）与 `go/conformance/limits_matrix_test.go`（五家族矩阵）；`cmd/consema-conformance` 为 runner CLI（无独立测试文件），其行为由 go/conformance 包测试与跨语言差分 harness 覆盖；如果发现 panic、无界分配或规范绕过，请附最小输入与触发的 capability contract 报告。
 
 canonical protocol JSON 拒绝空白、替代 escape、重排/未知字段和非最短数字表示；PVCE 继续拒绝非规范 varint 与整数。默认协议任意精度整数 magnitude 上限为 1 KiB，避免十进制转换的 CPU 放大；调用方提高上限时必须同时评估输入可信度和工作预算。任何 v1-v6 envelope payload 都会进入对应 typed decoder，不能只靠匹配 `schema` 绕过字段与交叉约束。v1-v5 registry 保持冻结；JSON5 专属 diagnostic 从 semantic-model v4 起可外部化（92/132/166-code registry 均含对应代码）。
 
-`json5.standard@1` 只实现 Standard JSON5 数据文法，不求值 JavaScript，不执行表达式、import、getter、method、computed key、regex 或模板字符串，也不访问文件与网络。IdentifierStart/Continue 使用精确锁定的 `unicode-id-start 1.4.0` 表。有限数字进入任意精度 Integer/Decimal；只有 `±Infinity`/`±NaN` 进入四种固定 binary64 位模式，有限 binary64 和任意 NaN payload 不能通过 JSON5 文本伪造 exact round-trip。非法 escape/identifier/number/comment 进入 recovery 或 fatal failure，不暴露伪造 native 值。固定 JSON5 v2.2.3 gate 覆盖 43 valid、39 invalid 和一个完整真实夹具；逐字节 mutation、截断、depth/token/node/source 上限均验证无 panic、无 partial success。
+`json5.standard@1` 只实现 Standard JSON5 数据文法，不求值 JavaScript，不执行表达式、import、getter、method、computed key、regex 或模板字符串，也不访问文件与网络。IdentifierStart/Continue 使用 Go 标准库 `unicode` 包的表格（`unicode.IsLetter` / `unicode.Nl` / `unicode.Mn` / `unicode.Mc` / `unicode.Nd` / `unicode.Pc`，见 go/json/parser.go:629-648），随所用 Go 工具链版本固定。有限数字进入任意精度 Integer/Decimal；只有 `±Infinity`/`±NaN` 进入四种固定 binary64 位模式，有限 binary64 和任意 NaN payload 不能通过 JSON5 文本伪造 exact round-trip。非法 escape/identifier/number/comment 进入 recovery 或 fatal failure，不暴露伪造 native 值。固定 JSON5 v2.2.3 gate 覆盖 43 valid、39 invalid 和一个完整真实夹具；逐字节 mutation、截断、depth/token/node/source 上限均验证无 panic、无 partial success。
 
 `core.source-snapshot@1` 解码时重算 digest、BOM/encoding resolution 与 decoded status；`core.source-patch@1` 解码时检查 replacement order/count/bytes，应用时再次检查 base/original/target/encoding。极端 offset、stale content、非法 UTF 序列和超限输出都在返回新 snapshot 前失败；redaction 只影响 review/debug presentation，不删除应用所需的字节前置条件。
 
@@ -29,7 +29,7 @@ Materialization 在递归与输出分配前计算 input node/depth 和增长上�
 
 raw `NodeRef`、snapshot handle、cursor 与 `CancellationToken` 不可序列化。需要 source/node identity 的 Diagnostic、Query、Provenance、ChangeSet、MaterializationResult 和 EditPlan 必须先绑定调用方稳定 locator；缺失绑定会失败，不会省略身份事实后伪造成功。
 
-`toml.1.0@1` 只对完整合法文档形成 snapshot，非法输入返回 `FatalFormationFailure`。发布门禁固定运行 `toml-lang/toml-test v2.2.0` 的 205 个 valid 和 474 个 invalid TOML 1.0 decoder cases；上游版本变更必须单独审计。semantic edit 不会舍入 NaN payload、亚纳秒时间或非整分钟 offset 来伪造成功。
+`toml.1.0@1` 只对完整合法文档形成 snapshot，非法输入返回 `FormationFailure`。本仓发布流程（release.yml）没有 toml-test 门禁——tag 即发布（Go proxy 自动拾取），发布验证仅重跑 Go 门禁（gofmt/vet/build/test/race）与版本一致性检查；TOML 一致性由 conformance 套件（toml-v1 向量 18 cases、fixtures/toml 真实夹具含 cargo-manifest）与 go/toml 包测试覆盖。semantic edit 不会舍入 NaN payload、亚纳秒时间或非整分钟 offset 来伪造成功。
 
 `xml.1.0-safe@1` 的 formation 只消费调用方提供的完整 document entity bytes，绝不打开外部 DTD、实体、URI、文件、网络连接、registry、classpath 或 catalog，也不提供用户 resolver 回调。DOCTYPE 仅允许 bounded internal subset；外部 subset、外部/参数实体、notation、conditional section 与 validation 声明一律恢复并发布稳定诊断。entity 膨胀按整个文档六维记账（declaration/reference 数量、expansion depth、expanded bytes/scalars、amplification ratio），任何一维突破即恢复；攻击无法把预算拆分到多个引用。内部 subset 注释按字符数据处理，其文本不会触发排除声明误报。UTF-16 输入必须携带 BOM；encoding 声明与实际编码冲突时恢复。恢复文档永不投影、物化或编辑；`xml.safe-canonical-document@1` materialization 对生成字节执行重解析闭包验证，失败返回无目标 Document。结构编辑不接收 raw markup，新内容一律 XML-escape；编辑不猜测或伪造 namespace 声明，unbound/reserved prefix、重复 expanded attribute、ancestor placement 与根删除均在 commit 前失败。XML 语法覆盖包含 37 种细粒度 kind，实体引用与属性部件均可被 lossless query 精确区分。
 
@@ -49,4 +49,4 @@ raw `NodeRef`、snapshot handle、cursor 与 `CancellationToken` 不可序列化
 
 **响应 SLA（按缺陷等级）。** P0（数据破坏、静默损失、RCE/外部访问、错误写文件、跨快照误编辑）：24 小时内确认，7 天内给出修复或缓解方案。P1（panic/crash/hang、错误完成状态、明显语义不一致、limit bypass）：72 小时内确认，14 天内修复。P2（有安全替代路径的功能缺陷、非核心性能回退、诊断位置错误）：随下一个发布窗口修复，发布判断逐项记录。P3（文档、易用性、非稳定 message、低风险边角）：尽力而为。任何等级都不得用降级测试或截断包装来"修复"；资源上限与完成状态语义是安全边界（见本文档开头部分），不能因披露而放松。
 
-**支持窗口。** 1.0.0 发布前，安全修复只承诺两个窗口：最新稳定版本与其上一 minor（当前为最新发布 tag 与其前一版本）；更早版本不承诺修复，除非影响面证明必须回移。正式支持的目标是 CI 矩阵（windows-latest / ubuntu-latest / macos-latest，x86_64）；MSRV 窗口为 manifest 声明的 `rust-version`（当前 1.85）起的所有版本，MSRV 提升必须走 manifest 变更记录。Go 实现（0.14.0 起）的版本窗口在 Go RC 时按当时稳定生态冻结。公共 API 与 CLI 命令的弃用期至少一个 minor；contract/Profile 退役必须走 RFC 进程，已冻结的 v1-v6 registry 永不删除 code，退役只改变新输入的接受行为并在发布记录中列明。
+**支持窗口。** 1.0.0 发布前，安全修复只承诺两个窗口：最新稳定版本与其上一 minor（当前为最新发布 tag 与其前一版本）；更早版本不承诺修复，除非影响面证明必须回移。正式支持的目标以本仓 CI 覆盖为准（Go 门禁在 ubuntu-latest，Go-Rust 差分门禁在 windows-latest，x86_64）；Go 支持窗口为 go.mod 声明的 `go 1.24`（实测最小版本）起的所有版本，CI go-matrix 以 1.24.x / 1.25.x / 1.26.5 三版本真实验证，最低版本提升必须走 go.mod 变更记录；Go 实现（0.14.0 起）的版本窗口在 Go RC 时按当时稳定生态冻结。公共 API 与 CLI 命令的弃用期至少一个 minor；contract/Profile 退役必须走 RFC 进程，已冻结的 v1-v6 registry 永不删除 code，退役只改变新输入的接受行为并在发布记录中列明。

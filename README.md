@@ -113,6 +113,14 @@ go test ./...
 go test -race ./...
 ```
 
+前置（干净克隆必做）：conformance 数据不入 git（见 `.gitignore`），
+`go test ./...` 的 conformance 用例（go/conformance，仓库相对路径
+`conformance/vectors` 等，无 skip 直接失败）需要先按
+[CONTRIBUTING.md](CONTRIBUTING.md)「Conformance 数据同步」并排检出母仓
+conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
+`docs/fc-manifest-0.13.0.json` 至 `docs/`。未 provision 时 conformance
+测试会失败（非跳过），这正是 CI 多仓 checkout 模式所 provision 的内容。
+
 ## FAQ
 
 - **支持哪些配置格式？** 八个格式家族、16 个 profiles：JSON（`json.strict@1` / `jsonc.bounded@1` / `json5.standard@1`）、TOML（`toml.1.0@1`）、YAML（`yaml.1.2-core@1` / `yaml.1.1-compat@1`）、INI（`ini.portable@1` / `ini.windows@1` / `ini.python-configparser@1`）、Java Properties（`java-properties.reader@1` / `java-properties.latin1@1`）、XML（`xml.1.0-safe@1`）、Property List（`plist.xml@1` / `plist.binary@1`）、HCL（`hcl.native@1` / `hcl.tfvars@1`）。完整面枚举见 `consema.Profiles()`。
