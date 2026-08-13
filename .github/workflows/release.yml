@@ -77,8 +77,8 @@ jobs:
             exit 1
           fi
           echo "tag $GITHUB_REF_NAME matches README Version $manifest"
-      - name: gofmt -l . && go vet && go build && go test && go test -race -shuffle=on
-        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
+      - name: gofmt gate (test -z, real failure semantics) && go vet && go build && go test && go test -race -shuffle=on
+        run: cd go && test -z "$(gofmt -l .)" && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
 
   github-release:
     name: create GitHub release (auto-generated notes)

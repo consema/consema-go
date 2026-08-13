@@ -107,8 +107,8 @@ jobs:
           # Cargo.toml is provisioned anymore.
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
-      - name: gofmt -l . && go vet && go build && go test && go test -race -shuffle=on
-        run: cd go && gofmt -l . && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
+      - name: gofmt gate (test -z, real failure semantics) && go vet && go build && go test && go test -race -shuffle=on
+        run: cd go && test -z "$(gofmt -l .)" && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
 
   # Coverage gate (gate plan §4 M3 standing toolchain; roadmap §18.3
   # "Coverage 不替代语义证明"): go test measures the whole module with the
