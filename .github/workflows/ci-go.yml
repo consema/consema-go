@@ -243,7 +243,8 @@ jobs:
   # Version-consistency gate (tokio check-readme pattern): go.mod declares no
   # package version (module consema.dev/consema), so the README "Version:"
   # line rides the release train (currently 1.0.0-rc.1) and must be present
-  # — a train bump that forgets the README line fails CI.
+  # — a train bump that forgets the README line (or the conformance CLI's
+  # productVersion in go/cmd/consema-conformance/main.go) fails CI.
   check-version-consistency:
     name: check README Version line (version consistency)
     runs-on: ubuntu-latest
@@ -261,6 +262,11 @@ jobs:
             exit 1
           }
           echo 'README version line present: 1.0.0-rc.1'
+          grep -qF 'productVersion = "1.0.0-rc.1"' go/cmd/consema-conformance/main.go || {
+            echo "::error::go/cmd/consema-conformance/main.go does not pin productVersion = '1.0.0-rc.1' (must match the README Version line)"
+            exit 1
+          }
+          echo 'conformance CLI product_version present: 1.0.0-rc.1'
 
   # SDK examples gate: go/examples/sdk_chain is the committed five-language
   # SDK chain example (parse -> native query -> best-exact projection ->

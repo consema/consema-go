@@ -19,6 +19,14 @@ import (
 	"consema.dev/consema/protocol"
 )
 
+// productVersion pins the RFC 0015 §3.3 product_version string of this CLI's
+// envelopes. Version policy (G5.6 decision, mirrored from cmd/consema/
+// version.go:15): the Go CLIs report the product release-train version, and
+// this CLI ships as part of the 1.0.0-rc.1 milestone, so the conformance CLI
+// reports "1.0.0-rc.1" like the main CLI. CI (check-version-consistency)
+// asserts this declaration stays in sync with the README "Version:" line.
+var productVersion = "1.0.0-rc.1"
+
 func main() {
 	os.Exit(run())
 }
@@ -137,7 +145,7 @@ func failureEnvelope(runErr error) (*protocol.CliOutputMessage, error) {
 		return nil, err
 	}
 	return protocol.NewCliOutputMessage(protocol.CommandConformance, protocol.ExitData,
-		"0.14.0", payload, []*protocol.Diagnostic{diagnostic}, redaction)
+		productVersion, payload, []*protocol.Diagnostic{diagnostic}, redaction)
 }
 
 // machineEnvelope builds the RFC 0015 machine envelope of the run: command
@@ -185,5 +193,5 @@ func machineEnvelope(report *conformance.RunReport) (*protocol.CliOutputMessage,
 		return nil, err
 	}
 	return protocol.NewCliOutputMessage(protocol.CommandConformance, exitClass,
-		"0.14.0", payload, nil, redaction)
+		productVersion, payload, nil, redaction)
 }
