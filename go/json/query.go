@@ -10,7 +10,7 @@ import (
 )
 
 // This file implements JSON native and lossless syntax query execution
-// (crates/consema-json/src/query.rs). Execution mirrors the Rust engine:
+// (consema-rs/crates/consema-json/src/query.rs). Execution mirrors the Rust engine:
 // deterministic operator application, result and step budgets, and
 // cancellation through the caller's context.
 

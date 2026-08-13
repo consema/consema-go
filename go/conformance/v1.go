@@ -1,6 +1,6 @@
 package conformance
 
-// The `consema.conformance@1` suite runner (crates/consema-conformance
+// The `consema.conformance@1` suite runner (consema-rs/crates/consema-conformance
 // src/lib.rs run_v1). The 0.14.0 milestone implements the core/PVCE surface
 // (value.*, pvce.*) and the QueryDefinition protocol surface
 // (query.reject-role-mismatch, query.protocol-roundtrip); the JSON-family

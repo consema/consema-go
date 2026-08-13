@@ -31,7 +31,7 @@ func mustBuild(t *testing.T, b *Builder) *Graph {
 
 // TestScalarGraphIsImmutableAndInspectable mirrors the Rust
 // scalar_graph_is_immutable_and_inspectable test
-// (crates/consema-graph/src/lib.rs:699-715).
+// (consema-rs/crates/consema-graph/src/lib.rs:699-715).
 func TestScalarGraphIsImmutableAndInspectable(t *testing.T) {
 	b := NewBuilder(DefaultLimits())
 	root := mustReserve(t, b)
@@ -74,7 +74,7 @@ func TestScalarGraphIsImmutableAndInspectable(t *testing.T) {
 
 // TestSharingCyclesAndDuplicateArbitraryKeysAreValues mirrors the Rust
 // sharing_cycles_and_duplicate_arbitrary_keys_are_values test
-// (crates/consema-graph/src/lib.rs:717-746): a mapping whose key is a shared
+// (consema-rs/crates/consema-graph/src/lib.rs:717-746): a mapping whose key is a shared
 // scalar, whose value is a sequence that references the mapping (cycle), and
 // a second association with the same key.
 func TestSharingCyclesAndDuplicateArbitraryKeysAreValues(t *testing.T) {
@@ -123,7 +123,7 @@ func TestSharingCyclesAndDuplicateArbitraryKeysAreValues(t *testing.T) {
 
 // TestStrictEqualityIgnoresBuilderIDsButPreservesTopology mirrors the Rust
 // strict_equality_ignores_builder_ids_but_preserves_topology test
-// (crates/consema-graph/src/lib.rs:748-788): two graphs built with different
+// (consema-rs/crates/consema-graph/src/lib.rs:748-788): two graphs built with different
 // reservation orders but identical topology are equal and hash equal; a
 // graph that duplicates the shared node instead of sharing it is not.
 func TestStrictEqualityIgnoresBuilderIDsButPreservesTopology(t *testing.T) {
@@ -195,7 +195,7 @@ func TestStrictEqualityIgnoresBuilderIDsButPreservesTopology(t *testing.T) {
 
 // TestRootAndAssociationOrderAreStrict mirrors the Rust
 // root_and_association_order_are_strict test
-// (crates/consema-graph/src/lib.rs:790-812): reversing the association order
+// (consema-rs/crates/consema-graph/src/lib.rs:790-812): reversing the association order
 // of a mapping is a value change.
 func TestRootAndAssociationOrderAreStrict(t *testing.T) {
 	makeGraph := func(reverse bool) *Graph {
@@ -322,7 +322,7 @@ func TestMultipleRootsShareNodes(t *testing.T) {
 
 // TestBuilderRejectsIncompleteUnreachableDuplicateAndInvalidTag mirrors the
 // Rust builder_rejects_incomplete_unreachable_duplicate_and_invalid_tag test
-// (crates/consema-graph/src/lib.rs:814-857).
+// (consema-rs/crates/consema-graph/src/lib.rs:814-857).
 func TestBuilderRejectsIncompleteUnreachableDuplicateAndInvalidTag(t *testing.T) {
 	// Incomplete: a root without a definition.
 	incomplete := NewBuilder(DefaultLimits())
@@ -397,7 +397,7 @@ func TestBuilderRejectsIncompleteUnreachableDuplicateAndInvalidTag(t *testing.T)
 
 // TestLimitsFailBeforeAGraphExists mirrors the Rust
 // limits_fail_before_a_graph_exists test
-// (crates/consema-graph/src/lib.rs:859-890): node, edge, and traversal-depth
+// (consema-rs/crates/consema-graph/src/lib.rs:859-890): node, edge, and traversal-depth
 // limits fail atomically before any graph exists.
 func TestLimitsFailBeforeAGraphExists(t *testing.T) {
 	b := NewBuilder(Limits{
@@ -452,7 +452,7 @@ func TestLimitsFailBeforeAGraphExists(t *testing.T) {
 
 // TestGraphBuildFailuresHaveStableCodes mirrors the Rust
 // graph_build_failures_have_stable_v5_codes test
-// (crates/consema-graph/src/lib.rs:892-911): construction failures carry the
+// (consema-rs/crates/consema-graph/src/lib.rs:892-911): construction failures carry the
 // frozen "core.graph.*@1" codes.
 func TestGraphBuildFailuresHaveStableCodes(t *testing.T) {
 	resource := &GraphError{Kind: ErrGraphResourceLimit, Field: "graph-nodes", Observed: 2, Limit: 1}

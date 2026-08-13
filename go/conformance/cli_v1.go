@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.cli.conformance@1` suite runner
-// (crates/consema-conformance/src/cli_v1.rs). Every case is dispatched by
+// (consema-rs/crates/consema-conformance/src/cli_v1.rs). Every case is dispatched by
 // its `capability` and executed against the protocol v7 types: envelope
 // decode, exit classification, batch state machines, the redaction record
 // contract, and transport budgets. The vector data drives every result;

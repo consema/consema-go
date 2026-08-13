@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.hcl.conformance@1` suite runner, mirroring
-// crates/consema-conformance/src/hcl_v1.rs. The 0.18.0 milestone G4.1
+// consema-rs/crates/consema-conformance/src/hcl_v1.rs. The 0.18.0 milestone G4.1
 // implements the whole HCL surface (hcl.native@1 and hcl.tfvars@1
 // formation, hcl.native-semantic-query@1 and hcl.lossless-syntax-query@1,
 // hcl.projection.body@1 with the ProjectExpression policy, the

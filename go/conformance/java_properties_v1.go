@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.java-properties.conformance@1` suite runner
-// (crates/consema-conformance/src/properties_v1.rs). The 0.16.0 milestone
+// (consema-rs/crates/consema-conformance/src/properties_v1.rs). The 0.16.0 milestone
 // (G2.3) implements the full Java Properties surface: both exact profiles
 // with explicit encoding selection, lossless natural/logical lines, exact
 // Java UTF-16 strings with unpaired-surrogate preservation, recovery with

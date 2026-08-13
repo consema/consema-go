@@ -1,7 +1,7 @@
 package protocol
 
 // The `core.portable-graph@1` record: the canonical readable graph plus its
-// exact PGCE/1 bytes (crates/consema-protocol/src/portable_graph.rs). Both
+// exact PGCE/1 bytes (consema-rs/crates/consema-protocol/src/portable_graph.rs). Both
 // forms are cross-validated on decode.
 
 import (

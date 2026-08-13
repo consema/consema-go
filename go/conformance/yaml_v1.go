@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.yaml.conformance@1` suite runner
-// (crates/consema-conformance/src/yaml_v1.rs). The 0.16.0 milestone (G2.1)
+// (consema-rs/crates/consema-conformance/src/yaml_v1.rs). The 0.16.0 milestone (G2.1)
 // implements the full YAML surface: both profiles, lossless syntax, native
 // facts, native queries, best-exact graph and value projection,
 // canonical-flow materialization, the eight structural edits with

@@ -26,7 +26,7 @@ import (
 // docs/five-language-ci-design.md §3.5) is encoded by both sides, and the
 // Rust encoder's bytes are compared as files. Orchestration:
 // scripts/go-verify-byte-parity.ps1 drives the Rust example
-// (crates/consema-conformance/examples/emit_parity_bytes.rs) into a
+// (consema-rs/crates/consema-conformance/examples/emit_parity_bytes.rs) into a
 // directory of `<case-id>.hex` files, then runs this test with
 // CONSEMA_DIFFERENTIAL_RUST_DIR set to that directory. Without the variable
 // the byte-parity test skips (documented skip, never silent) and only the

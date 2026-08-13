@@ -1,7 +1,7 @@
 package xml
 
 // This file implements XML native and lossless syntax query execution
-// (RFC 0012 §8; crates/consema-xml/src/query.rs). Native order is document
+// (RFC 0012 §8; consema-rs/crates/consema-xml/src/query.rs). Native order is document
 // order. Element attributes and namespace declarations preserve their
 // respective source orders; child content preserves mixed-content order.
 // Descendant traversal is bounded pre-order. No query resolves a URI,

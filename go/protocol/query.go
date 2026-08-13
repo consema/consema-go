@@ -5,7 +5,7 @@ import (
 )
 
 // This file implements the versioned typed query definitions and their
-// validation/binding (crates/consema-core/src/query.rs). The domain/operator
+// validation/binding (consema-rs/crates/consema-core/src/query.rs). The domain/operator
 // tables are transcribed verbatim; the operator validation is the language-
 // neutral contract (RFC 0016 §5.4), so the full fifteen-kind argument
 // vocabulary is accepted at definition time, matching the Rust core kinds

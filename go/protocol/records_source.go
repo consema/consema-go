@@ -1,8 +1,8 @@
 package protocol
 
 // Transferable raw source snapshots, verifiable source patches, and source
-// encodings (crates/consema-protocol/src/source.rs over
-// crates/consema-document/src/source.rs). The 0.14.0 milestone carries the
+// encodings (consema-rs/crates/consema-protocol/src/source.rs over
+// consema-rs/crates/consema-document/src/source.rs). The 0.14.0 milestone carries the
 // snapshot/patch verification facts needed by the `core.source-snapshot@1`,
 // `core.source-snapshot@2`, `core.source-patch@1`, `core.source-patch@2`,
 // and `core.source-encoding@1` wire records; the full document-layer source

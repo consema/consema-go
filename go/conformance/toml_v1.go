@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.toml.conformance@1` suite runner
-// (crates/consema-conformance/src/toml_v1.rs). The 0.15.0 milestone (G1.3)
+// (consema-rs/crates/consema-conformance/src/toml_v1.rs). The 0.15.0 milestone (G1.3)
 // implements the full TOML surface: complete formation, lossless syntax,
 // native items, native queries, best-exact-core projection, scalar edits,
 // resource limits, and the corpus documents. All 18 published cases are

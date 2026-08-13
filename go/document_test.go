@@ -1,6 +1,6 @@
 package consema
 
-// The Document union acceptance tests (crates/consema/src/lib.rs tests:
+// The Document union acceptance tests (consema-rs/crates/consema/src/lib.rs tests:
 // common_document_facade_is_opaque_and_typed).
 
 import (

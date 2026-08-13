@@ -3,7 +3,7 @@ package protocol
 // Portable value-path and association-location wire records. These are the
 // language-neutral portable-location facts of `core.query-result@1`,
 // `core.provenance-map@1`, and `core.materialization-*` records
-// (crates/consema-core value_path.rs; query.rs:441-560).
+// (consema-rs/crates/consema-core value_path.rs; query.rs:441-560).
 
 import (
 	"consema.dev/consema/core"

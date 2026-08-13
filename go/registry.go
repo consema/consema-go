@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the additive facade registry surface
-// (crates/consema/src/lib.rs `registry` module; RFC 0015 §6.2; plan §2.2
+// (consema-rs/crates/consema/src/lib.rs `registry` module; RFC 0015 §6.2; plan §2.2
 // G1.4): the unified enumeration of format families, profiles, query
 // domains, and per-profile operation registries, plus the single parse
 // entry by profile id.

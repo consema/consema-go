@@ -27,7 +27,7 @@ import (
 // docs/five-language-ci-design.md §3.5) is decoded and re-encoded by both
 // sides, and the other side's bytes are compared as files.
 // Orchestration: scripts/go-verify-protocol-exchange.ps1 runs the Rust
-// example (crates/consema-conformance/examples/emit_protocol_exchange.rs)
+// example (consema-rs/crates/consema-conformance/examples/emit_protocol_exchange.rs)
 // over the case set into a directory, then runs this test with
 // CONSEMA_EXCHANGE_RUST_DIR set to that directory and
 // CONSEMA_EXCHANGE_GO_DIR set to a writable directory the Go side fills
@@ -118,7 +118,7 @@ const goOutDirEnv = "CONSEMA_EXCHANGE_GO_DIR"
 
 // allRecords is the closed record inventory of the exchange set. It is
 // exactly the protocol record surface both implementations decode in full
-// (go/protocol payload.go dispatch intersect crates/consema-protocol
+// (go/protocol payload.go dispatch intersect consema-rs/crates/consema-protocol
 // payload.rs dispatch). The six records validated in Go only at the envelope
 // level (core.conversion-report@1, core.edit-plan@1,
 // core.format-operation-registry@1, core.materialization-provenance-map@1,

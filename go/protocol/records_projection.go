@@ -1,7 +1,7 @@
 package protocol
 
 // Projection request, report, provenance, and result records
-// (crates/consema-protocol/src/projection.rs): `core.projection-request@1`,
+// (consema-rs/crates/consema-protocol/src/projection.rs): `core.projection-request@1`,
 // `core.projection-report@1`, `core.provenance-map@1`, and
 // `core.projection-result@1`.
 

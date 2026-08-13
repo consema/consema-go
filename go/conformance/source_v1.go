@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.source.conformance@1` suite runner, mirroring
-// crates/consema-conformance/src/source_v1.rs. The 0.15.0 milestone G1.1
+// consema-rs/crates/consema-conformance/src/source_v1.rs. The 0.15.0 milestone G1.1
 // implements the whole document capability surface (core.source.snapshot@1,
 // core.source.encoding@1, core.source.decoded-location@1,
 // core.source.binary-coverage@1, core.source.patch@1,

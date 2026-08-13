@@ -4,15 +4,15 @@
 // strict equality and deterministic hashing under canonical node numbering,
 // and the PGCE/1 canonical byte codec.
 //
-// The model mirrors the Rust reference crate (crates/consema-graph): a graph
+// The model mirrors the Rust reference crate (consema-rs/crates/consema-graph): a graph
 // is independent from the closed fifteen-kind PortableValue model — its
 // scalar nodes carry resolved tag identifiers and canonical content strings
 // (RFC 0006 §2), the graph layer introduces no value kinds of its own, and
 // the package imports nothing else in the module
 // (docs/go-implementation-plan.md §0.2: core and graph are independently
 // implementable). The PGCE/1 wire format is reimplemented from
-// crates/consema-graph/src/pgce.rs, and its canonical bytes are pinned by
-// golden tests in this package (crates/consema-graph/src/pgce.rs:664-686).
+// consema-rs/crates/consema-graph/src/pgce.rs, and its canonical bytes are pinned by
+// golden tests in this package (consema-rs/crates/consema-graph/src/pgce.rs:664-686).
 //
 // The package is standard-library only (docs/go-implementation-plan.md §1.3).
 package graph
@@ -24,7 +24,7 @@ import (
 )
 
 // nextGraphIdentity assigns one unique identity per Builder (the Rust
-// NEXT_GRAPH counter, crates/consema-graph/src/lib.rs:22). The zero value
+// NEXT_GRAPH counter, consema-rs/crates/consema-graph/src/lib.rs:22). The zero value
 // never identifies a builder: identities start at 1, so a zero NodeID is
 // invalid for every builder.
 var nextGraphIdentity atomic.Uint64
@@ -67,7 +67,7 @@ type NodeID struct {
 }
 
 // AsUint64 returns the builder-local numeric representation (the Rust
-// GraphNodeId::as_u64, crates/consema-graph/src/lib.rs:40-43).
+// GraphNodeId::as_u64, consema-rs/crates/consema-graph/src/lib.rs:40-43).
 func (id NodeID) AsUint64() uint64 { return uint64(id.index) }
 
 // MappingEntry is one ordered mapping association with arbitrary graph-node
@@ -81,7 +81,7 @@ type MappingEntry struct {
 }
 
 // node is one immutable tagged graph node (the Rust GraphNode,
-// crates/consema-graph/src/lib.rs:94-157). The kind discriminates which
+// consema-rs/crates/consema-graph/src/lib.rs:94-157). The kind discriminates which
 // content field is meaningful.
 type node struct {
 	tag     string
@@ -136,7 +136,7 @@ func (n *Node) MappingEntries() ([]MappingEntry, bool) {
 }
 
 // Limits are the resource bounds for graph construction and traversal (RFC
-// 0006 §6; the Rust GraphLimits, crates/consema-graph/src/lib.rs:159-190).
+// 0006 §6; the Rust GraphLimits, consema-rs/crates/consema-graph/src/lib.rs:159-190).
 // The zero value rejects every reservation and root; use DefaultLimits.
 type Limits struct {
 	// MaxRoots is the maximum ordered roots.
@@ -159,7 +159,7 @@ type Limits struct {
 }
 
 // DefaultLimits returns the frozen defaults, mirroring the Rust GraphLimits
-// default (crates/consema-graph/src/lib.rs:178-190).
+// default (consema-rs/crates/consema-graph/src/lib.rs:178-190).
 func DefaultLimits() Limits {
 	return Limits{
 		MaxRoots:            1_000_000,
@@ -225,7 +225,7 @@ func (g *Graph) Node(id NodeID) (*Node, bool) {
 
 // Nodes returns the builder-local IDs in builder order. Numeric ID order is
 // not value semantics (the Rust PortableGraph::nodes,
-// crates/consema-graph/src/lib.rs:507-519).
+// consema-rs/crates/consema-graph/src/lib.rs:507-519).
 func (g *Graph) Nodes() []NodeID {
 	ids := make([]NodeID, len(g.nodes))
 	for i := range g.nodes {
@@ -280,7 +280,7 @@ func (b *Builder) PushRoot(id NodeID) error {
 // DefineScalar defines one reserved scalar node exactly once, with a
 // resolved tag and the producer's canonical content (RFC 0006 §2). Both the
 // tag and the canonical content must be valid UTF-8 (the Rust Arc<str>
-// invariant, crates/consema-graph/src/lib.rs:94-157: such a graph cannot
+// invariant, consema-rs/crates/consema-graph/src/lib.rs:94-157: such a graph cannot
 // even be constructed there); invalid UTF-8 returns a *GraphError with
 // ErrGraphInvalidUTF8.
 func (b *Builder) DefineScalar(id NodeID, tag, canonicalContent string) error {
@@ -336,7 +336,7 @@ func (b *Builder) DefineMapping(id NodeID, tag string, entries []MappingEntry) e
 }
 
 // define stores one node after checking duplicate definition and the edge
-// limit (the Rust GraphBuilder::define, crates/consema-graph/src/lib.rs:
+// limit (the Rust GraphBuilder::define, consema-rs/crates/consema-graph/src/lib.rs:
 // 383-401).
 func (b *Builder) define(id NodeID, n *node, newEdges int) error {
 	index, err := b.requireReserved(id)
@@ -356,7 +356,7 @@ func (b *Builder) define(id NodeID, n *node, newEdges int) error {
 
 // requireReserved validates that id belongs to this builder and is within
 // the reserved range (the Rust GraphBuilder::require_reserved,
-// crates/consema-graph/src/lib.rs:403-410).
+// consema-rs/crates/consema-graph/src/lib.rs:403-410).
 func (b *Builder) requireReserved(id NodeID) (int, error) {
 	if id.graph != b.identity {
 		return 0, &GraphError{Kind: ErrGraphWrongGraph, ID: id}
@@ -369,7 +369,7 @@ func (b *Builder) requireReserved(id NodeID) (int, error) {
 
 // validateTag rejects empty tags, tags containing ASCII control or
 // whitespace, and tags that are not valid UTF-8 (the Rust validate_tag,
-// crates/consema-graph/src/lib.rs:447-456 plus the Arc<str> invariant; RFC
+// consema-rs/crates/consema-graph/src/lib.rs:447-456 plus the Arc<str> invariant; RFC
 // 0006 §2). Invalid UTF-8 returns ErrGraphInvalidUTF8, everything else
 // ErrGraphInvalidTag.
 func (b *Builder) validateTag(tag string) error {
@@ -384,7 +384,7 @@ func (b *Builder) validateTag(tag string) error {
 
 // hasInvalidTagChar reports one ASCII control or whitespace character (the
 // Rust is_ascii_control / is_ascii_whitespace predicates,
-// crates/consema-graph/src/lib.rs:450-451).
+// consema-rs/crates/consema-graph/src/lib.rs:450-451).
 func hasInvalidTagChar(tag string) bool {
 	for _, r := range tag {
 		if r < 0x20 || r == 0x7f {
@@ -398,7 +398,7 @@ func hasInvalidTagChar(tag string) bool {
 }
 
 // checkLimit reports ErrGraphResourceLimit when observed exceeds limit (the Rust
-// check_limit, crates/consema-graph/src/lib.rs:458-468).
+// check_limit, consema-rs/crates/consema-graph/src/lib.rs:458-468).
 func (b *Builder) checkLimit(name string, observed, limit int) error {
 	if observed > limit {
 		return &GraphError{Kind: ErrGraphResourceLimit, Field: name, Observed: observed, Limit: limit}

@@ -1,7 +1,7 @@
 package protocol
 
 // This file implements the frozen CLI exit classes and the pure error
-// classification (crates/consema-protocol/src/exit_class.rs). RFC 0015 §5
+// classification (consema-rs/crates/consema-protocol/src/exit_class.rs). RFC 0015 §5
 // freezes the six exit classes, their codes (0-5), and the stable mapping
 // from error families to classes. ClassifyErrorCode is a pure function
 // implemented once in the Go protocol layer (RFC 0016 §6: "the SDK itself

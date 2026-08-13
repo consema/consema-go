@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.xml-1-0-safe.conformance@1` suite runner, mirroring the
-// XML driver of crates/consema-conformance/src/xml_v1.rs. The suite's
+// XML driver of consema-rs/crates/consema-conformance/src/xml_v1.rs. The suite's
 // capability surface landed with milestone 0.17.0 G3.1 (go/xml); every
 // case is data-driven: the vector input and expected facts drive the
 // execution, and no expectation literal lives here.

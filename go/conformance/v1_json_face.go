@@ -2,7 +2,7 @@ package conformance
 
 // The JSON-face handlers of the shared suites (v1.json, syntax-query-v1.json,
 // operations-v1.json), mirroring the JSON drivers of
-// crates/consema-conformance/src/lib.rs, syntax_query_v1.rs, and
+// consema-rs/crates/consema-conformance/src/lib.rs, syntax_query_v1.rs, and
 // operations_v1.rs. The shared runner files dispatch the JSON-capability
 // cases to these exported handlers; the non-JSON faces (portable-value
 // query execution, TOML, conversion, protocol records) stay with their

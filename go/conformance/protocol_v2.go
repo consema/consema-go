@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.protocol.conformance@2` suite runner
-// (crates/consema-conformance/src/protocol_v2.rs). The vector input drives
+// (consema-rs/crates/consema-conformance/src/protocol_v2.rs). The vector input drives
 // every snapshot/patch construction; the vector expected facts drive every
 // assertion.
 

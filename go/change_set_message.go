@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the change-set externalization composition
-// (crates/consema-protocol/src/change.rs `ChangeSetMessage::from_document`;
+// (consema-rs/crates/consema-protocol/src/change.rs `ChangeSetMessage::from_document`;
 // RFC 0004 §16): one document-layer ChangeSet becomes the transferable
 // `core.change-set@1` record with caller-assigned stable source and node
 // identities. The document layer owns the change facts; the protocol

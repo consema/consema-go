@@ -9,7 +9,7 @@ import (
 )
 
 // This file implements JSON projection to the PortableValue model
-// (crates/consema-json/src/projection.rs; RFC 0016 §5.2). The conservative
+// (consema-rs/crates/consema-json/src/projection.rs; RFC 0016 §5.2). The conservative
 // default policy is exact-or-reject: nothing is invented, and a failed
 // attempt never contains a partial value.
 

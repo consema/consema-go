@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the ordered query cursor terminal semantics
-// (crates/consema-core/src/query.rs `OrderedQueryCursor` /
+// (consema-rs/crates/consema-core/src/query.rs `OrderedQueryCursor` /
 // `QueryTerminalState`; capability `core.query.cursor-terminal@1`). The
 // cursor is the language-neutral pull primitive behind the query streams:
 // every value is yielded in standard order, and the stream terminates with

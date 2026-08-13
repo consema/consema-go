@@ -1,11 +1,11 @@
 // Package consema is the Go SDK facade root: the common opaque `Document`
 // union, the additive `Registry` surface (families, profiles, query
 // domains, operation registries), and the `Convert*` two-stage
-// composition (milestone 0.15.0 G1.4; RFC 0016 §3.2; crates/consema
+// composition (milestone 0.15.0 G1.4; RFC 0016 §3.2; consema-rs/crates/consema
 // facade; docs/go-implementation-plan.md §2.2).
 //
 // The package maps the public capability face of the Rust facade
-// (`crates/consema/src/lib.rs` and `conversion.rs`):
+// (`consema-rs/crates/consema/src/lib.rs` and `conversion.rs`):
 //
 //   - `Document` is the common snapshot handle over the format documents.
 //     Format access is only possible through the typed adapters (`AsJSON`,
@@ -31,7 +31,7 @@
 //     `ConvertPlist`/`ConvertHCL`) compose one format-owned projection
 //     and the requested target materializer, retaining the intermediate
 //     portable value, both provenance directions, and the two-stage
-//     report (`crates/consema/src/conversion.rs`). The composition never
+//     report (`consema-rs/crates/consema/src/conversion.rs`). The composition never
 //     invents a cross-format convention: the projection target, the
 //     materialization request, the mapping policy, and the
 //     representability policy are all explicit caller choices; loss

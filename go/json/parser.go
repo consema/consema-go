@@ -14,7 +14,7 @@ import (
 )
 
 // This file implements the lossless JSON/JSONC/JSON5 lexer and parser
-// (crates/consema-json/src/parser.rs). The language-neutral surface —
+// (consema-rs/crates/consema-json/src/parser.rs). The language-neutral surface —
 // token/trivia/error-region coverage, recovery diagnostics with their
 // codes and categories, native value categories, and the JSON5 lexical
 // extensions — mirrors the Rust semantics; the Go structure is

@@ -8,10 +8,10 @@ package consema
 // behavior.
 //
 // Every expected fact below is transcribed from the Rust published
-// surface (crates/consema/src/lib.rs registry module and the
+// surface (consema-rs/crates/consema/src/lib.rs registry module and the
 // `consema capabilities` CLI payload of
-// crates/consema/src/bin/consema/capabilities.rs for the inventory, and
-// crates/consema-*/src/operation_registry.rs for the per-profile
+// consema-rs/crates/consema/src/bin/consema/capabilities.rs for the inventory, and
+// consema-rs/crates/consema-*/src/operation_registry.rs for the per-profile
 // operation id lists), and the Go facts are derived from the registry
 // surface of this package and its families — nothing is re-declared, so
 // a drift on either side fails here (the Rust facade's own drift-guard
@@ -195,7 +195,7 @@ func TestCapabilityParityQueryDomains(t *testing.T) {
 
 // TestCapabilityParityOperationSets pins the per-profile operation id
 // lists against the Rust family registries
-// (crates/consema-<family>/src/operation_registry.rs): json 8, toml 7,
+// (consema-rs/crates/consema-<family>/src/operation_registry.rs): json 8, toml 7,
 // yaml 8, ini 8, properties 5, xml 8, plist 6, hcl.native 6,
 // hcl.tfvars 4. The comparison is exact in both directions (no missing
 // Rust operation, no extra Go operation), which is the

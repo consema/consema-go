@@ -14,8 +14,8 @@ import (
 // The three vectors below are transcribed byte-for-byte from the Rust PVCE/1
 // encoder's in-code pins:
 //
-//   - crates/consema-pvce/src/lib.rs:1192-1201 (object_byte_vector_is_frozen)
-//   - crates/consema-pvce/src/lib.rs:1336-1342 (byte_vector_is_frozen)
+//   - consema-rs/crates/consema-pvce/src/lib.rs:1192-1201 (object_byte_vector_is_frozen)
+//   - consema-rs/crates/consema-pvce/src/lib.rs:1336-1342 (byte_vector_is_frozen)
 //
 // The Rust side is the authority for the bytes (roadmap §16.1 hard gate:
 // "Rust 与 Go 的 PVCE/PGCE bytes 完全一致"); any change to these constants
@@ -68,7 +68,7 @@ func TestPVCEGoldenBytes(t *testing.T) {
 }
 
 // TestRoundTripEveryKind mirrors the Rust every_core_kind_round_trips test
-// (crates/consema-pvce/src/lib.rs:1129-1174) restricted to the closed
+// (consema-rs/crates/consema-pvce/src/lib.rs:1129-1174) restricted to the closed
 // eight-kind Go value model: every kind round-trips byte-stably.
 func TestRoundTripEveryKind(t *testing.T) {
 	object, err := NewObject(
@@ -115,7 +115,7 @@ func TestRoundTripEveryKind(t *testing.T) {
 
 // TestObjectOrderAffectsEncoding mirrors the Rust
 // object_order_affects_encoding_and_is_strict test
-// (crates/consema-pvce/src/lib.rs:1177-1189): entry order is encoded, so a
+// (consema-rs/crates/consema-pvce/src/lib.rs:1177-1189): entry order is encoded, so a
 // different order produces different bytes.
 func TestObjectOrderAffectsEncoding(t *testing.T) {
 	first := mustObject(t, Entry{"a", NewInteger(big.NewInt(1))}, Entry{"b", Null{}})
@@ -127,7 +127,7 @@ func TestObjectOrderAffectsEncoding(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 // Strict canonicality: the decoder rejects every non-canonical form the Rust
-// decoder rejects (crates/consema-pvce/src/lib.rs:404-833, 1317-1333).
+// decoder rejects (consema-rs/crates/consema-pvce/src/lib.rs:404-833, 1317-1333).
 // ---------------------------------------------------------------------------
 
 func pvce(tag byte, payload []byte) []byte {
@@ -228,7 +228,7 @@ func TestDecodeAcceptsCanonicalMultibyteVarints(t *testing.T) {
 }
 
 // TestDecodeEnforcesEachResourceLimit drives every decoder limit with the
-// Rust field names (crates/consema-pvce/src/lib.rs:55-82).
+// Rust field names (consema-rs/crates/consema-pvce/src/lib.rs:55-82).
 func TestDecodeEnforcesEachResourceLimit(t *testing.T) {
 	var nested Value = Null{}
 	for i := 0; i < 3; i++ {
@@ -274,7 +274,7 @@ func TestDecodeEnforcesEachResourceLimit(t *testing.T) {
 
 // TestEncodeBoundedRejectsEachResourceLimit mirrors the Rust
 // bounded_encode_rejects_each_resource_limit test
-// (crates/consema-pvce/src/lib.rs:1204-1276).
+// (consema-rs/crates/consema-pvce/src/lib.rs:1204-1276).
 func TestEncodeBoundedRejectsEachResourceLimit(t *testing.T) {
 	value := NewArray(String("12345"), String("67890"), String("abcde"))
 	cases := []struct {
@@ -343,7 +343,7 @@ func TestEncodeNilValue(t *testing.T) {
 }
 
 // TestPVCEErrorCodeTable pins the frozen registered codes for every failure
-// kind, transcribed from crates/consema-pvce/src/lib.rs:1062-1087.
+// kind, transcribed from consema-rs/crates/consema-pvce/src/lib.rs:1062-1087.
 func TestPVCEErrorCodeTable(t *testing.T) {
 	cases := []struct {
 		kind PVCEErrorKind

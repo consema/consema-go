@@ -2,7 +2,7 @@
 // (RFC 0010): the frozen Reader and Latin-1 profiles over one shared
 // lossless natural/logical-line pipeline with exact Java UTF-16 semantics.
 //
-// The package mirrors the capability face of crates/consema-properties
+// The package mirrors the capability face of consema-rs/crates/consema-properties
 // (docs/go-implementation-plan.md §2.3 G2.3): explicit profile and
 // encoding selection (never locale or platform guessing), byte-exact
 // unmodified rendering, the native duplicate-preserving document view with

@@ -2,7 +2,7 @@
 // frozen YAML 1.2 Core and YAML 1.1 compatibility profiles over one shared
 // lossless presentation pipeline.
 //
-// The package mirrors the capability face of crates/consema-yaml
+// The package mirrors the capability face of consema-rs/crates/consema-yaml
 // (docs/go-implementation-plan.md §2.3 G2.1): explicit profile selection
 // (never dialect guessing), byte-exact unmodified rendering, the native
 // representation view with anchors/aliases/tags preserved as facts (never

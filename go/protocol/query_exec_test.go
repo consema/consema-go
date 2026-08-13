@@ -3,8 +3,8 @@ package protocol
 // Execution-level regression tests for the query engine
 // (query_exec.go). The identity semantics are pinned against the Rust
 // reference: GraphMatchIdentity for association matches is the (parent,
-// ordinal) location (crates/consema-graph/src/query.rs:65-83), and the
-// portable identity is the full value path (crates/consema-core/src/
+// ordinal) location (consema-rs/crates/consema-graph/src/query.rs:65-83), and the
+// portable identity is the full value path (consema-rs/crates/consema-core/src/
 // query.rs:2248-2262).
 
 import (
@@ -165,7 +165,7 @@ func TestGraphDistinctNodeIdentityUnchanged(t *testing.T) {
 
 func TestPortableDistinctByPathIdentity(t *testing.T) {
 	// The distinct-by-identity key of one portable match is its full value
-	// path (PortableIdentity::Value(path), crates/consema-core/src/
+	// path (PortableIdentity::Value(path), consema-rs/crates/consema-core/src/
 	// query.rs:2248-2262), not a path-length structural proxy: distinct
 	// paths of equal length both survive.
 	operator := NewOperatorCall("core.distinct-by-identity", 1)

@@ -8,7 +8,7 @@ import (
 )
 
 // This file implements the frozen contract registry and the common protocol
-// envelope (crates/consema-protocol/src/contract.rs). CONTRACTS_V7 pins the
+// envelope (consema-rs/crates/consema-protocol/src/contract.rs). CONTRACTS_V7 pins the
 // semantic-model v7 set of 41 contracts; earlier versions pin their frozen
 // subsets (16/18/25/25/30/38).
 
@@ -55,7 +55,7 @@ type ContractId struct {
 // NewContractId validates and creates an identifier: the version must be
 // non-zero and the id must be a dotted lowercase identifier of at most 255
 // bytes whose segments start with a lowercase letter
-// (crates/consema-protocol/src/contract.rs:18-30, 559-578).
+// (consema-rs/crates/consema-protocol/src/contract.rs:18-30, 559-578).
 func NewContractId(id string, version uint32) (*ContractId, error) {
 	if version == 0 {
 		return nil, invalid("$.contract.version", "version must be non-zero")
@@ -141,7 +141,7 @@ func validateIdentifier(identifier, path string) error {
 func isLower(byte byte) bool { return byte >= 'a' && byte <= 'z' }
 
 // validateNamespace enforces the profile/capability namespace rule
-// (crates/consema-protocol/src/registry.rs:475-498): at most 255 bytes, and
+// (consema-rs/crates/consema-protocol/src/registry.rs:475-498): at most 255 bytes, and
 // when requireDot is set at least two segments; every segment starts with a
 // lowercase letter (or a digit when not the first segment) and continues
 // with lowercase letters, digits, or dashes.
@@ -256,7 +256,7 @@ func (r ContractRegistry) ErrorCodeRegistry() ErrorCodeRegistry {
 
 // contractsV7 returns the frozen contract records of one semantic-model
 // version. The lists are transcribed from the Rust CONTRACTS_V1..V7
-// (crates/consema-protocol/src/contract.rs:71-273) and are strictly sorted
+// (consema-rs/crates/consema-protocol/src/contract.rs:71-273) and are strictly sorted
 // by (id, version); the test battery re-pins the counts
 // (16/18/25/25/30/38/41) and sortedness.
 func contractsV7(version ContractRegistryVersion) []ContractDescriptor {
@@ -473,7 +473,7 @@ var contractsV7List = []ContractDescriptor{
 }
 
 // ProtocolMessage is one validated protocol payload in the common envelope
-// (crates/consema-protocol/src/contract.rs:417-521).
+// (consema-rs/crates/consema-protocol/src/contract.rs:417-521).
 type ProtocolMessage struct {
 	contract *ContractId
 	payload  core.Value
@@ -486,7 +486,7 @@ type ProtocolMessage struct {
 //
 // Documented scope note: the Rust side additionally dispatches every
 // registered contract to its full record decoder
-// (crates/consema-protocol/src/payload.rs). The Go package implements those
+// (consema-rs/crates/consema-protocol/src/payload.rs). The Go package implements those
 // record types in stages: core.cli-output@1, core.batch-plan@1,
 // core.batch-result@1, core.diagnostic@1, core.query-definition@1,
 // core.capability-declaration@1, core.profile-descriptor@1,

@@ -10,7 +10,7 @@ import (
 )
 
 // This file implements the HCL native and lossless syntax query execution
-// (crates/consema-hcl/src/query.rs; RFC 0014 §7). Execution mirrors the
+// (consema-rs/crates/consema-hcl/src/query.rs; RFC 0014 §7). Execution mirrors the
 // Rust engine: deterministic operator application, result and step
 // budgets, and cancellation through the caller's context. The domain
 // serves both profiles: the two profiles own the one native model, so only

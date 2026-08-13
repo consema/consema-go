@@ -1,5 +1,5 @@
 // Package ini implements lossless INI documents under three explicit,
-// incompatible profiles (RFC 0009; crates/consema-ini). The caller selects
+// incompatible profiles (RFC 0009; consema-rs/crates/consema-ini). The caller selects
 // exactly one profile before formation; the implementation never guesses a
 // dialect from the extension or tries multiple profiles in sequence.
 //
@@ -23,7 +23,7 @@
 // overlapping syntax pieces over the raw source. Recovered documents
 // remain fully queryable but never project, materialize, or commit.
 //
-// The package mirrors the public capability face of crates/consema-ini:
+// The package mirrors the public capability face of consema-rs/crates/consema-ini:
 // formation with explicit encoding selection (UTF-8, BOM-detected UTF-16LE,
 // or a caller-selected Windows code page), native and lossless-syntax
 // queries over validated protocol query definitions, best-exact and

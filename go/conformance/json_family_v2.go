@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.json-family.conformance@2` suite runner, mirroring
-// crates/consema-conformance/src/json_family_v2.rs. The 0.15.0 milestone
+// consema-rs/crates/consema-conformance/src/json_family_v2.rs. The 0.15.0 milestone
 // G1.2 implements the whole JSON-family surface (json5.standard@1
 // formation, json.lossless-syntax-query@2, json.native-semantic-query@2,
 // json5.projection.best-exact-core@1, json5.canonical-compact@1,

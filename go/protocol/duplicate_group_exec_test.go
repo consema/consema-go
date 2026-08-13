@@ -5,7 +5,7 @@ package protocol_test
 // table lookup types it by the input role, and the operator then emits
 // every section or entry sharing the same duplicate/case-equivalence
 // group (query.rs:1056-1065; consema-ini query.rs:543-565). The Rust
-// reference test (crates/consema-ini/src/query.rs:778-794) asserts the
+// reference test (consema-rs/crates/consema-ini/src/query.rs:778-794) asserts the
 // same two-match outcome on the same case-equivalent Windows source.
 //
 // This file is an external test package (protocol_test) so it can execute

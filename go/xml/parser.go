@@ -3,7 +3,7 @@ package xml
 // This file implements XML formation: source facts, tokenization, native
 // tree, safe DTD subset, bounded entity expansion, recovery, and
 // exhaustive piece coverage (RFC 0012 §2-4, §6-7, §12-13;
-// crates/consema-xml/src/parser.rs). The tokenizer is an independent
+// consema-rs/crates/consema-xml/src/parser.rs). The tokenizer is an independent
 // implementation of the XML 1.0 token surface consumed by the reference
 // parser; it performs no I/O and never opens another entity.
 

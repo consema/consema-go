@@ -4,7 +4,7 @@ package conformance
 // cases of `consema.operations.conformance@1` (operations.v1.convert-*)
 // and the three `core.conversion@1` cases of
 // `consema.json-family.conformance@2` (json5.convert.*), driven through
-// the root package Convert* composition (0.15.0 G1.4; crates/
+// the root package Convert* composition (0.15.0 G1.4; consema-rs/crates/
 // consema-conformance/src/operations_v1.rs convert_* and json_family_v2.rs
 // conversion_case). The shared runner files dispatch these case IDs to
 // the exported handler below:

@@ -7,7 +7,7 @@ import (
 )
 
 // This file implements the transferable `core.diagnostic@1` record
-// (crates/consema-protocol/src/diagnostic.rs). Construction validates the
+// (consema-rs/crates/consema-protocol/src/diagnostic.rs). Construction validates the
 // code against the frozen error registry and the category against the
 // registry record (RFC 0011; RFC 0016 §6: "unknown code or category
 // contradiction is a protocol error").

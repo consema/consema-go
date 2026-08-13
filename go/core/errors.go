@@ -74,12 +74,12 @@ const (
 	// ErrInvalidTemporal: date, time, or offset fields were outside the
 	// supported ranges (the Rust DecodeError::InvalidTemporal and the
 	// ValueBuildError::InvalidDate/InvalidTime/InvalidOffset construction
-	// failures, crates/consema-pvce/src/lib.rs:971-979).
+	// failures, consema-rs/crates/consema-pvce/src/lib.rs:971-979).
 	ErrInvalidTemporal
 )
 
 // The frozen registered codes, transcribed from the Rust StableFailure
-// mapping in crates/consema-pvce/src/lib.rs:1062-1087.
+// mapping in consema-rs/crates/consema-pvce/src/lib.rs:1062-1087.
 const (
 	codeInvalidMagic        = "core.pvce.invalid-magic@1"
 	codeUnsupportedVersion  = "core.pvce.unsupported-version@1"
@@ -165,7 +165,7 @@ func (e *PVCEError) Error() string {
 }
 
 // Code returns the frozen registered code for the failure (RFC 0016 §6;
-// crates/consema-pvce/src/lib.rs:1062-1087).
+// consema-rs/crates/consema-pvce/src/lib.rs:1062-1087).
 func (e *PVCEError) Code() string {
 	switch e.Kind {
 	case ErrInvalidMagic:
@@ -241,7 +241,7 @@ func (e *DuplicateKeyError) Error() string {
 }
 
 // Code returns the frozen registered code "core.pvce.duplicate-object-key@1"
-// (crates/consema-pvce/src/lib.rs:1082).
+// (consema-rs/crates/consema-pvce/src/lib.rs:1082).
 func (e *DuplicateKeyError) Code() string {
 	return codeDuplicateObjectKey
 }

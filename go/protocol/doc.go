@@ -1,6 +1,6 @@
 // Package protocol implements the language-neutral Consema protocol layer
 // for Go (RFC 0016 §3.2; docs/go-implementation-plan.md §2.1 G0.3). It maps
-// crates/consema-protocol: the frozen contract registry (semantic-model v7,
+// consema-rs/crates/consema-protocol: the frozen contract registry (semantic-model v7,
 // 41 contracts), the public error-code registry (v7, 187 codes), Diagnostic
 // construction validation, Capability/Profile descriptors, QueryDefinition
 // validation and binding, the three CLI machine-protocol records of RFC 0015

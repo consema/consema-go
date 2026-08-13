@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.semantic-model-v6.conformance@1` suite runner
-// (crates/consema-conformance/src/semantic_model_v6.rs). The v6 registry
+// (consema-rs/crates/consema-conformance/src/semantic_model_v6.rs). The v6 registry
 // facts, the source-v2 records, and the line-format query records are
 // verified data-driven from the vector file.
 

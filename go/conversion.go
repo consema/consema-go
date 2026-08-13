@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the audited projection-to-materialization
-// composition (crates/consema/src/conversion.rs; RFC 0016 §3.2 line 108:
+// composition (consema-rs/crates/consema/src/conversion.rs; RFC 0016 §3.2 line 108:
 // convert lives in the root package only).
 //
 // Every Convert* function composes one format-owned projection and the

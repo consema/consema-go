@@ -1,7 +1,7 @@
 package protocol
 
 // The `core.query-result@1` record and its native match locators
-// (crates/consema-protocol/src/query.rs). Native matches are externalized by
+// (consema-rs/crates/consema-protocol/src/query.rs). Native matches are externalized by
 // the caller with stable source identities; raw process-local node handles
 // are explicitly rejected.
 

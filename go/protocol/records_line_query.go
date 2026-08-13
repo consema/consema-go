@@ -1,7 +1,7 @@
 package protocol
 
 // YAML, INI, and Java Properties query-result records
-// (crates/consema-protocol/src/yaml_query.rs, line_query.rs):
+// (consema-rs/crates/consema-protocol/src/yaml_query.rs, line_query.rs):
 // `core.yaml-query-result@1`, `core.ini-query-result@1`, and
 // `core.java-properties-query-result@1` with external caller-stable match
 // locators.

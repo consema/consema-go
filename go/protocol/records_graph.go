@@ -1,7 +1,7 @@
 package protocol
 
 // Graph query-result, provenance, and projection records
-// (crates/consema-protocol/src/graph_query.rs, graph_projection.rs): the
+// (consema-rs/crates/consema-protocol/src/graph_query.rs, graph_projection.rs): the
 // `core.graph-query-result@1`, `core.graph-provenance-map@1`, and
 // `core.graph-projection-result@1` records. Every match and location uses
 // canonical wire node IDs bound to the complete graph carried by the record.

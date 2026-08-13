@@ -13,7 +13,7 @@ import (
 // 1547).
 //
 // The orchestrator scripts/go-verify-shared-conformance.ps1 provisions the
-// Rust side's shared report (crates/consema-conformance/examples/
+// Rust side's shared report (consema-rs/crates/consema-conformance/examples/
 // emit_conformance_reports.rs -> <dir>/shared-conformance.json) and runs
 // this test with CONSEMA_SHARED_CONFORMANCE_RUST_DIR set to that directory.
 // The test executes the Go runner over the same 18 vector suites, converts

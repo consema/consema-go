@@ -8,7 +8,7 @@ import (
 // ProtocolErrorKind enumerates the strict protocol failures shared by the
 // canonical JSON and PVCE/1 transports and the fixed-field record decoders.
 // The kinds mirror the Rust ProtocolErrorKind
-// (crates/consema-protocol/src/error.rs); each kind maps to one frozen
+// (consema-rs/crates/consema-protocol/src/error.rs); each kind maps to one frozen
 // registered code (see Code).
 type ProtocolErrorKind uint8
 
@@ -42,7 +42,7 @@ const (
 )
 
 // The frozen registered codes, transcribed from the Rust ProtocolErrorKind
-// mapping (crates/consema-protocol/src/error.rs; the error-code registry
+// mapping (consema-rs/crates/consema-protocol/src/error.rs; the error-code registry
 // v1 pins "core.protocol.invalid-value@1" etc.).
 const (
 	codeInvalidJson        = "core.protocol.invalid-json@1"
@@ -78,7 +78,7 @@ func (e *ProtocolError) Error() string {
 }
 
 // Code returns the frozen registered code for the failure (RFC 0016 §6;
-// crates/consema-protocol/src/error.rs).
+// consema-rs/crates/consema-protocol/src/error.rs).
 func (e *ProtocolError) Code() string {
 	switch e.Kind {
 	case KindInvalidJson:

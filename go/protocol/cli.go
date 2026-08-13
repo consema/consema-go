@@ -8,7 +8,7 @@ import (
 )
 
 // This file implements the CLI machine-protocol payloads of RFC 0015
-// §4/§8/§9 (crates/consema-protocol/src/cli.rs): the core.cli-output@1
+// §4/§8/§9 (consema-rs/crates/consema-protocol/src/cli.rs): the core.cli-output@1
 // envelope, the core.batch-plan@1 manifest, and the core.batch-result@1
 // manifest. Every decoder re-validates the cross constraints (closed
 // command and exit-class sets, payload-schema/command consistency,

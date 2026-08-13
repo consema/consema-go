@@ -1,7 +1,7 @@
 package xml
 
 // This file implements canonical `xml.safe-canonical-document@1`
-// materialization (RFC 0012 §10; crates/consema-xml/src/materialization.rs).
+// materialization (RFC 0012 §10; consema-rs/crates/consema-xml/src/materialization.rs).
 // The style consumes one fully validated `xml.element-tree@1` value and
 // creates a new `xml.1.0-safe@1` Document. It is not W3C Canonical XML and
 // does not claim C14N equivalence. The style deterministically chooses

@@ -1,7 +1,7 @@
 package xml
 
 // This file implements namespace-aware expanded names and the immutable
-// binding scope (RFC 0012 §5; crates/consema-xml/src/namespace.rs). Prefix
+// binding scope (RFC 0012 §5; consema-rs/crates/consema-xml/src/namespace.rs). Prefix
 // spelling is source representation. Expanded-name equality compares the
 // namespace URI and the local name, never the prefix. Resolution follows
 // Namespaces in XML 1.0 Third Edition without URI fetch or normalization.

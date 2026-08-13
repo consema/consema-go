@@ -62,7 +62,7 @@ eight format families and the CLI (per-milestone delivery records below).
   - `errors.go` —`GraphError` (`core.graph.*@1` codes) and `PGCEError`
     (`core.pgce.*@1` codes), both with the RFC 0016 §6 `Code()` contract.
 - `document/` —the source-snapshot and patch surface (0.15.0 G1.1; RFC
-  0016 §3.2), mirroring the capability face of crates/consema-document:
+  0016 §3.2), mirroring the capability face of consema-rs/crates/consema-document:
   - `source.go` —`SourceSnapshot` (immutable raw bytes, SHA-256
     `ContentDigest`, resolved `EncodingFacts`, decoded text, checkpointed
     `DecodedPosition`/`DecodedOffset` coordinate conversion), `SourceLimits`,
@@ -107,7 +107,7 @@ eight format families and the CLI (per-milestone delivery records below).
     family packages expose them under their established local names as
     aliases and thin wrappers;
 - `json/` —the JSON family surface (0.15.0 G1.2; RFC 0016 §5), mirroring
-  the capability face of crates/consema-json:
+  the capability face of consema-rs/crates/consema-json:
   - `profile.go` —`JsonProfile` (StrictV1/JsoncBoundedV1/Json5StandardV1)
     and `JsonSyntaxKind` (the closed lossless kind vocabulary with the
     stable query spellings);
@@ -136,7 +136,7 @@ eight format families and the CLI (per-milestone delivery records below).
     records come from go/document (0.16.0 G2.4); the operation registry
     is format-local.
 - `toml/` —the TOML family surface (0.15.0 G1.3; RFC 0001, RFC 0016 §5),
-  mirroring the capability face of crates/consema-toml:
+  mirroring the capability face of consema-rs/crates/consema-toml:
   - `toml.go` —`TomlProfile` (Toml10V1), `TomlSyntaxKind` (the closed
     twelve-kind lossless vocabulary with the stable query spellings),
     `TomlItemKind` (the fifteen native item categories incl. table/
@@ -164,7 +164,7 @@ eight format families and the CLI (per-milestone delivery records below).
     The shared edit records come from go/document (0.16.0 G2.4); the
     operation registry is format-local.
 - `yaml/` —the YAML family surface (0.16.0 G2.1; RFC 0007, RFC 0016 §5),
-  mirroring the capability face of crates/consema-yaml:
+  mirroring the capability face of consema-rs/crates/consema-yaml:
   - `yaml.go` —`YamlProfile` (Yaml12CoreV1 / Yaml11CompatV1, explicit
     selection never dialect guessing), `YamlSyntaxKind` (the closed
     twenty-five-kind lossless vocabulary with the stable query spellings),
@@ -199,7 +199,7 @@ eight format families and the CLI (per-milestone delivery records below).
     from go/document (0.16.0 G2.4); the operation registry is
     format-local.
 - `ini/` —the INI family surface (0.16.0 G2.2; RFC 0009, RFC 0016 §5),
-  mirroring the capability face of crates/consema-ini:
+  mirroring the capability face of consema-rs/crates/consema-ini:
   - `profile.go` —`IniProfile` (PortableV1 / WindowsV1 /
     PythonConfigParserV1, explicit selection never dialect guessing),
     `IniEncodingSelection` (profile default, explicit UTF-8/UTF-16LE/
@@ -232,7 +232,7 @@ eight format families and the CLI (per-milestone delivery records below).
     go/document (0.16.0 G2.4); the operation registry is format-local.
 - `properties/` —the Java Properties family surface (0.16.0 G2.3; RFC
   0010, RFC 0016 §5), mirroring the capability face of
-  crates/consema-properties:
+  consema-rs/crates/consema-properties:
   - `properties.go` —`PropertiesProfile` (ReaderV1 / Latin1V1, explicit
     encoding selection never platform guessing), `JavaString` (exact
     UTF-16 code units, unpaired surrogates preserved as native content,
@@ -270,7 +270,7 @@ eight format families and the CLI (per-milestone delivery records below).
     The shared edit records come from go/document (0.16.0 G2.4); the
     operation registry is format-local.
 - `xml/` —the XML family surface (0.17.0 G3.1; RFC 0012, RFC 0016 §5),
-  mirroring the capability face of crates/consema-xml:
+  mirroring the capability face of consema-rs/crates/consema-xml:
   - `profile.go` —`XmlProfile` (SafeV1), `XmlEncodingSelection`
     (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `XmlParseLimits`
     (common limits plus the element/attribute/namespace-declaration/
@@ -316,7 +316,7 @@ eight format families and the CLI (per-milestone delivery records below).
     `FormatOperationRegistry`. The shared edit records come from
     go/document (0.16.0 G2.4); the operation registry is format-local.
 - `plist/` —the plist family surface (0.17.0 G3.2; RFC 0013), mirroring
-  the capability face of crates/consema-plist:
+  the capability face of consema-rs/crates/consema-plist:
   - `profile.go` —`PlistProfile` (XmlV1/BinaryV1), `PlistEncodingSelection`
     (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `PlistParseLimits`
     (common limits plus object/dict/array/duplicate-key-group/string/data/
@@ -368,7 +368,7 @@ eight format families and the CLI (per-milestone delivery records below).
     offset table, trailer), and the six-operation `FormatOperationRegistry`.
     The shared edit records come from go/document (0.16.0 G2.4).
 - `hcl/` —the HCL family surface (0.18.0 G4.1; RFC 0014), mirroring the
-  capability face of crates/consema-hcl:
+  capability face of consema-rs/crates/consema-hcl:
   - `profile.go` —`HclProfile` (NativeV1/TfvarsV1), `HclEncodingSelection`
     (profile default or explicit UTF-8; any other explicit encoding is a
     source-contract conflict with `hcl.parse.encoding@1`), `HclParseLimits`
@@ -426,7 +426,7 @@ eight format families and the CLI (per-milestone delivery records below).
     the `FormatOperationRegistry`. The shared edit records come from
     go/document.
 - `consema` (the package root, `*.go` directly in `go/`) —the facade
-  surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring crates/consema:
+  surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring consema-rs/crates/consema:
   - `document.go` —the `Document` union over the eight format families
     (JSON, TOML, YAML, INI, Properties, XML, plist, HCL; additive as
     the families landed through 0.15.0-0.18.0) with the typed adapters
@@ -509,7 +509,7 @@ The Go public API is held to the six stability policies of roadmap §21.2
 ## Go CLI（0.19.0 G5.6；productVersion 1.0.0-rc.1）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
-0015; mirror of the Rust `crates/consema` bin). It is stdlib-only (self-
+0015; mirror of the Rust `consema-rs/crates/consema` bin). It is stdlib-only (self-
 written deterministic argument parsing, no clap/flag-based guessing), sits
 inside the module, and reaches format semantics only through the root
 package's public API (RFC 0015 §2.3 hard gate 1).
@@ -571,14 +571,14 @@ RFC 0016 §10 rejected alternatives.
 ## Golden-bytes provenance
 The PVCE/1 golden vectors in `core/pvce_test.go` (`TestPVCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `crates/consema-pvce/src/lib.rs:1192-1201` —`object_byte_vector_is_frozen`
+- `consema-rs/crates/consema-pvce/src/lib.rs:1192-1201` —`object_byte_vector_is_frozen`
   (`{"a": Integer(1)}` →hex `5056434501410a01200201611003010101`);
-- `crates/consema-pvce/src/lib.rs:1336-1342` —`byte_vector_is_frozen`
+- `consema-rs/crates/consema-pvce/src/lib.rs:1336-1342` —`byte_vector_is_frozen`
   (Null →`50564345010000`; Integer(-256) →`5056434501100402020100`).
 The additional-kind golden vectors in `core/fifteen_test.go`
 (`TestPVCEFifteenKindGoldenBytes`) are pinned to the Rust encoder's bytes
 for the exact values of the Rust `every_core_kind_round_trips` test
-(`crates/consema-pvce/src/lib.rs:1129-1174`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
+(`consema-rs/crates/consema-pvce/src/lib.rs:1129-1174`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
 Date(-12345-02-28) →`505643450130070402023039021c`,
 Time(23:59:58.125) →`5056434501310c173b3a080301017d03020103`,
 LocalDateTime(-12345-02-28T23:59:58.125) →`50564345013215070402023039021c0c173b3a080301017d03020103`,
@@ -590,10 +590,10 @@ are pinned to the Rust `value_transport.rs` encoder output for the same
 values.
 The PGCE/1 golden vectors in `graph/pgce_test.go` (`TestPGCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `crates/consema-graph/src/pgce.rs:664-678` —`scalar_byte_vector_is_frozen`
+- `consema-rs/crates/consema-graph/src/pgce.rs:664-678` —`scalar_byte_vector_is_frozen`
   (scalar "x" tagged `tag:yaml.org,2002:str` →hex
   `504743450101010020157461673a79616d6c2e6f72672c323030323a7374720178`);
-- `crates/consema-graph/src/pgce.rs:680-686` —`empty_graph_byte_vector_is_frozen`
+- `consema-rs/crates/consema-graph/src/pgce.rs:680-686` —`empty_graph_byte_vector_is_frozen`
   (empty graph →`50474345010000`).
 Both are also the shared conformance vector expectations
 (`conformance/vectors/portable-graph-v1.json`: `pgce.empty-vector` and
@@ -728,7 +728,7 @@ input is pinned as a regression seed under `testdata/fuzz/`:
 ## Security matrix (0.19.0 G5.4)
 `go/conformance/security_matrix_test.go` extends the 0.16.0 limits matrix
 (`limits_matrix_test.go`) to the recovery-capable families and mirrors the
-Rust hardening surface (crates/consema-conformance/tests/
+Rust hardening surface (consema-rs/crates/consema-conformance/tests/
 {xml,plist,hcl,yaml}_hardening.rs; roadmap §22.4:1908):
 - **Limits matrices** —13 XML rows, 10 plist XML rows, 9 plist binary
   rows, 13 HCL rows (32 boundary rows total), each pinning the exact
@@ -787,8 +787,8 @@ files.
 - `conformance/differential/cases.json` —the shared input set: 68 cases
   (51 PVCE transport values + 17 PGCE graphs) covering all fifteen kinds,
   golden vectors, integer/varint/container boundaries, nesting, sharing, and
-  cycles (≤40 required by the milestone; the integrity test fails if the
-  file drifts below that or loses kind coverage). Single-authority location
+  cycles (68 is the exact frozen count; the integrity test fails if the
+  file drifts from it or loses kind coverage). Single-authority location
   of the consema repository (migrated from go/ on 2026-08-12,
   docs/five-language-ci-design.md §3.5): the normalized and protocol-exchange
   case files live at `conformance/differential/normalized/cases.json` and
@@ -801,7 +801,7 @@ files.
   the Rust bytes and re-encodes them. Without `CONSEMA_DIFFERENTIAL_RUST_DIR`
   the byte-parity test skips (documented skip, never silent) and the
   case-file integrity test still runs (when the case set is reachable).
-- `crates/consema-conformance/examples/emit_parity_bytes.rs` —the minimal
+- `consema-rs/crates/consema-conformance/examples/emit_parity_bytes.rs` —the minimal
   Rust encoder driver (justification: no existing Rust entry point encodes
   arbitrary values to PVCE/PGCE and prints bytes; it reuses the published
   codecs only, no new encoding logic).
@@ -879,4 +879,4 @@ fuzzing with no panic, no hang, and no limit bypass:
 | `FuzzJSONEncodeDecode` | 6,637,952 | PASS |
 go test -bench=. -benchtime=1s ./json/ ./toml/ ./yaml/ ./ini/ ./properties/ ./xml/ ./plist/ ./hcl/
 ```
-The completion path is documented, not a CI job (plan §2.6 G5.4: "没有则只文档化完成路径，不新建 CI job（.github 是 Rust 门禁域）").
+The completion path is documented, not a CI job (plan §2.6 G5.4: "没有则只文档化完成路径，不新建 CI job"). 拆分后本仓 .github/workflows 已是 Go 门禁域（ci-go.yml / release.yml / audit.yml / labeler.yml / pr-labels.yml / stale.yml 六个 workflow）。

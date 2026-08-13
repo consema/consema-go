@@ -1,5 +1,5 @@
 // Package toml implements the frozen `toml.1.0@1` language profile of the
-// TOML format family (RFC 0001; crates/consema-toml). It forms lossless
+// TOML format family (RFC 0001; consema-rs/crates/consema-toml). It forms lossless
 // immutable document snapshots (byte-exact render, exhaustive
 // token/trivia coverage), exposes the closed TOML native item model
 // (scalar categories, tables, inline tables, dotted tables, arrays, and

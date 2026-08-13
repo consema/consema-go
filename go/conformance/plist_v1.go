@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.plist.conformance@1` suite runner
-// (crates/consema-conformance/src/plist_v1.rs). The 0.17.0 milestone (G3.2)
+// (consema-rs/crates/consema-conformance/src/plist_v1.rs). The 0.17.0 milestone (G3.2)
 // implements the full plist surface: XML and binary formation with
 // recovery, the three query domains, value-tree and require-object
 // projection, both canonical materializations with the reparse closure,

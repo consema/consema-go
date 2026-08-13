@@ -1,6 +1,6 @@
 // Module consema: the Go implementation of the language-neutral Consema
 // contracts (RFC 0016 §3.1; docs/go-implementation-plan.md §0.2). One module
-// carries the SDK and the future Go CLI, mirroring crates/consema's facade +
+// carries the SDK and the future Go CLI, mirroring consema-rs/crates/consema's facade +
 // [[bin]] structure.
 //
 // Minimum Go version is 1.24 — the empirical floor, not the plan's

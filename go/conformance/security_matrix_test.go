@@ -6,7 +6,7 @@ package conformance
 //
 // Extends the 0.16.0 limits matrix (limits_matrix_test.go, five families)
 // to the recovery-capable families shipped in 0.16.0-0.18.0 (xml/plist/hcl)
-// and mirrors the Rust adversarial surface (crates/consema-conformance/
+// and mirrors the Rust adversarial surface (consema-rs/crates/consema-conformance/
 // tests/{xml,plist,hcl,yaml}_hardening.rs; SECURITY.md:16,32-36). Every
 // public limit parameter is pinned with its exact positive/negative
 // boundary (N-1 fails with the family's frozen code, N succeeds), and the

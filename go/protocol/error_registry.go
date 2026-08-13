@@ -8,7 +8,7 @@ import (
 )
 
 // This file implements the stable public diagnostic and failure code
-// registry (crates/consema-protocol/src/error_registry.rs). The v7 registry
+// registry (consema-rs/crates/consema-protocol/src/error_registry.rs). The v7 registry
 // pins 187 codes (55/62/90/92/132/166/187 across v1..v7); every code carries
 // its semantic category, first release, and a human-facing description.
 // The records are transcribed verbatim from the Rust registries, which are
@@ -202,7 +202,7 @@ func mergeErrorCodes(old, added []ErrorCodeDescriptor) []ErrorCodeDescriptor {
 
 // The semantic-model v1 records (ERROR_CODES_V1, 55 codes). Strictly sorted
 // by code; introduced versions and descriptions transcribed verbatim from
-// crates/consema-protocol/src/error_registry.rs:31-362.
+// consema-rs/crates/consema-protocol/src/error_registry.rs:31-362.
 var errorCodesV1 = []ErrorCodeDescriptor{
 	errorCode("core.diagnostic.truncated@1", CategoryResource, "0.1.0", "Diagnostic limit truncated a sequence"),
 	errorCode("core.parse.resource-limit@1", CategoryResource, "0.1.0", "Parser resource limit was reached"),

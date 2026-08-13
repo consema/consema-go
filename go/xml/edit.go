@@ -1,7 +1,7 @@
 package xml
 
 // This file implements the typed XML edit operations and the atomic
-// commit/dry-run pipeline (RFC 0012 §11; crates/consema-xml/src/edit.rs;
+// commit/dry-run pipeline (RFC 0012 §11; consema-rs/crates/consema-xml/src/edit.rs;
 // RFC 0016 §5.3). V1 publishes eight versioned operations. Each operation
 // targets one exact NodeRef. Placement uses one exact parent and an
 // optional sibling/attribute anchor. Duplicate expanded attributes,

@@ -1,7 +1,7 @@
 // Package conformance implements the Go conformance runner over the shared
 // language-neutral vectors (RFC 0016 §7; docs/go-implementation-plan.md
 // §4). One runner file per suite family mirrors
-// crates/consema-conformance/src/lib.rs:3-25; every runner validates the
+// consema-rs/crates/consema-conformance/src/lib.rs:3-25; every runner validates the
 // suite identifier, rejects duplicate case IDs, asserts the frozen case
 // count, dispatches cases by capability, and rejects unknown cases. The
 // vector files themselves are the authority — the runner embeds no vector

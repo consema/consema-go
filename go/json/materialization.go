@@ -9,7 +9,7 @@ import (
 )
 
 // This file implements deterministic PortableValue materialization for the
-// JSON-family profiles (crates/consema-json/src/materialization.rs).
+// JSON-family profiles (consema-rs/crates/consema-json/src/materialization.rs).
 // Materialization is two-phase: the exact writer produces bytes under the
 // resource budgets, then the bytes are reparsed into an immutable target
 // document and the provenance facts are collected against it.
