@@ -1,6 +1,6 @@
 // Package pilot implements the Go SDK real-repository migration pilot
-// (0.19.0 G5.7; roadmap §22.7, §23.2-§23.3; report docs/pilot-go-0.19.0.md,
-// modeled on docs/pilot-0.13.0.md).
+// (0.19.0 G5.7; roadmap §22.7, §23.2-§23.3; report https://github.com/consema/consema/blob/main/docs/pilot-go-0.19.0.md,
+// modeled on https://github.com/consema/consema/blob/main/docs/pilot-0.13.0.md).
 //
 // The pilot drives only the public SDK surface (the consema root facade,
 // the family packages, go/document, go/protocol, go/core). It performs no
@@ -1845,7 +1845,7 @@ func TestPilotMigration3(t *testing.T) {
 func TestPilotRustComparison(t *testing.T) {
 	cliPath := os.Getenv("CONSEMA_PILOT_RUST_CLI")
 	if cliPath == "" {
-		t.Skip("CONSEMA_PILOT_RUST_CLI not set; Rust comparison recorded in docs/pilot-go-0.19.0.md")
+		t.Skip("CONSEMA_PILOT_RUST_CLI not set; Rust comparison recorded in https://github.com/consema/consema/blob/main/docs/pilot-go-0.19.0.md")
 	}
 	if _, err := os.Stat(cliPath); err != nil {
 		t.Skipf("Rust CLI not found at %s: %v", cliPath, err)
@@ -1858,7 +1858,7 @@ func TestPilotRustComparison(t *testing.T) {
 
 	// The cookbook pin: cli.convert-request@1 envelope payload with the
 	// toml.1.0 canonical-document materialization request
-	// (docs/cookbook.md §5, the exact pinned canonical JSON). The YAML
+	// (https://github.com/consema/consema/blob/main/docs/cookbook.md §5, the exact pinned canonical JSON). The YAML
 	// variant derives by replacing the two target profile ids, keeping
 	// the canonical field order intact.
 	const cookbookConvertRequest = `{"schema":"core.portable-value-json@1","value":{"type":"Object","entries":[{"key":"schema","value":{"type":"String","value":"cli.convert-request@1"}},{"key":"projection_request","value":{"type":"Object","entries":[{"key":"schema","value":{"type":"String","value":"core.projection-request@1"}},{"key":"target","value":{"type":"Object","entries":[{"key":"id","value":{"type":"String","value":"json.projection.best-exact-core"}},{"key":"version","value":{"type":"Integer","value":"1"}}]}},{"key":"default_policy","value":{"type":"Object","entries":[{"key":"id","value":{"type":"String","value":"core.projection.exact-or-reject"}},{"key":"version","value":{"type":"Integer","value":"1"}},{"key":"arguments","value":{"type":"Object","entries":[]}}]}},{"key":"rules","value":{"type":"Sequence","items":[]}},{"key":"limits","value":{"type":"Object","entries":[]}}]}},{"key":"materialization_request","value":{"type":"Object","entries":[{"key":"schema","value":{"type":"String","value":"core.materialization-request@2"}},{"key":"target_profile","value":{"type":"Object","entries":[{"key":"id","value":{"type":"String","value":"toml.1.0"}},{"key":"version","value":{"type":"Integer","value":"1"}}]}},{"key":"style","value":{"type":"Object","entries":[{"key":"id","value":{"type":"String","value":"toml.canonical-document"}},{"key":"version","value":{"type":"Integer","value":"1"}}]}},{"key":"encoding","value":{"type":"Object","entries":[{"key":"schema","value":{"type":"String","value":"core.source-encoding@1"}},{"key":"kind","value":{"type":"String","value":"Utf8"}},{"key":"windows_code_page","value":{"type":"Null"}}]}},{"key":"newline","value":{"type":"String","value":"Lf"}},{"key":"mapping_policy","value":{"type":"String","value":"UniqueStringEntriesToObject"}},{"key":"representability","value":{"type":"String","value":"ExactOnly"}},{"key":"limits","value":{"type":"Object","entries":[{"key":"max_input_nodes","value":{"type":"Integer","value":"1000000"}},{"key":"max_output_bytes","value":{"type":"Integer","value":"67108864"}},{"key":"max_depth","value":{"type":"Integer","value":"256"}},{"key":"max_report_entries","value":{"type":"Integer","value":"100000"}},{"key":"max_provenance_entries","value":{"type":"Integer","value":"2000000"}}]}}]}}]}}`

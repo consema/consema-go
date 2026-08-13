@@ -18,16 +18,16 @@ import (
 
 // ---------------------------------------------------------------------------
 // Cross-language protocol exchange harness (milestone 0.19.0 G5.3;
-// docs/go-implementation-plan.md §2.6 and §4.4; roadmap §16.6 line 1549 and
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.4; roadmap §16.6 line 1549 and
 // §22.2 line 1882: "protocol cross-encode/decode 100%").
 //
 // The harness never imports or calls Rust (RFC 0016 §1.1 cgo ban): the
-// checked-in case set (cases.json, the shared conformance/differential/
+// provisioned case set (cases.json, the shared conformance/differential/
 // protocol-exchange directory of the consema repository — single authority,
-// docs/five-language-ci-design.md §3.5) is decoded and re-encoded by both
+// https://github.com/consema/consema/blob/main/docs/five-language-ci-design.md §3.5) is decoded and re-encoded by both
 // sides, and the other side's bytes are compared as files.
 // Orchestration: scripts/go-verify-protocol-exchange.ps1 runs the Rust
-// example (consema-rs/crates/consema-conformance/examples/emit_protocol_exchange.rs)
+// example (consema-rs/consema-conformance/examples/emit_protocol_exchange.rs)
 // over the case set into a directory, then runs this test with
 // CONSEMA_EXCHANGE_RUST_DIR set to that directory and
 // CONSEMA_EXCHANGE_GO_DIR set to a writable directory the Go side fills
@@ -91,7 +91,7 @@ func resolveCasesDir(t *testing.T) string {
 	return ""
 }
 
-// loadCaseJSON reads the checked-in protocol-exchange case file from the
+// loadCaseJSON reads the provisioned protocol-exchange case file from the
 // shared differential directory.
 func loadCaseJSON(t *testing.T) []byte {
 	t.Helper()
@@ -104,9 +104,9 @@ func loadCaseJSON(t *testing.T) []byte {
 
 const caseFileManifest = "consema.differential.protocol-exchange@1"
 
-// expectedCaseCount is the exact size of the checked-in input set (frozen
+// expectedCaseCount is the exact size of the provisioned input set (frozen
 // test data; measured from cases.json: 83 cases). The integrity test fails
-// if the checked-in file's case count drifts from it.
+// if the provisioned file's case count drifts from it.
 const expectedCaseCount = 83
 
 // rustDirEnv names the directory of the Rust encoder's per-case files.
@@ -118,7 +118,7 @@ const goOutDirEnv = "CONSEMA_EXCHANGE_GO_DIR"
 
 // allRecords is the closed record inventory of the exchange set. It is
 // exactly the protocol record surface both implementations decode in full
-// (go/protocol payload.go dispatch intersect consema-rs/crates/consema-protocol
+// (go/protocol payload.go dispatch intersect consema-rs/consema-protocol
 // payload.rs dispatch). The six records validated in Go only at the envelope
 // level (core.conversion-report@1, core.edit-plan@1,
 // core.format-operation-registry@1, core.materialization-provenance-map@1,
@@ -172,7 +172,7 @@ type fileCase struct {
 	} `json:"expected"`
 }
 
-// loadCaseFile parses and validates the checked-in case set: manifest id,
+// loadCaseFile parses and validates the provisioned case set: manifest id,
 // case count lower bound, unique ids, known records, per-record positive and
 // negative coverage, canonical transport JSON, and registered expected
 // codes.
@@ -258,7 +258,7 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the checked-in case set. It always runs
+// TestCaseFileIntegrity validates the provisioned case set. It always runs
 // (no Rust bytes needed), so `go test ./...` guards the file even without
 // the orchestrator.
 func TestCaseFileIntegrity(t *testing.T) {

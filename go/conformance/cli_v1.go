@@ -1,11 +1,13 @@
 package conformance
 
 // The `consema.cli.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/cli_v1.rs). Every case is dispatched by
-// its `capability` and executed against the protocol v7 types: envelope
+// (consema-rs/consema-conformance/src/cli_v1.rs). Every case is dispatched
+// by its `capability` and executed against the protocol v7 types: envelope
 // decode, exit classification, batch state machines, the redaction record
 // contract, and transport budgets. The vector data drives every result;
-// the runner holds no expectation literals.
+// the runner pins the frozen per-suite case count (conformance/README.md
+// rule 4) but holds no per-case expectation literals (G146, adversarial
+// audit 2026-08-13).
 
 import (
 	"encoding/hex"

@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the cross-family mandatory structural edit surface
-// (RFC 0016 §5.3; RFC 0004 §10-§16; docs/go-implementation-plan.md §2.5
+// (RFC 0016 §5.3; RFC 0004 §10-§16; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.5
 // G4.3): the root-package counterpart of the per-family
 // EditTransactionBuilder. The family builders stay typed and family-owned;
 // this package dispatches one union `Document` to the owning family's

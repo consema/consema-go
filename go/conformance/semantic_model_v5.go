@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.semantic-model-v5.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/semantic_model_v5.rs). The v5 registry
+// (consema-rs/consema-conformance/src/semantic_model_v5.rs). The v5 registry
 // facts and the graph/YAML wire records are verified data-driven: every
 // graph and expectation comes from the vector file.
 

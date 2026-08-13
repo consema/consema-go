@@ -12,9 +12,9 @@ import (
 // The vectors below are transcribed byte-for-byte from the Rust PGCE/1
 // encoder's in-code pins:
 //
-//   - consema-rs/crates/consema-graph/src/pgce.rs:664-678
+//   - consema-rs/consema-graph/src/pgce.rs:664-678
 //     (scalar_byte_vector_is_frozen)
-//   - consema-rs/crates/consema-graph/src/pgce.rs:680-686
+//   - consema-rs/consema-graph/src/pgce.rs:680-686
 //     (empty_graph_byte_vector_is_frozen)
 //
 // They are also the shared conformance vector expectations
@@ -132,7 +132,7 @@ func TestConformanceVectorRejections(t *testing.T) {
 
 // TestIsomorphicBuilderNumberingHasIdenticalPGCE mirrors the Rust
 // isomorphic_builder_numbering_has_identical_pgce test
-// (consema-rs/crates/consema-graph/src/pgce.rs:688-713): equal graphs built with
+// (consema-rs/consema-graph/src/pgce.rs:688-713): equal graphs built with
 // different local IDs encode to identical bytes.
 func TestIsomorphicBuilderNumberingHasIdenticalPGCE(t *testing.T) {
 	build := func(sharedFirst bool) *Graph {
@@ -169,7 +169,7 @@ func TestIsomorphicBuilderNumberingHasIdenticalPGCE(t *testing.T) {
 
 // TestSharedCyclesAndArbitraryMappingKeysRoundTrip mirrors the Rust
 // shared_cycles_and_arbitrary_mapping_keys_round_trip test
-// (consema-rs/crates/consema-graph/src/pgce.rs:715-746): a graph with sharing, a
+// (consema-rs/consema-graph/src/pgce.rs:715-746): a graph with sharing, a
 // self-cycle through a mapping value, and a duplicate arbitrary key
 // round-trips byte-stably.
 func TestSharedCyclesAndArbitraryMappingKeysRoundTrip(t *testing.T) {
@@ -265,7 +265,7 @@ func TestRoundTripEveryNodeKind(t *testing.T) {
 
 // TestDecoderRejectsNonminimalVarintTrailingAndInvalidReference mirrors the
 // Rust decoder_rejects_nonminimal_varint_trailing_and_invalid_reference test
-// (consema-rs/crates/consema-graph/src/pgce.rs:748-771).
+// (consema-rs/consema-graph/src/pgce.rs:748-771).
 func TestDecoderRejectsNonminimalVarintTrailingAndInvalidReference(t *testing.T) {
 	scalar := hexScalar(t)
 	limits := DefaultPGCELimits()
@@ -292,7 +292,7 @@ func TestDecoderRejectsNonminimalVarintTrailingAndInvalidReference(t *testing.T)
 
 // TestDecoderRejectsNoncanonicalNodeNumbering mirrors the Rust
 // decoder_rejects_noncanonical_node_numbering test
-// (consema-rs/crates/consema-graph/src/pgce.rs:773-792).
+// (consema-rs/consema-graph/src/pgce.rs:773-792).
 func TestDecoderRejectsNoncanonicalNodeNumbering(t *testing.T) {
 	bytes := []byte{'P', 'G', 'C', 'E',
 		1, // version
@@ -357,7 +357,7 @@ func TestDecoderRejectsStructuralFailures(t *testing.T) {
 
 // TestEncodeAndDecodeLimitsFailAtomically mirrors the Rust
 // encode_and_decode_limits_fail_atomically test
-// (consema-rs/crates/consema-graph/src/pgce.rs:794-817): both directions fail with a
+// (consema-rs/consema-graph/src/pgce.rs:794-817): both directions fail with a
 // stream-bytes resource limit and never return partial output.
 func TestEncodeAndDecodeLimitsFailAtomically(t *testing.T) {
 	scalar := hexScalar(t)
@@ -428,7 +428,7 @@ func TestCodecLimitBoundaries(t *testing.T) {
 
 // TestPGCEFailuresHaveStableCodes mirrors the Rust
 // pgce_failures_have_stable_v5_codes test
-// (consema-rs/crates/consema-graph/src/pgce.rs:819-845): codec failures carry the
+// (consema-rs/consema-graph/src/pgce.rs:819-845): codec failures carry the
 // frozen "core.pgce.*@1" codes.
 func TestPGCEFailuresHaveStableCodes(t *testing.T) {
 	if got := (&PGCEError{Kind: ErrInvalidMagic}).Code(); got != "core.pgce.invalid@1" {
@@ -515,7 +515,7 @@ func mustEncode(t *testing.T, g *Graph) []byte {
 }
 
 // hexScalar returns the canonical PGCE stream of one scalar "x" node (the
-// Rust hex_scalar helper, consema-rs/crates/consema-graph/src/pgce.rs:847-856).
+// Rust hex_scalar helper, consema-rs/consema-graph/src/pgce.rs:847-856).
 func hexScalar(t *testing.T) []byte {
 	t.Helper()
 	b := NewBuilder(DefaultLimits())

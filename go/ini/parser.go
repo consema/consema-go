@@ -8,7 +8,7 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// This file implements the lossless INI parser (consema-rs/crates/consema-ini
+// This file implements the lossless INI parser (consema-rs/consema-ini
 // parser.rs). Physical lines are scanned over the decoded text first with
 // the physical limits; each line is then classified per profile into
 // comments, sections, entries, continuations, or recovered error records;

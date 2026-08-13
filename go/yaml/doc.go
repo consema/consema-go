@@ -2,8 +2,8 @@
 // frozen YAML 1.2 Core and YAML 1.1 compatibility profiles over one shared
 // lossless presentation pipeline.
 //
-// The package mirrors the capability face of consema-rs/crates/consema-yaml
-// (docs/go-implementation-plan.md §2.3 G2.1): explicit profile selection
+// The package mirrors the capability face of consema-rs/consema-yaml
+// (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.3 G2.1): explicit profile selection
 // (never dialect guessing), byte-exact unmodified rendering, the native
 // representation view with anchors/aliases/tags preserved as facts (never
 // implicitly expanded and never fabricated into PortableValue), native and
@@ -14,7 +14,7 @@
 // network/filesystem/application access).
 //
 // The parser is a self-written standard-library implementation of the YAML
-// 1.2.2 presentation grammar (docs/go-implementation-plan.md §1.3 rejects
+// 1.2.2 presentation grammar (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §1.3 rejects
 // gopkg.in/yaml.v3 and every third-party YAML base). Backend event types
 // are private; the public contract is the immutable Document snapshot, its
 // snapshot-bound native handles, the query/projection/materialization/edit

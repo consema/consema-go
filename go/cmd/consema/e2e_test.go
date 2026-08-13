@@ -1,7 +1,7 @@
 package main
 
 // Process-level tests of the Go CLI binary (mirroring the Rust
-// consema-rs/crates/consema/tests/cli_*.rs spirit): stdout/stderr separation, the
+// consema-rs/consema/tests/cli_*.rs spirit): stdout/stderr separation, the
 // exit-code matrix, the machine-output envelope shape, the full plan→apply
 // flow, the interruption/write-failure injection seams
 // (CONSEMA_APPLY_INTERRUPT_AFTER / CONSEMA_APPLY_WRITE_FAILURE), and the

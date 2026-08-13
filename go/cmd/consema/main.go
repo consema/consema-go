@@ -1,9 +1,14 @@
 // The official `consema` CLI binary (Go implementation).
 //
 // Entry point, command dispatch, exit-code wiring, and stdout/stderr
-// separation (mirror of the Rust bin's main.rs). The binary is stdlib-only
-// and reaches format semantics only through the root package's public API
-// (RFC 0015 §2.3 hard gate 1). All 11 formal commands are wired.
+// separation (mirror of the Rust bin's main.rs). The binary is stdlib-only.
+// Command implementations reach format semantics through the root package
+// and the family packages' public APIs — flow.go imports the eight family
+// packages directly, a documented deviation from RFC 0015 §2.3 hard gate 1
+// (the Rust bin reaches semantics only through the facade; the Go facade
+// does not expose every format entry point, so the CLI calls the family
+// packages' public APIs; G055, adversarial audit 2026-08-13). All 11
+// formal commands are wired.
 //
 // Exit-code wiring: every error path maps through
 // protocol.ClassifyErrorCode (RFC 0015 §5); the process exits with the

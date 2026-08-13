@@ -8,7 +8,7 @@ import (
 )
 
 // This file implements the transferable Profile and Capability registry
-// records plus the registry manifest (consema-rs/crates/consema-protocol/src/registry.rs
+// records plus the registry manifest (consema-rs/consema-protocol/src/registry.rs
 // and registry_manifest.rs).
 
 // ProfileReference is a versioned reference to a Profile, whose ID may

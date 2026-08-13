@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.json-family.conformance@2` suite runner, mirroring
-// consema-rs/crates/consema-conformance/src/json_family_v2.rs. The 0.15.0 milestone
+// consema-rs/consema-conformance/src/json_family_v2.rs. The 0.15.0 milestone
 // G1.2 implements the whole JSON-family surface (json5.standard@1
 // formation, json.lossless-syntax-query@2, json.native-semantic-query@2,
 // json5.projection.best-exact-core@1, json5.canonical-compact@1,
@@ -9,8 +9,10 @@ package conformance
 // core.parse.limits@1) through the json package, so the formation, query,
 // projection, materialization, edit, registry, and security cases
 // execute. The three conversion cases (json5.convert.*) publish the
-// core.conversion@1 capability, which lands with 0.15.0 G1.4 (the root
-// package Convert* composition); they remain documented skips.
+// core.conversion@1 capability through the root package Convert*
+// composition (delivered 0.15.0 G1.4) and execute since then (G054,
+// adversarial audit 2026-08-13 — the "remain documented skips" header was
+// stale).
 
 import (
 	"context"

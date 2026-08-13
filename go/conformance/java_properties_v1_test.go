@@ -7,7 +7,7 @@ import (
 
 // TestJavaPropertiesV1SuitePins the G2.3 gate: the data-driven runner
 // executes all 25 published java-properties-v1 cases with zero skips and
-// zero failures (docs/go-implementation-plan.md §4.2; RFC 0016 §7).
+// zero failures (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.2; RFC 0016 §7).
 func TestJavaPropertiesV1SuitePins(t *testing.T) {
 	repoRoot := filepath.Join("..", "..")
 	runner := &Runner{

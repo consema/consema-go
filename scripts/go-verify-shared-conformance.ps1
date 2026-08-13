@@ -2,13 +2,19 @@ param(
     [string]$RustOutDir = '',
     [string]$GoReportFile = '',
     [switch]$StrictSkips,
-    # consema-rs checkout directory (multi-repo mode); default: <repo root>\consema-rs
-    [string]$RustWorkspace = ''
+    # consema-rs checkout directory (multi-repo mode); default: <repo
+    # root>\consema-rs (CI layout) or a sibling consema-rs checkout (G109)
+    [string]$RustWorkspace = '',
+    # Feature-Complete Manifest path; default: <repo root>\docs\
+    # fc-manifest-0.13.0.json (local provision) then
+    # <repo root>\consema-repo\docs\fc-manifest-0.13.0.json (CI multi-repo
+    # mode) — G109
+    [string]$ManifestPath = ''
 )
 
 # ---------------------------------------------------------------------------
 # Shared dual-runner conformance verification (milestone 0.19.0 G5.1;
-# docs/go-implementation-plan.md §2.6 and §4.1/§4.5; roadmap §16.6 line
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.1/§4.5; roadmap §16.6 line
 # 1547).
 #
 # Runs the same 18 vector suites with both independent runners in one batch
@@ -37,16 +43,19 @@ param(
 # case skipped on exactly one side with the required documentation
 # (capability + reason, RFC 0016 §7) while the other side passes it is a
 # recorded documented-skip asymmetry: reported case by case, and blocking
-# only with -StrictSkips (the "skip 必须两侧同 skip" rule). An undocumented
-# skip, a pass-vs-fail or skip-vs-fail disagreement, and any inventory
-# divergence (suite or case present on one side only, per-file suite
-# identifier disagreement) are hard mismatches.
+# under -StrictSkips (the "skip 必须两侧同 skip" rule; the CI go-differential
+# job passes -StrictSkips, so the roadmap §16.6 hard gate enforces the rule
+# — G057, adversarial audit 2026-08-13). An undocumented skip, a
+# pass-vs-fail or skip-vs-fail disagreement, and any inventory divergence
+# (suite or case present on one side only, per-file suite identifier
+# disagreement) are hard mismatches.
 #
 # Exit code: 0 = both runners conformant on all 18 suites, no hard
 # mismatches, digest verified (documented-skip asymmetries are reported,
-# not blocking by default); non-zero = any side failed, any hard mismatch,
-# digest mismatch, or a harness error. The Go runner's RFC 0015 exit class
-# (2 = non-conformant data) is propagated.
+# blocking only under -StrictSkips); non-zero = any side failed, any hard
+# mismatch, digest mismatch, a strict-mode skip asymmetry, or a harness
+# error. The Go runner's RFC 0015 exit class (2 = non-conformant data) is
+# propagated.
 #
 # Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
 # workspace is the consema-rs checkout (<repo root>\consema-rs by default,
@@ -59,14 +68,45 @@ $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
 # (multi-repo mode): this repository carries the Go implementation only.
-# -RustWorkspace overrides the default sibling checkout <repo root>\consema-rs.
-if (-not $RustWorkspace) { $RustWorkspace = Join-Path $workspaceRoot 'consema-rs' }
+# Default resolution (G109): <repo root>\consema-rs (CI) first, then a
+# sibling consema-rs checkout; -RustWorkspace overrides either.
+if (-not $RustWorkspace) {
+    $nested = Join-Path $workspaceRoot 'consema-rs'
+    $sibling = Join-Path (Split-Path -Parent $workspaceRoot) 'consema-rs'
+    if (Test-Path (Join-Path $nested 'Cargo.toml')) {
+        $RustWorkspace = $nested
+    }
+    elseif (Test-Path (Join-Path $sibling 'Cargo.toml')) {
+        $RustWorkspace = $sibling
+    }
+    else {
+        Write-Error "consema-rs checkout not found: tried $nested (CI multi-repo mode) and $sibling (side-by-side layout); pass -RustWorkspace explicitly"
+        exit 1
+    }
+}
 $RustWorkspace = [IO.Path]::GetFullPath($RustWorkspace)
 $vectorsDir = Join-Path $workspaceRoot 'conformance\vectors'
 $fixturesDir = Join-Path $workspaceRoot 'conformance\fixtures'
-# The Feature-Complete Manifest is authoritative in the consema spec repository
-# checkout (multi-repo mode).
-$manifestPath = Join-Path $workspaceRoot 'consema-repo\docs\fc-manifest-0.13.0.json'
+# The Feature-Complete Manifest is authoritative in the consema spec
+# repository. Default (G109): the locally provisioned copy (<repo
+# root>\docs\fc-manifest-0.13.0.json, per CONTRIBUTING "Conformance 数据
+# 同步") first, then the CI multi-repo checkout
+# (<repo root>\consema-repo\docs\fc-manifest-0.13.0.json);
+# -ManifestPath overrides either.
+if (-not $ManifestPath) {
+    $localManifest = Join-Path $workspaceRoot 'docs\fc-manifest-0.13.0.json'
+    $ciManifest = Join-Path $workspaceRoot 'consema-repo\docs\fc-manifest-0.13.0.json'
+    if (Test-Path $localManifest) {
+        $ManifestPath = $localManifest
+    }
+    elseif (Test-Path $ciManifest) {
+        $ManifestPath = $ciManifest
+    }
+    else {
+        Write-Error "Feature-Complete Manifest not found: tried $localManifest (local provision) and $ciManifest (CI multi-repo mode); pass -ManifestPath explicitly"
+        exit 1
+    }
+}
 
 # --- repo layout sanity ------------------------------------------------------
 if (-not (Test-Path (Join-Path $RustWorkspace 'Cargo.toml')) -or
@@ -104,7 +144,8 @@ if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
 # The 2026-08-07 recorded value e3d6578858... was computed on a CRLF working
 # tree (core.autocrlf=true) and has been replaced by the canonical-state
 # value 35bebc8d...; the 2026-08-12 P2-B vector reinforcement (508 -> 519
-# cases) replaced it again with cfd6e296... (fc-manifest-0.13.0.json:38). On
+# cases) replaced it again with cfd6e296... (fc-manifest-0.13.0.json:39,
+# the aggregate_sha256 value line; G115 line re-verification 2026-08-13). On
 # a CRLF working tree this step fails as expected — run with
 # `git config core.autocrlf false` (or a clean LF checkout).
 Write-Host "[1/6] verifying the conformance/vectors aggregate digest against the Feature-Complete Manifest..."
@@ -203,8 +244,19 @@ $cliWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "[3/6] running the Go runner CLI over the same 18 suites..."
 Push-Location $goDir
 try {
-    & go run ./cmd/consema-conformance -vectors $vectorsDir -fixtures $fixturesDir -manifest $manifestPath 1> $cliOutFile 2> $cliErrFile
-    $goCliCode = $LASTEXITCODE
+    # G131 (adversarial audit 2026-08-13): under EAP=Stop, PowerShell 5.1
+    # turns native-command stderr with redirection into a terminating
+    # NativeCommandError — exactly on the failure path whose diagnostics
+    # this block exists to capture. EAP is relaxed around the native call.
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & go run ./cmd/consema-conformance -vectors $vectorsDir -fixtures $fixturesDir -manifest $manifestPath 1> $cliOutFile 2> $cliErrFile
+        $goCliCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousEAP
+    }
 }
 finally {
     Pop-Location
@@ -235,8 +287,17 @@ $testWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "[4/6] comparing the two sides case by case (shared_run_test.go)..."
 Push-Location $goDir
 try {
-    & go test -count=1 -v ./conformance/ -run '^TestSharedConformanceDualRunner$' 1> $stdoutFile 2> $stderrFile
-    $testCode = $LASTEXITCODE
+    # G131: same EAP relaxation as the other redirected native calls
+    # (PS 5.1 NativeCommandError on native-command stderr under EAP=Stop).
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & go test -count=1 -v ./conformance/ -run '^TestSharedConformanceDualRunner$' 1> $stdoutFile 2> $stderrFile
+        $testCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousEAP
+    }
 }
 finally {
     Pop-Location

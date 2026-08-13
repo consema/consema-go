@@ -7,7 +7,7 @@ import (
 
 // validateRegisteredPayload dispatches the registered contracts whose Go
 // message types exist in this package to their full record decoders,
-// mirroring consema-rs/crates/consema-protocol/src/payload.rs. The 0.14.0 milestone
+// mirroring consema-rs/consema-protocol/src/payload.rs. The 0.14.0 milestone
 // closes the v1-v6 record surface exercised by the shared conformance
 // vectors; contracts whose record types ship with later milestones are
 // accepted at the schema-discriminator level (the NewProtocolMessage

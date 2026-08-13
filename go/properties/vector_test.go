@@ -17,7 +17,7 @@ import (
 
 // This file drives all 25 published cases of the shared
 // `consema.java-properties.conformance@1` vector suite through the public
-// package API (docs/go-implementation-plan.md §4.2; the conformance runner
+// package API (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.2; the conformance runner
 // in go/conformance/java_properties_v1.go executes the same facts through
 // the same API). The vector file is the authority; no expectation literal
 // lives here.

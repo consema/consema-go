@@ -17,16 +17,16 @@ import (
 
 // ---------------------------------------------------------------------------
 // Cross-language PVCE/PGCE byte-parity harness (milestone 0.14.0 G0.5;
-// docs/go-implementation-plan.md §4.4; roadmap §16.1 hard gate: "Rust 与 Go
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4; roadmap §16.1 hard gate: "Rust 与 Go
 // 的 PVCE/PGCE bytes 完全一致").
 //
 // The harness never imports or calls Rust (RFC 0016 §1.1 cgo ban): the
-// checked-in case set (cases.json, the shared conformance/differential/
+// provisioned case set (cases.json, the shared conformance/differential/
 // directory of the consema repository — single authority,
-// docs/five-language-ci-design.md §3.5) is encoded by both sides, and the
+// https://github.com/consema/consema/blob/main/docs/five-language-ci-design.md §3.5) is encoded by both sides, and the
 // Rust encoder's bytes are compared as files. Orchestration:
 // scripts/go-verify-byte-parity.ps1 drives the Rust example
-// (consema-rs/crates/consema-conformance/examples/emit_parity_bytes.rs) into a
+// (consema-rs/consema-conformance/examples/emit_parity_bytes.rs) into a
 // directory of `<case-id>.hex` files, then runs this test with
 // CONSEMA_DIFFERENTIAL_RUST_DIR set to that directory. Without the variable
 // the byte-parity test skips (documented skip, never silent) and only the
@@ -72,7 +72,7 @@ func resolveCasesDir(t *testing.T) string {
 	return ""
 }
 
-// loadCaseJSON reads the checked-in byte-parity case file from the shared
+// loadCaseJSON reads the provisioned byte-parity case file from the shared
 // differential directory.
 func loadCaseJSON(t *testing.T) []byte {
 	t.Helper()
@@ -85,9 +85,9 @@ func loadCaseJSON(t *testing.T) []byte {
 
 const caseFileManifest = "consema.differential.byte-parity@1"
 
-// expectedCaseCount is the exact size of the checked-in input set (frozen
+// expectedCaseCount is the exact size of the provisioned input set (frozen
 // test data; measured from cases.json: 68 cases). The integrity test fails
-// if the checked-in file's case count drifts from it.
+// if the provisioned file's case count drifts from it.
 const expectedCaseCount = 68
 
 // rustDirEnv names the directory of Rust encoder hex files.
@@ -131,7 +131,7 @@ type mappingDesc struct {
 	Value int `json:"value"`
 }
 
-// loadCaseFile parses and validates the checked-in case set: manifest id,
+// loadCaseFile parses and validates the provisioned case set: manifest id,
 // case count lower bound, unique ids, known codecs, decodable PVCE values,
 // buildable PGCE graphs, and fifteen-kind coverage.
 func loadCaseFile(t *testing.T) []fileCase {
@@ -192,7 +192,7 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the checked-in case set. It always runs
+// TestCaseFileIntegrity validates the provisioned case set. It always runs
 // (no Rust bytes needed), so `go test ./...` guards the file even without
 // the orchestrator.
 func TestCaseFileIntegrity(t *testing.T) {

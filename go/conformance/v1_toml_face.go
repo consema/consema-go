@@ -4,10 +4,11 @@ package conformance
 // milestone implements the `toml.lossless-syntax-query@1` cases of
 // `consema.syntax-query.conformance@1` (8 cases) and the TOML operation
 // cases of `consema.operations.conformance@1` (12 executed cases; the
-// operation-registry case needs both the JSON and TOML registries and is a
-// documented skip until the JSON family lands). The shared suite files
-// dispatch these cases to the exported handlers below; the vector files
-// are the authority and no expectation literals are embedded.
+// operation-registry case executes since the JSON family landed, 0.15.0 —
+// G054, adversarial audit 2026-08-13: the documented-skip note was stale).
+// The shared suite files dispatch these cases to the exported handlers
+// below; the vector files are the authority and no expectation literals
+// are embedded.
 //
 // The two shared runner files (`syntax_query_v1.go`, `operations_v1.go`,
 // and `v1.go`) are edited by the milestone coordinator; the handlers here
@@ -56,7 +57,7 @@ func argumentInt(argument string) int64 {
 }
 
 // RunSyntaxQueryTomlFace executes one `syntax.toml.*` case of the shared
-// syntax-query suite (consema-rs/crates/consema-conformance/src/syntax_query_v1.rs
+// syntax-query suite (consema-rs/consema-conformance/src/syntax_query_v1.rs
 // run_toml). The handler is called by the shared syntax_query_v1.go runner
 // for every case whose ID starts with "syntax.toml.".
 func RunSyntaxQueryTomlFace(vector *caseData, report *SuiteReport) {
@@ -102,7 +103,7 @@ func RunSyntaxQueryTomlFace(vector *caseData, report *SuiteReport) {
 }
 
 // tomlSyntaxDefinition builds the lossless-syntax-query definition from the
-// vector filters (consema-rs/crates/consema-conformance/src/syntax_query_v1.rs
+// vector filters (consema-rs/consema-conformance/src/syntax_query_v1.rs
 // definition).
 func tomlSyntaxDefinition(vector *caseData) (*protocol.ExecutableQuery, *protocol.QueryFailure) {
 	filtersValue, ok := objectField(vector.Input, "filters")
@@ -271,7 +272,7 @@ func compareSyntaxMatches(vector *caseData, report *SuiteReport, document *toml.
 }
 
 // RunOperationsTOMLFace executes one TOML-operation case of the shared
-// operations suite (consema-rs/crates/consema-conformance/src/operations_v1.rs
+// operations suite (consema-rs/consema-conformance/src/operations_v1.rs
 // run_case). The handler is called by the shared operations_v1.go runner
 // for every case ID in the TOML dispatch list.
 func RunOperationsTOMLFace(vector *caseData, report *SuiteReport) {

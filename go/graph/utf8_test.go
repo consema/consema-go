@@ -9,7 +9,7 @@ var invalidUTF8 = "\xff\xfe"
 
 // TestBuilderRejectsInvalidUTF8 pins the builder-layer UTF-8 invariant: the
 // Rust side cannot construct a graph whose tag or scalar content is not
-// valid UTF-8 (the Arc<str> invariant, consema-rs/crates/consema-graph/src/lib.rs:
+// valid UTF-8 (the Arc<str> invariant, consema-rs/consema-graph/src/lib.rs:
 // 94-157), so the Go builder validates explicitly and returns the typed
 // ErrGraphInvalidUTF8. The typed error maps to the frozen registered code
 // "core.graph.invalid@1".
@@ -47,7 +47,7 @@ func TestBuilderRejectsInvalidUTF8(t *testing.T) {
 // TestDecodePGCEInvalidUTF8ThroughBuilder pins that wire-level invalid UTF-8
 // is now intercepted by the builder layer and mapped back to the codec's
 // ErrInvalidUTF8, so the strict decode surface is unchanged (the Rust
-// Decoder::string InvalidUtf8, consema-rs/crates/consema-graph/src/pgce.rs:576-586).
+// Decoder::string InvalidUtf8, consema-rs/consema-graph/src/pgce.rs:576-586).
 func TestDecodePGCEInvalidUTF8ThroughBuilder(t *testing.T) {
 	// One scalar root with invalid-UTF-8 content ("\xff").
 	stream := []byte{'P', 'G', 'C', 'E', 0x01, 0x01, 0x01, 0x00,
@@ -79,7 +79,7 @@ func TestDecodePGCEInvalidUTF8ThroughBuilder(t *testing.T) {
 //
 // The check therefore guards against encoder regressions, not against
 // inputs. The Rust decoder has the same unreachable defense
-// (consema-rs/crates/consema-graph/src/pgce.rs:502-504) and no test drives it either;
+// (consema-rs/consema-graph/src/pgce.rs:502-504) and no test drives it either;
 // its registered code is pinned by TestPGCEFailuresHaveStableCodes. The
 // code table mapping is re-pinned here for completeness.
 func TestErrNonCanonicalEncodingIsDefenseInDepth(t *testing.T) {

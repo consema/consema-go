@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the common opaque Document union over the format
-// documents (consema-rs/crates/consema/src/lib.rs `Document`; RFC 0016 §3.2). The
+// documents (consema-rs/consema/src/lib.rs `Document`; RFC 0016 §3.2). The
 // concrete representation is private; format access is only possible
 // through the typed adapters. All returned facts are immutable snapshot
 // facts. The union is additive: the JSON and TOML families land with
@@ -47,7 +47,7 @@ type documentInner struct {
 }
 
 // ParseJSON forms one JSON/JSONC/JSON5 snapshot under an exact profile
-// (consema-rs/crates/consema/src/lib.rs `Document::parse_json`). ctx carries
+// (consema-rs/consema/src/lib.rs `Document::parse_json`). ctx carries
 // cancellation only, passed through to the JSON family parse entry.
 func ParseJSON(ctx context.Context, source []byte, profile jsonpkg.JsonProfile,
 	limits document.ParseLimits) (*Document, *jsonpkg.FormationFailure) {
@@ -59,7 +59,7 @@ func ParseJSON(ctx context.Context, source []byte, profile jsonpkg.JsonProfile,
 }
 
 // ParseTOML forms one TOML 1.0 snapshot under the exact profile
-// (consema-rs/crates/consema/src/lib.rs `Document::parse_toml`). The TOML family
+// (consema-rs/consema/src/lib.rs `Document::parse_toml`). The TOML family
 // parse entry has no cancellation; the facade mirrors that.
 func ParseTOML(source []byte, profile toml.TomlProfile,
 	limits document.ParseLimits) (*Document, *toml.FormationFailure) {
@@ -71,7 +71,7 @@ func ParseTOML(source []byte, profile toml.TomlProfile,
 }
 
 // ParseYAML forms one YAML stream snapshot under the exact frozen profile
-// (consema-rs/crates/consema/src/lib.rs `Document::parse_yaml`). The YAML family
+// (consema-rs/consema/src/lib.rs `Document::parse_yaml`). The YAML family
 // parse entry has no cancellation; the facade mirrors that.
 func ParseYAML(source []byte, profile yaml.YamlProfile,
 	limits document.ParseLimits) (*Document, *yaml.FormationFailure) {
@@ -83,7 +83,7 @@ func ParseYAML(source []byte, profile yaml.YamlProfile,
 }
 
 // ParseINI forms one INI snapshot under the exact profile and explicit
-// encoding selection (consema-rs/crates/consema/src/lib.rs `Document::parse_ini`).
+// encoding selection (consema-rs/consema/src/lib.rs `Document::parse_ini`).
 func ParseINI(source []byte, profile ini.IniProfile, selection ini.IniEncodingSelection,
 	limits ini.IniParseLimits) (*Document, *ini.FormationFailure) {
 	document, failure := ini.Parse(source, profile, selection, limits)
@@ -94,7 +94,7 @@ func ParseINI(source []byte, profile ini.IniProfile, selection ini.IniEncodingSe
 }
 
 // ParseProperties forms one Java Properties snapshot under the exact
-// profile and source contract (consema-rs/crates/consema/src/lib.rs
+// profile and source contract (consema-rs/consema/src/lib.rs
 // `Document::parse_properties`).
 func ParseProperties(source []byte, profile properties.PropertiesProfile,
 	selection properties.PropertiesEncodingSelection,
@@ -107,7 +107,7 @@ func ParseProperties(source []byte, profile properties.PropertiesProfile,
 }
 
 // ParseXML forms one XML 1.0 safe snapshot under the exact profile and
-// explicit encoding selection (consema-rs/crates/consema/src/lib.rs
+// explicit encoding selection (consema-rs/consema/src/lib.rs
 // `Document::parse_xml`). ctx carries cancellation only, passed through
 // to the XML family parse entry.
 func ParseXML(ctx context.Context, source []byte, profile xmlpkg.XmlProfile,
@@ -121,7 +121,7 @@ func ParseXML(ctx context.Context, source []byte, profile xmlpkg.XmlProfile,
 }
 
 // ParsePlist forms one Property List snapshot under the exact profile and
-// explicit encoding selection (consema-rs/crates/consema/src/lib.rs
+// explicit encoding selection (consema-rs/consema/src/lib.rs
 // `Document::parse_plist`).
 func ParsePlist(source []byte, profile plist.PlistProfile, selection plist.PlistEncodingSelection,
 	limits plist.PlistParseLimits) (*Document, *plist.FormationFailure) {
@@ -133,7 +133,7 @@ func ParsePlist(source []byte, profile plist.PlistProfile, selection plist.Plist
 }
 
 // ParseHCL forms one HCL snapshot under the exact profile and explicit
-// encoding selection (consema-rs/crates/consema/src/lib.rs `Document::parse_hcl`).
+// encoding selection (consema-rs/consema/src/lib.rs `Document::parse_hcl`).
 // ctx carries cancellation only, passed through to the HCL family parse
 // entry.
 func ParseHCL(ctx context.Context, source []byte, profile hclpkg.HclProfile,

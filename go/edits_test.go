@@ -1,6 +1,6 @@
 package consema
 
-// The G4.3 end-to-end tests (docs/go-implementation-plan.md §2.5): for
+// The G4.3 end-to-end tests (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.5): for
 // every family, parse -> edit -> commit -> patch apply -> digest
 // verification through the root-package edit surface; the batch-plan full
 // flow (plan -> manifest -> apply with the base-digest and original-bytes

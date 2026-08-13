@@ -1,16 +1,17 @@
 // Package normalized implements the Go side of the cross-language
 // normalized-result differential harness (milestone 0.15.0 G1.5;
-// docs/go-implementation-plan.md §4.4 and §2.2; roadmap §16.2 line 1488 and
-// §11.2 lines 849-861).
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4 and §2.2; roadmap §16.2 line 1494
+// (the cross-language normalized-result differential harness) and §11.2
+// lines 849-861; G114 line re-verification 2026-08-13).
 //
 // The harness compares the language-neutral normalized results of the same
 // data-driven input set (`cases.json`, this directory) executed by the Rust
-// SDK (consema-rs/crates/consema-conformance/examples/emit_normalized_results.rs) and
+// SDK (consema-rs/consema-conformance/examples/emit_normalized_results.rs) and
 // by this package. Go never imports or calls Rust (RFC 0016 §1.1 cgo ban):
 // the Rust side emits one `<case-id>.txt` evidence file per case, and the
 // Go test computes the same normalized facts and compares them field by
 // field. Since milestone 0.19.0 G5.2 the comparison is bidirectional
-// (roadmap §16.6 line 1548; docs/go-implementation-plan.md §2.6): the Go
+// (roadmap §16.6 line 1548; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6): the Go
 // side also emits its evidence files for the same input set, and the Rust
 // example's consume mode (--consume) reads them and compares them with its
 // own results field by field. Orchestration:

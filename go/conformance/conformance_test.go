@@ -6,7 +6,7 @@ import (
 )
 
 // repositoryRunner builds the runner over the repository vectors using the
-// repo-relative layout (docs/go-implementation-plan.md §4.3: go test uses
+// repo-relative layout (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.3: go test uses
 // repository-relative paths; the CLI takes explicit paths). The package
 // directory is go/conformance, so the repository root is two levels up.
 func repositoryRunner(t *testing.T) *Runner {
@@ -55,8 +55,11 @@ func TestRunIsConformant(t *testing.T) {
 }
 
 // TestApplicableSuiteCounts pins the per-suite applicable surface of the
-// current milestone (0.15.0 G1.1 flips source-v1, G1.2 flips the JSON
-// faces, G1.3 flips the TOML faces; docs/go-implementation-plan.md §4.2).
+// current milestone: all 18 suites execute with zero documented skips
+// (0.14.0-0.19.0 milestones G0.1-G5.6 delivered; the 0.15.0-era per-face
+// flip notes of the old header are closed — G054, adversarial audit
+// 2026-08-13; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §4.2).
 func TestApplicableSuiteCounts(t *testing.T) {
 	report, err := repositoryRunner(t).Run()
 	if err != nil {

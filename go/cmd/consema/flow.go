@@ -51,9 +51,10 @@ import (
 // query/project/materialize.
 const requestSchema = "cli.request@1"
 
-// portableQueryDomain is the only query domain wired in this milestone
-// (native domains need caller-externalized node locators, which the facade
-// does not expose yet).
+// portableQueryDomain is the only query domain the CLI wires (native
+// domains need caller-externalized node locators, which the facade does
+// not expose; G121, adversarial audit 2026-08-13 — milestone phrasing
+// removed).
 const portableQueryDomain = "core.portable-value-query"
 
 // fallbackRegisteredCode is the registered fallback code for format-local

@@ -1,7 +1,7 @@
 // Package document implements the immutable source-snapshot, structural
 // location, formation-status, limits, materialization-request, and
 // source-patch surface of the Go SDK (milestone 0.15.0 G1.1; RFC 0016 §3.2;
-// docs/go-implementation-plan.md §2.2). It maps the public capability face
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.2). It maps the public capability face
 // of the Rust crate consema-document: SourceSnapshot, Span (byte offsets),
 // NodeRef, ProfileId, FormationStatus (closed Complete/Recovered),
 // ParseLimits, MaterializationRequest, SourcePatch, and — since 0.16.0

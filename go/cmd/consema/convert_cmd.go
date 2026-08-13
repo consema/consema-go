@@ -57,8 +57,10 @@ type ConvertRequest struct {
 func runConvert(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	if parsed.output != nil {
 		error := usageFlowError("cli.usage.invalid-argument@1",
-			"flag '--output' is not available in this build: convert writes only to "+
-				"stdout (file writing lands with the CLI fsio milestone)")
+			"flag '--output' is not available: convert writes only to stdout "+
+				"(G121, adversarial audit 2026-08-13 — the fsio-milestone phrasing "+
+				"was removed: fsio landed with the CLI, convert remains "+
+				"stdout-only)")
 		return emitFailure(protocol.CommandConvert, parsed, error, nil, stdout, stderr)
 	}
 	request, err := readRequestBytes(parsed)
@@ -74,8 +76,10 @@ func runConvertWithRequest(parsed *ParsedArgs, request []byte,
 	stdout, stderr io.Writer) uint8 {
 	if parsed.output != nil {
 		error := usageFlowError("cli.usage.invalid-argument@1",
-			"flag '--output' is not available in this build: convert writes only to "+
-				"stdout (file writing lands with the CLI fsio milestone)")
+			"flag '--output' is not available: convert writes only to stdout "+
+				"(G121, adversarial audit 2026-08-13 — the fsio-milestone phrasing "+
+				"was removed: fsio landed with the CLI, convert remains "+
+				"stdout-only)")
 		return emitFailure(protocol.CommandConvert, parsed, error, nil, stdout, stderr)
 	}
 	// The presentation redaction policy of RFC 0015 §11 (an invalid

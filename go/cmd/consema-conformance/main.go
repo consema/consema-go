@@ -1,5 +1,5 @@
 // Command consema-conformance is the Go conformance runner CLI
-// (docs/go-implementation-plan.md §4.3; RFC 0016 §7). It reads the shared
+// (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.3; RFC 0016 §7). It reads the shared
 // language-neutral vectors from explicit repository paths, verifies the
 // aggregate vector digest against the Feature-Complete Manifest, executes
 // every suite, prints a human report, and emits the machine-readable result
@@ -32,15 +32,29 @@ func main() {
 }
 
 func run() int {
-	vectorsDir := flag.String("vectors", "", "repository conformance/vectors directory (required)")
-	fixturesDir := flag.String("fixtures", "", "repository conformance/fixtures directory (required)")
-	manifestPath := flag.String("manifest", "", "Feature-Complete Manifest path (default: <vectors>/../../docs/fc-manifest-0.13.0.json)")
-	quiet := flag.Bool("quiet", false, "suppress the human report; emit only the machine envelope")
-	flag.Parse()
+	return runWithArgs(os.Args[1:])
+}
+
+// runWithArgs runs the CLI with explicit arguments (testable; G141,
+// adversarial audit 2026-08-13). Flag syntax errors exit 1 (RFC 0015 §5.1
+// usage class) — the old flag.ExitOnError default exited 2. Per RFC 0015
+// §4.2, usage errors are rejected before command execution and carry no
+// machine envelope; they surface only as the process exit code.
+func runWithArgs(args []string) int {
+	flags := flag.NewFlagSet("consema-conformance", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	vectorsDir := flags.String("vectors", "", "repository conformance/vectors directory (required)")
+	fixturesDir := flags.String("fixtures", "", "repository conformance/fixtures directory (required)")
+	manifestPath := flags.String("manifest", "", "Feature-Complete Manifest path (default: <vectors>/../../docs/fc-manifest-0.13.0.json)")
+	quiet := flags.Bool("quiet", false, "suppress the human report; emit only the machine envelope")
+	if err := flags.Parse(args); err != nil {
+		// flag already printed the error and usage to stderr.
+		return int(protocol.ExitUsage.ExitCode())
+	}
 
 	if *vectorsDir == "" || *fixturesDir == "" {
 		fmt.Fprintln(os.Stderr, "consema-conformance: -vectors and -fixtures are required")
-		flag.Usage()
+		flags.Usage()
 		return int(protocol.ExitUsage.ExitCode())
 	}
 	manifest := *manifestPath

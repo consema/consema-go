@@ -1,6 +1,6 @@
 package consema
 
-// The Convert* composition acceptance tests (consema-rs/crates/consema/src/
+// The Convert* composition acceptance tests (consema-rs/consema/src/
 // conversion.rs tests: json_to_toml_keeps_both_stages_and_exact_target_
 // closure, toml_to_json_is_exact_and_materialization_failure_has_no_
 // document, explicitly_lossy_json_projection_remains_observable,
@@ -322,7 +322,7 @@ func TestConversionFailureDiagnosticsAreRegistered(t *testing.T) {
 }
 
 // The Convert* acceptance tests of the six families that land with
-// 0.16.0-0.18.0 (consema-rs/crates/consema/src/conversion.rs tests:
+// 0.16.0-0.18.0 (consema-rs/consema/src/conversion.rs tests:
 // yaml_and_json_conversion_closes_exactly_in_both_directions,
 // yaml_compat_profile_is_explicit_at_both_conversion_stages,
 // yaml_sharing_and_cycles_require_explicit_tree_projection_policy,

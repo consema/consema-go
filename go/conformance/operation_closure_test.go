@@ -12,11 +12,13 @@ package conformance
 // Completed commit with at least one source edit. An operation that could
 // not be mapped to a builder invocation would fail here (unreachable).
 //
-// The convert composition face (root package ConvertJSON/ConvertTOML) is
-// checked separately: the json<->toml face is exercised here and in
-// convert_face_test.go; the yaml/ini/properties convert face is not yet
-// published by the root package (full-format convert composition is
-// planned for 0.18.0 G4.2) — reported, not asserted.
+// The convert composition face (root package ConvertJSON/ConvertTOML and
+// the yaml/ini/properties/xml/plist/hcl faces, all delivered by 0.18.0
+// G4.2) is checked separately: the json<->toml face is exercised here and
+// in convert_face_test.go; the full eight-family convert composition is
+// verified by the conformance convert cases and the cross-format
+// conversion tests (G054, adversarial audit 2026-08-13 — the
+// "not yet published / planned for 0.18.0" note was stale).
 
 import (
 	"context"

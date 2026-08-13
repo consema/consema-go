@@ -7,6 +7,15 @@ import (
 	"consema.dev/consema/core"
 )
 
+// Version discipline (G120, adversarial audit 2026-08-13): the three
+// rfc* fixtures below are transcribed byte-for-byte from the cli-v1 vector
+// (conformance/vectors/cli-v1.json) and carry the vector's frozen
+// product_version "0.12.0" — they must NOT be bumped. Envelopes that this
+// file *constructs* (NewCliOutputMessage/NewBatchPlanMessage/
+// NewBatchResultMessage and the batchPlanJSON helper) use the current
+// product version "1.0.0-rc.1" (cmd/consema/version.go), matching what the
+// real CLI emits; the check-version-consistency CI gate pins that constant.
+
 // The RFC 0015 §4.4 envelope example, transcribed byte-for-byte from the
 // cli-v1 vector cli.envelope.rfc-canonical-bytes (conformance/vectors/
 // cli-v1.json).
@@ -90,7 +99,7 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "0.12.0",
+	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "1.0.0-rc.1",
 		valueObject(core.Entry{Key: "schema", Value: core.String("cli.explain@1")}),
 		nil, redaction)
 	if err == nil || protocolCode(err) != "core.protocol.schema-mismatch@1" {
@@ -102,14 +111,14 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 		"core.java-properties-query-result@1", "core.yaml-query-result@1",
 		"core.graph-query-result@1",
 	} {
-		if _, err := NewCliOutputMessage(CommandQuery, ExitSuccess, "0.12.0",
+		if _, err := NewCliOutputMessage(CommandQuery, ExitSuccess, "1.0.0-rc.1",
 			valueObject(core.Entry{Key: "schema", Value: core.String(schema)}),
 			nil, redaction); err != nil {
 			t.Errorf("query schema %s rejected: %v", schema, err)
 		}
 	}
 	// A non-object payload is rejected.
-	_, err = NewCliOutputMessage(CommandQuery, ExitSuccess, "0.12.0",
+	_, err = NewCliOutputMessage(CommandQuery, ExitSuccess, "1.0.0-rc.1",
 		core.String("core.query-result@1"), nil, redaction)
 	if err == nil || protocolCode(err) != "core.protocol.wrong-type@1" {
 		t.Errorf("non-object payload: got %v", err)
@@ -122,7 +131,7 @@ func TestCLIEnvelopeRejectionRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "0.12.0", reordered, nil, redaction)
+	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "1.0.0-rc.1", reordered, nil, redaction)
 	if err == nil || protocolCode(err) != "core.protocol.schema-mismatch@1" {
 		t.Errorf("reordered payload: got %v", err)
 	}
@@ -197,7 +206,7 @@ func TestCLIEnvelopeDiagnosticsRegistryBinding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	message, err := NewCliOutputMessage(CommandInspect, ExitLimit, "0.12.0",
+	message, err := NewCliOutputMessage(CommandInspect, ExitLimit, "1.0.0-rc.1",
 		rfcInspectPayload(t), []*Diagnostic{diagnostic}, redaction)
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +232,7 @@ func TestCLIEnvelopeDiagnosticsRegistryBinding(t *testing.T) {
 	}
 	tampered := &Diagnostic{Code: "example.unknown@1", Category: valid.Category,
 		Severity: valid.Severity, Arguments: map[string]string{}, Occurrence: 0}
-	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "0.12.0",
+	_, err = NewCliOutputMessage(CommandInspect, ExitSuccess, "1.0.0-rc.1",
 		rfcInspectPayload(t), []*Diagnostic{tampered}, redaction)
 	if err == nil {
 		t.Error("envelope accepted an unregistered diagnostic code")
@@ -333,7 +342,7 @@ func TestBatchPlanCrossConstraintsAreEnforced(t *testing.T) {
 	}
 	// The manifest rejects a non-plan command
 	// (cli.batch-plan.reject-command-fixed).
-	plan, err := NewBatchPlanMessage("0.12.0", nil)
+	plan, err := NewBatchPlanMessage("1.0.0-rc.1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +401,7 @@ func TestBatchPlanCrossConstraintsAreEnforced(t *testing.T) {
 		t.Error("value round-trip lost replacement facts")
 	}
 	// ... and the JSON tree codec round-trips it.
-	planWithPatch, err := NewBatchPlanMessage("0.12.0", []*BatchPlanFileEntry{entry})
+	planWithPatch, err := NewBatchPlanMessage("1.0.0-rc.1", []*BatchPlanFileEntry{entry})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +437,7 @@ func TestBatchPlanVectorRejectionInputs(t *testing.T) {
 			`{"key":"diagnostics","value":{"type":"Null"}}`
 		return `{"schema":"core.portable-value-json@1","value":{"type":"Object","entries":[` +
 			`{"key":"schema","value":{"type":"String","value":"core.batch-plan@1"}},` +
-			`{"key":"product_version","value":{"type":"String","value":"0.12.0"}},` +
+			`{"key":"product_version","value":{"type":"String","value":"1.0.0-rc.1"}},` +
 			`{"key":"command","value":{"type":"String","value":"` + command + `"}},` +
 			`{"key":"files","value":{"type":"Sequence","items":[{"type":"Object","entries":[` +
 			entry + `]}]}}]}}`
@@ -566,7 +575,7 @@ func TestBatchResultRoundTripsWithAllStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := NewBatchResultMessage("0.12.0",
+	result, err := NewBatchResultMessage("1.0.0-rc.1",
 		[]*BatchResultFileEntry{completed, failed, stale, pending})
 	if err != nil {
 		t.Fatal(err)
@@ -668,7 +677,7 @@ func TestBatchResultStatusPresenceRulesAreEnforced(t *testing.T) {
 		t.Errorf("unknown status: got %v", err)
 	}
 	// A batch-result manifest with the wrong command is rejected.
-	result, err := NewBatchResultMessage("0.12.0", nil)
+	result, err := NewBatchResultMessage("1.0.0-rc.1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

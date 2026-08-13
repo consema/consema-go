@@ -114,7 +114,7 @@ type properties struct {
 
 // parser is the self-written YAML 1.2.2 presentation parser producing the
 // native composition directly (the Go counterpart of the private Rust
-// backend plus Composer; docs/go-implementation-plan.md §1.2 leaves the
+// backend plus Composer; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §1.2 leaves the
 // internal tree free). All positions are decoded Unicode scalar offsets.
 type parser struct {
 	chars        []rune

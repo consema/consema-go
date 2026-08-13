@@ -8,7 +8,7 @@ import (
 )
 
 // This file reimplements the PVCE/1 wire format from the Rust reference
-// codec, consema-rs/crates/consema-pvce/src/lib.rs:
+// codec, consema-rs/consema-pvce/src/lib.rs:
 //
 //   - stream magic is the ASCII octets "PVCE" (lib.rs:23);
 //   - version is minimal unsigned LEB128 1 (lib.rs:25);
@@ -24,10 +24,10 @@ import (
 // magicPVCE is the PVCE/1 stream magic (ASCII "PVCE").
 var magicPVCE = [4]byte{'P', 'V', 'C', 'E'}
 
-// streamVersion is the frozen PVCE/1 version (consema-rs/crates/consema-pvce/src/lib.rs:25).
+// streamVersion is the frozen PVCE/1 version (consema-rs/consema-pvce/src/lib.rs:25).
 const streamVersion = 1
 
-// Record tags (consema-rs/crates/consema-pvce/src/lib.rs:27-43). The Rust codec also
+// Record tags (consema-rs/consema-pvce/src/lib.rs:27-43). The Rust codec also
 // defines tag 0x7f (Extended); the Go value model has no ExtendedValue type,
 // so extended records are rejected as ErrUnknownCoreTag.
 const (
@@ -50,7 +50,7 @@ const (
 )
 
 // Default resource limits, mirroring the Rust defaults
-// (consema-rs/crates/consema-pvce/src/lib.rs:71-82, 127-138).
+// (consema-rs/consema-pvce/src/lib.rs:71-82, 127-138).
 const (
 	defaultMaxBytes            = 64 << 20 // 64 MiB
 	defaultMaxDepth            = 256
@@ -61,7 +61,7 @@ const (
 )
 
 // DecodeLimits are the strict PVCE/1 decoder resource limits, mirroring the
-// Rust DecodeLimits (consema-rs/crates/consema-pvce/src/lib.rs:56-82). The zero value
+// Rust DecodeLimits (consema-rs/consema-pvce/src/lib.rs:56-82). The zero value
 // rejects every stream; use DefaultDecodeLimits.
 type DecodeLimits struct {
 	// MaxBytes is the maximum complete stream bytes.
@@ -94,7 +94,7 @@ func DefaultDecodeLimits() DecodeLimits {
 }
 
 // EncodeLimits are the bounded PVCE/1 encoder resource limits, mirroring the
-// Rust EncodeLimits (consema-rs/crates/consema-pvce/src/lib.rs:111-138). The zero value
+// Rust EncodeLimits (consema-rs/consema-pvce/src/lib.rs:111-138). The zero value
 // rejects every value; use DefaultEncodeLimits.
 type EncodeLimits struct {
 	// MaxBytes is the maximum complete stream bytes.
@@ -127,7 +127,7 @@ func DefaultEncodeLimits() EncodeLimits {
 
 // EncodePVCE encodes one value as a complete canonical PVCE/1 stream (RFC
 // 0016 §4.2). The bytes are byte-identical to the Rust codec's output
-// (consema-rs/crates/consema-pvce/src/lib.rs); the encoder emits only canonical forms.
+// (consema-rs/consema-pvce/src/lib.rs); the encoder emits only canonical forms.
 // The error is always nil for a valid non-nil value; the error slot is
 // reserved by the frozen API shape (RFC 0016 §4.2) and reports an invalid
 // nil value.
@@ -147,7 +147,7 @@ func EncodePVCE(v Value) ([]byte, error) {
 }
 
 // EncodePVCEBounded encodes one value after measuring it against explicit
-// resource limits (the Rust encode_bounded; consema-rs/crates/consema-pvce/src/lib.rs:
+// resource limits (the Rust encode_bounded; consema-rs/consema-pvce/src/lib.rs:
 // 150-156). It never truncates: exceeding any limit returns a
 // resource-limit error with no partial output.
 func EncodePVCEBounded(v Value, limits EncodeLimits) ([]byte, error) {
@@ -167,7 +167,7 @@ func EncodePVCEBounded(v Value, limits EncodeLimits) ([]byte, error) {
 }
 
 // DecodePVCE strictly decodes one canonical PVCE/1 stream (RFC 0016 §4.2),
-// mirroring the Rust decode (consema-rs/crates/consema-pvce/src/lib.rs:104-108, 404-426,
+// mirroring the Rust decode (consema-rs/consema-pvce/src/lib.rs:104-108, 404-426,
 // 725-833). The decoder covers the closed fifteen-kind core model; only
 // extended (0x7f) records fail with ErrUnknownCoreTag. Non-canonical input
 // fails with the matching PVCEError kind.
@@ -205,7 +205,7 @@ func DecodePVCE(stream []byte, limits DecodeLimits) (Value, error) {
 }
 
 // encodeRecord writes one tag-length-prefixed record (the Rust write_record,
-// consema-rs/crates/consema-pvce/src/lib.rs:610-614).
+// consema-rs/consema-pvce/src/lib.rs:610-614).
 func encodeRecord(out []byte, v Value) ([]byte, error) {
 	tag, payload, err := encodePayload(v)
 	if err != nil {
@@ -339,7 +339,7 @@ func encodePayload(v Value) (uint64, []byte, error) {
 
 // appendIntegerPayload writes the sign octet, the magnitude length varint,
 // and the minimal big-endian magnitude (the Rust encode_integer_payload,
-// consema-rs/crates/consema-pvce/src/lib.rs:545-554).
+// consema-rs/consema-pvce/src/lib.rs:545-554).
 func appendIntegerPayload(out []byte, value *big.Int) []byte {
 	switch value.Sign() {
 	case -1:
@@ -355,7 +355,7 @@ func appendIntegerPayload(out []byte, value *big.Int) []byte {
 }
 
 // appendIntegerField writes a length-prefixed integer payload (the Rust
-// encode_integer_field, consema-rs/crates/consema-pvce/src/lib.rs:556-561).
+// encode_integer_field, consema-rs/consema-pvce/src/lib.rs:556-561).
 func appendIntegerField(out []byte, value *big.Int) []byte {
 	field := appendIntegerPayload(nil, value)
 	out = appendVarint(out, uint64(len(field)))
@@ -363,7 +363,7 @@ func appendIntegerField(out []byte, value *big.Int) []byte {
 }
 
 // appendDecimalField writes a length-prefixed decimal payload (the Rust
-// encode_decimal_field, consema-rs/crates/consema-pvce/src/lib.rs:568-573).
+// encode_decimal_field, consema-rs/consema-pvce/src/lib.rs:568-573).
 func appendDecimalField(out []byte, value Decimal) []byte {
 	field := appendDecimalPayload(nil, value)
 	out = appendVarint(out, uint64(len(field)))
@@ -379,7 +379,7 @@ func appendDecimalPayload(out []byte, value Decimal) []byte {
 }
 
 // appendDateField writes a length-prefixed date payload (the Rust
-// encode_date_field, consema-rs/crates/consema-pvce/src/lib.rs:586-591).
+// encode_date_field, consema-rs/consema-pvce/src/lib.rs:586-591).
 func appendDateField(out []byte, value Date) []byte {
 	field := appendDatePayload(nil, value)
 	out = appendVarint(out, uint64(len(field)))
@@ -394,7 +394,7 @@ func appendDatePayload(out []byte, value Date) []byte {
 }
 
 // appendTimeField writes a length-prefixed time payload (the Rust
-// encode_time_field, consema-rs/crates/consema-pvce/src/lib.rs:598-603).
+// encode_time_field, consema-rs/consema-pvce/src/lib.rs:598-603).
 func appendTimeField(out []byte, value Time) []byte {
 	field := appendTimePayload(nil, value)
 	out = appendVarint(out, uint64(len(field)))
@@ -409,14 +409,14 @@ func appendTimePayload(out []byte, value Time) []byte {
 }
 
 // appendBlob writes a length-prefixed byte string (the Rust encode_blob,
-// consema-rs/crates/consema-pvce/src/lib.rs:575-578).
+// consema-rs/consema-pvce/src/lib.rs:575-578).
 func appendBlob(out []byte, value []byte) []byte {
 	out = appendVarint(out, uint64(len(value)))
 	return append(out, value...)
 }
 
 // appendVarint writes the minimal unsigned LEB128 encoding of value (the
-// Rust write_varint, consema-rs/crates/consema-pvce/src/lib.rs:616-628).
+// Rust write_varint, consema-rs/consema-pvce/src/lib.rs:616-628).
 func appendVarint(out []byte, value uint64) []byte {
 	for {
 		octet := byte(value & 0x7f)
@@ -432,7 +432,7 @@ func appendVarint(out []byte, value uint64) []byte {
 }
 
 // varintSize returns the encoded length of value as a minimal unsigned
-// LEB128 (the Rust const varint_size, consema-rs/crates/consema-pvce/src/lib.rs:370-377).
+// LEB128 (the Rust const varint_size, consema-rs/consema-pvce/src/lib.rs:370-377).
 func varintSize(value uint64) int {
 	size := 1
 	for value >= 0x80 {
@@ -443,7 +443,7 @@ func varintSize(value uint64) int {
 }
 
 // reader is the strict streaming decoder over one PVCE/1 stream or payload
-// (the Rust Reader, consema-rs/crates/consema-pvce/src/lib.rs:630-723).
+// (the Rust Reader, consema-rs/consema-pvce/src/lib.rs:630-723).
 type reader struct {
 	bytes  []byte
 	offset int
@@ -528,7 +528,7 @@ func (r *reader) record() (uint64, []byte, error) {
 }
 
 // decodeRecord decodes one record whose payload is already delimited (the
-// Rust decode_core_record, consema-rs/crates/consema-pvce/src/lib.rs:725-833): it
+// Rust decode_core_record, consema-rs/consema-pvce/src/lib.rs:725-833): it
 // enforces the depth and node limits, decodes the payload, and rejects
 // trailing payload bytes.
 func (r *reader) decodeRecord(tag uint64, payload []byte, depth int) (Value, error) {
@@ -740,7 +740,7 @@ func (r *reader) decodePayload(tag uint64, depth int) (Value, error) {
 }
 
 // decodeInteger decodes one integer payload (the Rust
-// decode_integer_payload, consema-rs/crates/consema-pvce/src/lib.rs:835-846).
+// decode_integer_payload, consema-rs/consema-pvce/src/lib.rs:835-846).
 func (r *reader) decodeInteger() (Integer, error) {
 	sign, err := r.octet()
 	if err != nil {
@@ -772,7 +772,7 @@ func (r *reader) decodeInteger() (Integer, error) {
 }
 
 // decodeIntegerField decodes one length-prefixed integer field (the Rust
-// decode_integer_field, consema-rs/crates/consema-pvce/src/lib.rs:848-860).
+// decode_integer_field, consema-rs/consema-pvce/src/lib.rs:848-860).
 func (r *reader) decodeIntegerField() (Integer, error) {
 	n, err := r.length(r.limits.MaxIntegerBytes+16, "integer-field")
 	if err != nil {
@@ -795,7 +795,7 @@ func (r *reader) decodeIntegerField() (Integer, error) {
 
 // decodeDecimal decodes one decimal payload and rejects unnormalized
 // coefficient/exponent pairs (the Rust decode_decimal_payload,
-// consema-rs/crates/consema-pvce/src/lib.rs:862-870).
+// consema-rs/consema-pvce/src/lib.rs:862-870).
 func (r *reader) decodeDecimal() (Decimal, error) {
 	coefficient, err := r.decodeIntegerField()
 	if err != nil {
@@ -814,7 +814,7 @@ func (r *reader) decodeDecimal() (Decimal, error) {
 }
 
 // decodeDecimalField decodes one length-prefixed decimal field (the Rust
-// decode_decimal_field, consema-rs/crates/consema-pvce/src/lib.rs:872-888).
+// decode_decimal_field, consema-rs/consema-pvce/src/lib.rs:872-888).
 func (r *reader) decodeDecimalField() (Decimal, error) {
 	n, err := r.length(r.limits.MaxIntegerBytes*2+32, "decimal-field")
 	if err != nil {
@@ -836,7 +836,7 @@ func (r *reader) decodeDecimalField() (Decimal, error) {
 }
 
 // decodeDate decodes one date payload (the Rust decode_date_payload,
-// consema-rs/crates/consema-pvce/src/lib.rs:895-900). Invalid calendar fields map to
+// consema-rs/consema-pvce/src/lib.rs:895-900). Invalid calendar fields map to
 // ErrInvalidTemporal (map_build_error, lib.rs:971-979).
 func (r *reader) decodeDate() (Date, error) {
 	year, err := r.decodeIntegerField()
@@ -859,7 +859,7 @@ func (r *reader) decodeDate() (Date, error) {
 }
 
 // decodeDateField decodes one length-prefixed date field (the Rust
-// decode_date_field, consema-rs/crates/consema-pvce/src/lib.rs:902-914).
+// decode_date_field, consema-rs/consema-pvce/src/lib.rs:902-914).
 func (r *reader) decodeDateField() (Date, error) {
 	n, err := r.length(r.limits.MaxIntegerBytes+32, "date-field")
 	if err != nil {
@@ -881,7 +881,7 @@ func (r *reader) decodeDateField() (Date, error) {
 }
 
 // decodeTime decodes one time payload (the Rust decode_time_payload,
-// consema-rs/crates/consema-pvce/src/lib.rs:916-922). Invalid fields map to
+// consema-rs/consema-pvce/src/lib.rs:916-922). Invalid fields map to
 // ErrInvalidTemporal.
 func (r *reader) decodeTime() (Time, error) {
 	hour, err := r.octet()
@@ -908,7 +908,7 @@ func (r *reader) decodeTime() (Time, error) {
 }
 
 // decodeTimeField decodes one length-prefixed time field (the Rust
-// decode_time_field, consema-rs/crates/consema-pvce/src/lib.rs:924-940).
+// decode_time_field, consema-rs/consema-pvce/src/lib.rs:924-940).
 func (r *reader) decodeTimeField() (Time, error) {
 	n, err := r.length(r.limits.MaxIntegerBytes*2+64, "time-field")
 	if err != nil {
@@ -930,7 +930,7 @@ func (r *reader) decodeTimeField() (Time, error) {
 }
 
 // offsetToI32 converts a decoded offset integer to an int32 (the Rust
-// to_i64().and_then(i32::try_from), consema-rs/crates/consema-pvce/src/lib.rs:768-771).
+// to_i64().and_then(i32::try_from), consema-rs/consema-pvce/src/lib.rs:768-771).
 func offsetToI32(offset Integer) (int32, bool) {
 	value := offset.safeValue()
 	if !value.IsInt64() {
@@ -944,7 +944,7 @@ func offsetToI32(offset Integer) (int32, bool) {
 }
 
 // decodeBlob decodes one length-prefixed byte string (the Rust decode_blob,
-// consema-rs/crates/consema-pvce/src/lib.rs:890-893).
+// consema-rs/consema-pvce/src/lib.rs:890-893).
 func (r *reader) decodeBlob() ([]byte, error) {
 	n, err := r.length(r.limits.MaxBlobBytes, "blob-bytes")
 	if err != nil {
@@ -954,7 +954,7 @@ func (r *reader) decodeBlob() ([]byte, error) {
 }
 
 // sizer measures a value's canonical PVCE/1 stream size under encode limits
-// without producing bytes (the Rust Sizer, consema-rs/crates/consema-pvce/src/lib.rs:
+// without producing bytes (the Rust Sizer, consema-rs/consema-pvce/src/lib.rs:
 // 170-364).
 type sizer struct {
 	limits EncodeLimits

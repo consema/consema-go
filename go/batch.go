@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the batch-plan and batch-result composition
-// (RFC 0015 §8-§9; RFC 0004 §14, §16; docs/go-implementation-plan.md §2.5
+// (RFC 0015 §8-§9; RFC 0004 §14, §16; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.5
 // G4.3): the root package closes the `core.batch-plan@1` /
 // `core.batch-result@1` records over the shared edit artifacts.
 //

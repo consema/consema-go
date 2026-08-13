@@ -1,10 +1,11 @@
 package json
 
 // ---------------------------------------------------------------------------
-// Go native fuzz targets (milestone 0.19.0 G5.4; docs/go-implementation-plan.md
-// §2.6; roadmap §22.4:1903 release-candidate fuzz clean-run, §22.4:1908
-// "XML/YAML/HCL/binary plist 专项 threat tests"). Discipline mirrors the
-// Rust fuzz targets of 0.13.0 (docs/fuzz-evidence-0.13.0.md §2) and the Go
+// Go native fuzz targets (milestone 0.19.0 G5.4; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §2.6; roadmap §22.4:1908 release-candidate fuzz clean-run, §22.4:1911
+// "XML/YAML/HCL/binary plist 专项 threat tests"; G114 line re-verification
+// 2026-08-13). Discipline mirrors the
+// Rust fuzz targets of 0.13.0 (https://github.com/consema/consema/blob/main/docs/fuzz-evidence-0.13.0.md §2) and the Go
 // core/graph/protocol targets of 0.14.0 (G0.5): resource limits are fixed at
 // the production defaults, limit failures are passes, and property
 // assertions detect closure violations. A successful parse must render

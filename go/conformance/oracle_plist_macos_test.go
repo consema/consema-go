@@ -7,7 +7,7 @@ import (
 
 // repositoryOracle derives the plist-macos-v1 oracle paths from the
 // repo-relative layout (the package directory is go/conformance, so the
-// repository root is two levels up; docs/go-implementation-plan.md §4.3).
+// repository root is two levels up; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.3).
 func repositoryOracle(t *testing.T) (manifestPath, repoRoot string) {
 	t.Helper()
 	repoRoot = filepath.Join("..", "..")
@@ -16,7 +16,7 @@ func repositoryOracle(t *testing.T) (manifestPath, repoRoot string) {
 }
 
 // TestPlistMacOSFoundationDifferential pins the 0.17.0 G3.3 gate
-// (docs/go-implementation-plan.md §2.4, §6): the Go plist implementation
+// (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.4, §6): the Go plist implementation
 // reproduces the frozen Foundation facts of the plist-macos-v1 manifest —
 // accept/reject, format detection, convert outcomes, and native value
 // consistency. The four cases without a divergence annotation must be fully

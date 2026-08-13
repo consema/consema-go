@@ -1,12 +1,13 @@
 package conformance
 
-// Security matrix (milestone 0.19.0 G5.4; docs/go-implementation-plan.md
-// 搂2.6 deliverable "full corpus銆乫uzz銆乥enchmark 鍜?security matrix";
-// roadmap 搂22.4:1908 "XML/YAML/HCL/binary plist 涓撻」 threat tests 閫氳繃").
+// Security matrix (milestone 0.19.0 G5.4; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §2.6 deliverable "full corpus、fuzz、benchmark 和 security matrix";
+// roadmap §22.4:1911 "XML/YAML/HCL/binary plist 专项 threat tests 通过";
+// G129 encoding fix + G114 line re-verification 2026-08-13).
 //
 // Extends the 0.16.0 limits matrix (limits_matrix_test.go, five families)
 // to the recovery-capable families shipped in 0.16.0-0.18.0 (xml/plist/hcl)
-// and mirrors the Rust adversarial surface (consema-rs/crates/consema-conformance/
+// and mirrors the Rust adversarial surface (consema-rs/consema-conformance/
 // tests/{xml,plist,hcl,yaml}_hardening.rs; SECURITY.md:16,32-36). Every
 // public limit parameter is pinned with its exact positive/negative
 // boundary (N-1 fails with the family's frozen code, N succeeds), and the
@@ -17,7 +18,7 @@ package conformance
 // as the INI MaxNestingDepth row of limits_matrix_test.go): xml parse does
 // not consume Common.MaxTokenCount (its piece budget is the lossless
 // tokenizer, and MaxRecoveryRegions is a diagnostics budget that silently
-// drops further diagnostics 鈥?the Rust-aligned shape), plist XML parse
+// drops further diagnostics —the Rust-aligned shape), plist XML parse
 // does not consume Common.MaxTokenCount/Common.MaxNodeCount (its piece
 // budget is MaxSyntaxPieces), and HCL parse does not consume
 // Common.MaxNodeCount/Common.MaxNestingDepth (HCL owns body/expression
@@ -100,7 +101,7 @@ func TestSecurityLimitsMatrixXML(t *testing.T) {
 // smallest limit N at which the source completes without an entity-limit
 // diagnostic; N-1 must be Recovered with the expected `xml.entity.*@1`
 // code. Entity limits are document-wide accounting that recovers (RFC
-// 0013 搂12; SECURITY.md:32), never a fatal failure.
+// 0013 §12; SECURITY.md:32), never a fatal failure.
 func pinXmlEntityBoundary(t *testing.T, param, expectedCode string,
 	run func(limit int) (*xml.Document, *xml.FormationFailure)) {
 	t.Helper()
@@ -311,7 +312,7 @@ func TestSecurityLimitsMatrixPlistXML(t *testing.T) {
 }
 
 func TestSecurityLimitsMatrixPlistBinary(t *testing.T) {
-	// Frozen binary corpora (plist_hardening.rs; RFC 0013 搂5).
+	// Frozen binary corpora (plist_hardening.rs; RFC 0013 §5).
 	const threeObjects = "62706c6973743030d1010251611001080b0d000000000000010100000000000000030000000000000000000000000000000f"
 	const oneUID = "62706c6973743030802a08000000000000010100000000000000010000000000000000000000000000000a"
 	const oneExtendedString = "62706c69737430305f110002abcd08000000000000010100000000000000010000000000000000000000000000000e"
@@ -362,7 +363,7 @@ func TestSecurityPlistBinaryMutationTruncation(t *testing.T) {
 	// truncating or single-bit mutating any frozen binary corpus must never
 	// panic, a formed document must render byte-exactly, and a Complete
 	// document must always carry a native model (a limit breach must never
-	// masquerade as a Complete document 鈥?the trailer-limit discard defect
+	// masquerade as a Complete document —the trailer-limit discard defect
 	// this matrix closes).
 	hexSeeds := []string{
 		"62706c697374303050080000000000000101000000000000000100000000000000000000000000000009",
@@ -472,7 +473,7 @@ func TestSecurityLimitsMatrixHCL(t *testing.T) {
 func TestSecurityHCLAdversarialNesting(t *testing.T) {
 	// The Rust adversarial-nesting corpus (hcl_hardening.rs): 2,000-level
 	// parentheses, operator chains, block bodies, and template
-	// interpolations must never panic 鈥?the frozen depth budgets truncate
+	// interpolations must never panic —the frozen depth budgets truncate
 	// before the recursion deepens, publishing the documented hcl.limit.*
 	// codes.
 	deepParens := "a = " + strings.Repeat("(", 2000) + "1" + strings.Repeat(")", 2000) + "\n"
@@ -539,7 +540,7 @@ func TestSecurityYAMLAliasBomb(t *testing.T) {
 	// references encode exponential duplication in linear source. The
 	// graph projection must keep the shared identity (small node count),
 	// the default tree projection must reject shared identity, and a
-	// bounded duplication must fail with the resource-limit code 鈥?the
+	// bounded duplication must fail with the resource-limit code —the
 	// amplification ratio and value-node limits cannot be bypassed.
 	source := "base: &base [zero, one]\n" +
 		"level1: &level1 [*base, *base, *base, *base]\n" +

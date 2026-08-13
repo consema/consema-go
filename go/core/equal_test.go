@@ -199,7 +199,7 @@ func TestEqualIsByteBijection(t *testing.T) {
 
 // TestObjectOrderAffectsEquality pins the ordered-object contract: the same
 // entries in a different order are not equal (mirrors the Rust
-// object_order_affects_encoding test, consema-rs/crates/consema-pvce/src/lib.rs:1177).
+// object_order_affects_encoding test, consema-rs/consema-pvce/src/lib.rs:1177).
 func TestObjectOrderAffectsEquality(t *testing.T) {
 	first := mustObject(t, Entry{"a", NewInteger(big.NewInt(1))}, Entry{"b", Null{}})
 	second := mustObject(t, Entry{"b", Null{}}, Entry{"a", NewInteger(big.NewInt(1))})

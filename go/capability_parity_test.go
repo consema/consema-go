@@ -1,6 +1,7 @@
 package consema
 
-// Capability parity hard gate (roadmap §16.5 line 1539; plan §2.5 G4.4):
+// Capability parity hard gate (roadmap §16.5 line 1545; plan §2.5 G4.4;
+// G114 line re-verification 2026-08-13):
 // the Go mandatory capability set equals the Rust Feature-Complete
 // Manifest capability set — docs/fc-manifest-0.13.0.json digests.
 // capability_set: "8 families / 16 profiles / 21 query domains / 16
@@ -8,10 +9,10 @@ package consema
 // behavior.
 //
 // Every expected fact below is transcribed from the Rust published
-// surface (consema-rs/crates/consema/src/lib.rs registry module and the
+// surface (consema-rs/consema/src/lib.rs registry module and the
 // `consema capabilities` CLI payload of
-// consema-rs/crates/consema/src/bin/consema/capabilities.rs for the inventory, and
-// consema-rs/crates/consema-*/src/operation_registry.rs for the per-profile
+// consema-rs/consema/src/bin/consema/capabilities.rs for the inventory, and
+// consema-rs/consema-*/src/operation_registry.rs for the per-profile
 // operation id lists), and the Go facts are derived from the registry
 // surface of this package and its families — nothing is re-declared, so
 // a drift on either side fails here (the Rust facade's own drift-guard
@@ -195,7 +196,7 @@ func TestCapabilityParityQueryDomains(t *testing.T) {
 
 // TestCapabilityParityOperationSets pins the per-profile operation id
 // lists against the Rust family registries
-// (consema-rs/crates/consema-<family>/src/operation_registry.rs): json 8, toml 7,
+// (consema-rs/consema-<family>/src/operation_registry.rs): json 8, toml 7,
 // yaml 8, ini 8, properties 5, xml 8, plist 6, hcl.native 6,
 // hcl.tfvars 4. The comparison is exact in both directions (no missing
 // Rust operation, no extra Go operation), which is the

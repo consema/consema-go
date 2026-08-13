@@ -2,12 +2,12 @@ package core
 
 // ---------------------------------------------------------------------------
 // Deterministic fifteen-kind value-space generator for the round-trip fuzz
-// targets (milestone 0.14.0 G0.5; docs/go-implementation-plan.md §2.1).
+// targets (milestone 0.14.0 G0.5; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.1).
 //
 // The generator lives in package core (test files) because it constructs
 // core values: any package that imports core would create an import cycle
 // with core's own fuzz tests (the same reason the Rust fuzz drivers live in
-// the per-crate fuzz directories, docs/fuzz-evidence-0.13.0.md §2). The
+// the per-crate fuzz directories, https://github.com/consema/consema/blob/main/docs/fuzz-evidence-0.13.0.md §2). The
 // protocol package's transport fuzz target carries its own value generator
 // for the same reason.
 //

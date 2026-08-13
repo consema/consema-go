@@ -1,6 +1,6 @@
 package consema
 
-// The registry-face acceptance tests (consema-rs/crates/consema/src/lib.rs registry
+// The registry-face acceptance tests (consema-rs/consema/src/lib.rs registry
 // tests: registry_lists_eight_families_and_sixteen_profiles,
 // registry_query_domains_are_sorted_and_unique,
 // registry_parse_document_round_trips_every_profile,

@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.plist.macos-differential@1` oracle runner (0.17.0 milestone
-// G3.3; docs/go-implementation-plan.md §2.4, §4.2, §4.4). The runner
+// G3.3; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.4, §4.2, §4.4). The runner
 // consumes the frozen facts of
 // `conformance/oracles/plist-macos-v1/manifest.json` — the per-case input
 // fixture, the Foundation-recorded lint / detected-format / convert /

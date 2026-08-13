@@ -8,7 +8,7 @@ import (
 )
 
 // This file implements the immutable namespace-aware native XML tree
-// (RFC 0012 §4-7; consema-rs/crates/consema-xml/src/document.rs). The Document
+// (RFC 0012 §4-7; consema-rs/consema-xml/src/document.rs). The Document
 // retains prolog order, one document element, epilog order, and every
 // exact source span. An XML element is not a JSON Object: attributes and
 // child elements are never merged into one map, mixed content keeps its

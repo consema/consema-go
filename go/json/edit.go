@@ -14,7 +14,7 @@ import (
 )
 
 // This file implements the typed JSON edit operations and the atomic
-// commit/dry-run pipeline (consema-rs/crates/consema-json/src/edit.rs; RFC 0016
+// commit/dry-run pipeline (consema-rs/consema-json/src/edit.rs; RFC 0016
 // §5.3). An edit replaces only the bytes its operations own; every other
 // byte is covered by the untouched-byte proof, and a failure never
 // modifies the base document.

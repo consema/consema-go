@@ -10,7 +10,7 @@ import (
 )
 
 // This file pins the §16.3 hard gate: Go map iteration order must never
-// influence any public result (docs/go-implementation-plan.md §16.3 line
+// influence any public result (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §16.3 line
 // 1509; RFC 0016 §4.1 line 125: ordered structures, never maps). Every
 // public fact below is produced repeatedly from identical inputs and must
 // be byte-identical across runs.

@@ -1,7 +1,7 @@
 package xml
 
 // ---------------------------------------------------------------------------
-// Benchmark baseline (milestone 0.19.0 G5.4; docs/go-implementation-plan.md
+// Benchmark baseline (milestone 0.19.0 G5.4; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §2.6). See go/json/json_bench_test.go for the shared discipline.
 // ---------------------------------------------------------------------------
 

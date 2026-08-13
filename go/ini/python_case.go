@@ -5,7 +5,7 @@ import (
 )
 
 // This file implements the pinned Python 3.14 / Unicode 16.0 default
-// `optionxform` semantics (consema-rs/crates/consema-ini python_case.rs). The tables
+// `optionxform` semantics (consema-rs/consema-ini python_case.rs). The tables
 // are generated from Rust 1.85's Unicode 16.0 unconditional full lowercase
 // mappings and compacted into ordered ranges and exceptions. Keeping the
 // data in this package prevents compiler or runtime Unicode-table upgrades

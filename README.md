@@ -66,20 +66,24 @@ func main() {
 	builder := jsonpkg.NewEditTransactionBuilder(jsonDoc)
 	builder.SemanticScalar(c.NodeRef(), core.NewInteger(big.NewInt(42)),
 		jsonpkg.RepresentationPolicyCanonicalForProfile)
-	commit, err := jsonDoc.Commit(builder.Build())
-	if err != nil {
-		panic(err)
+	// Commit 返回 (*EditCommit, *EditFailure)：failure 必须用其自身类型
+	// 判空（G053，对抗审计 2026-08-13）——若把 *EditFailure 复用进 error
+	// 接口变量，成功时的 typed-nil 会被接口包装为非 nil，panic(err) 在
+	// Error() 上对 nil 接收者解引用。
+	commit, failure := jsonDoc.Commit(builder.Build())
+	if failure != nil {
+		panic(failure)
 	}
 	// 4. render：输出 `{"a":1,"b":{"c":42}}`
 	fmt.Println(string(commit.Document.Render()))
 }
 ```
 
-完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。
+完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。上方快速开始代码的仓库副本在 [`go/examples/quickstart`](go/examples/quickstart)（CI examples job 编译并运行它，防止文档示例漂移；G053）。
 
 ## API 摘要
 
-核心面一行式（完整签名见 [go/README.md](go/README.md)；八个格式家族各有独立的 `Parse` / `Execute*Query` / `Project` / `Materialize` / `Convert*` 入口）：
+核心面一行式（完整签名见 [go/README.md](go/README.md)；`Parse` / `Execute*Query` / `Project` / `Materialize` 在各家族包内，`Convert*` 为根级统一入口，G137）：
 
 | 操作 | facade 入口 |
 | --- | --- |
@@ -93,16 +97,21 @@ func main() {
 
 ## 布局
 
-- `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.24）。完整文档
-  见 [go/README.md](go/README.md)（全部里程碑 0.14.0-0.19.0 G0.1-G5.6 已交付：
-  core / graph / protocol / document + 八格式家族 + CLI）。
+- `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.26，RFC 0020
+  §9.2 冻结）。完整文档见 [go/README.md](go/README.md)（全部里程碑
+  0.14.0-0.19.0 G0.1-G5.6 已交付：core / graph / protocol / document +
+  八格式家族 + CLI）。
 - `scripts/`：跨语言差分验证脚本（byte parity / normalized differential /
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
   conformance 数据来自规范仓 checkout。
-- `.github/workflows/ci-go.yml`：Go 门禁（go-matrix：1.24.x / 1.25.x /
-  1.26.5 三版本 gofmt/vet/build/test/race，与 go.mod 声明的 `go 1.24` 最小
-  版本真实对齐）与 Go-Rust 差分门禁（windows-latest 多仓 checkout）。
+- `.github/workflows/ci-go.yml`：6 个 job（G123，对抗审计 2026-08-13）——
+  go-matrix（1.26.x 声明最小版本 / 1.26.5 当前稳定两版本
+  gofmt/vet/build/test/race，与 go.mod 声明的 `go 1.26` 最小版本真实对齐，
+  RFC 0020 §9.2）、coverage（≥60% 语句覆盖）、go-differential（windows-latest
+  多仓 checkout，四个跨语言差分 harness）、check-version-consistency、
+  examples、check（alls-green 聚合门禁，branch protection 唯一必选
+  check）。
 
 ## 构建与测试
 
@@ -114,21 +123,23 @@ go test -race ./...
 ```
 
 前置（干净克隆必做）：conformance 数据不入 git（见 `.gitignore`），
-`go test ./...` 的 conformance 用例（go/conformance，仓库相对路径
-`conformance/vectors` 等，无 skip 直接失败）需要先按
+`go test ./...` 的 conformance 套件用例（go/conformance，仓库相对路径
+`conformance/vectors` 等）在未 provision 时直接失败；差分 harness 用例
+（go/conformance/differential*）在 case 集不可达时 `t.Skipf` 跳过（G058，
+对抗审计 2026-08-13：两条路径口径不同，均不会伪造成功）。需要先按
 [CONTRIBUTING.md](CONTRIBUTING.md)「Conformance 数据同步」并排检出母仓
 conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
 `docs/fc-manifest-0.13.0.json` 至 `docs/`。未 provision 时 conformance
-测试会失败（非跳过），这正是 CI 多仓 checkout 模式所 provision 的内容。
+套件测试会失败（非跳过），这正是 CI 多仓 checkout 模式所 provision 的内容。
 
 ## FAQ
 
 - **支持哪些配置格式？** 八个格式家族、16 个 profiles：JSON（`json.strict@1` / `jsonc.bounded@1` / `json5.standard@1`）、TOML（`toml.1.0@1`）、YAML（`yaml.1.2-core@1` / `yaml.1.1-compat@1`）、INI（`ini.portable@1` / `ini.windows@1` / `ini.python-configparser@1`）、Java Properties（`java-properties.reader@1` / `java-properties.latin1@1`）、XML（`xml.1.0-safe@1`）、Property List（`plist.xml@1` / `plist.binary@1`）、HCL（`hcl.native@1` / `hcl.tfvars@1`）。完整面枚举见 `consema.Profiles()`。
 - **与 encoding/json、gopkg.in/yaml.v3 等的关系？** 互不包装：Consema 是语言中立契约（RFC 0016）的独立 Go 实现，go.mod 零第三方依赖、纯标准库；JSON/YAML 等格式在 Consema 内是"格式内容处理面"（无损文档、查询、投影、原子编辑、跨格式转换），不是类型编解码。
-- **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `docs/BENCHMARKS-0.13.0.md`。
+- **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md`。
 - **零依赖吗？** 是——`go.mod` 零 `require`，只使用标准库（math/big、hash/fnv、crypto/sha256、unicode/utf8 等）。
 - **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与 Go-Rust 差分门禁（byte parity / normalized differential / protocol-exchange）。
-- **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.24）上真实验证；兼容与支持政策见 RFC 0020。
+- **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.26，RFC 0020 §9.2 冻结）与当前稳定上真实验证；兼容与支持政策见 RFC 0020。
 - **如何贡献？** 见本仓 [CONTRIBUTING.md](CONTRIBUTING.md)（规范仓为权威版）；conformance 向量/夹具/oracle/差分数据权威在规范仓——向量变更是五仓同步事件，必须先回规范仓提交再同步五个语言仓。
 - **"默认拒绝信息损失"是什么意思？** 投影/转换/编辑中的任何 loss（如 YAML 共享结构展开、Properties 重复键折叠、数值舍入）必须显式授权；未授权时操作原子失败（`ConversionResult.Failed`；fidelity 三档：Exact / Transformed / Lossy）。
 

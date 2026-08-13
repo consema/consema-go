@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the lazy ordered pull cursor over one validated
-// portable-value query (consema-rs/crates/consema-core/src/query.rs
+// portable-value query (consema-rs/consema-core/src/query.rs
 // `PortableQueryCursor` and `build_portable_cursor_pipeline`; capability
 // `core.query.ordered-results@1`). The cursor yields standard-order matches
 // one at a time; mid-stream failures surface through NextMatch with a

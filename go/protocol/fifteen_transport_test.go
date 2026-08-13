@@ -11,7 +11,7 @@ import (
 // Canonical JSON golden vectors for the seven additional kinds.
 //
 // The vectors below are byte-identical to the Rust canonical JSON encoder
-// output (consema-rs/crates/consema-protocol/src/value_transport.rs), generated with
+// output (consema-rs/consema-protocol/src/value_transport.rs), generated with
 // the reference encoder itself for the exact values of the Rust
 // every_core_kind_round_trips_through_both_transports test
 // (value_transport.rs:1045-1053).
@@ -79,7 +79,7 @@ func TestFifteenKindJSONGoldenVectors(t *testing.T) {
 
 // TestFifteenKindsRoundTripBothTransports mirrors the Rust
 // every_core_kind_round_trips_through_both_transports test
-// (consema-rs/crates/consema-protocol/src/value_transport.rs:1045-1053): a value
+// (consema-rs/consema-protocol/src/value_transport.rs:1045-1053): a value
 // exercising every kind round-trips through the canonical JSON transport and
 // the PVCE transport.
 func TestFifteenKindsRoundTripBothTransports(t *testing.T) {

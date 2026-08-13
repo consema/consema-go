@@ -1,18 +1,25 @@
 # Consema Go SDK (`go/`)
 The Go implementation of the language-neutral Consema contracts (RFC 0016;
-`docs/go-implementation-plan.md`). All milestones 0.14.0-0.19.0
+[`docs/go-implementation-plan.md`](https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md)).
+All milestones 0.14.0-0.19.0
 (G0.1-G5.6) are delivered: G0.1 delivered the scaffold and the `core`
 package; G0.2 delivered the `graph` package; G0.3 delivered the `protocol`
 package; 0.15.0 G1.1 delivered the `document` package (source snapshots,
 structural locations, formation status, limits, materialization requests,
 and verifiable source patches); the remaining milestones delivered the
 eight format families and the CLI (per-milestone delivery records below).
+> **docs/ reference note (G118, adversarial audit 2026-08-13):** the
+> six-repo split moved the spec repository's `docs/` out of this
+> repository, so bare `docs/…` references elsewhere in this repository
+> are written as full GitHub URLs (github.com/consema/consema). The only
+> locally provisioned docs file is `docs/fc-manifest-0.13.0.json`
+> (see CONTRIBUTING.md "Conformance 数据同步").
 ## Layout
 - `go.mod` —the single module `consema.dev/consema` (RFC 0016 §3.1;
-  plan §0.2). Minimum Go version declared as `go 1.24` — the empirically
-  verified floor (2026-08-12: gofmt/vet/build/test/race all green on
-  go1.24.13 and go1.25.12; plan §1.3 had suggested 1.26, see the go.mod
-  header comment).
+  plan §0.2). Minimum Go version declared as `go 1.26`, frozen at 0.14.0
+  (RFC 0020 §9.2, support-policy.md §2; a 2026-08-12 experiment lowered
+  the directive to 1.24, restored to 1.26 by the G001 adversarial-audit
+  ruling 2026-08-13 — see the go.mod header comment).
 - `core/` —the value model and PVCE/1 codec:
   - `value.go` —`Value` (closed fifteen-kind interface), `Kind`, `Null`,
     `Boolean`, `String`, `Bytes`, `Object`/`ObjectBuilder` (ordered,
@@ -62,7 +69,7 @@ eight format families and the CLI (per-milestone delivery records below).
   - `errors.go` —`GraphError` (`core.graph.*@1` codes) and `PGCEError`
     (`core.pgce.*@1` codes), both with the RFC 0016 §6 `Code()` contract.
 - `document/` —the source-snapshot and patch surface (0.15.0 G1.1; RFC
-  0016 §3.2), mirroring the capability face of consema-rs/crates/consema-document:
+  0016 §3.2), mirroring the capability face of consema-rs/consema-document:
   - `source.go` —`SourceSnapshot` (immutable raw bytes, SHA-256
     `ContentDigest`, resolved `EncodingFacts`, decoded text, checkpointed
     `DecodedPosition`/`DecodedOffset` coordinate conversion), `SourceLimits`,
@@ -107,7 +114,7 @@ eight format families and the CLI (per-milestone delivery records below).
     family packages expose them under their established local names as
     aliases and thin wrappers;
 - `json/` —the JSON family surface (0.15.0 G1.2; RFC 0016 §5), mirroring
-  the capability face of consema-rs/crates/consema-json:
+  the capability face of consema-rs/consema-json:
   - `profile.go` —`JsonProfile` (StrictV1/JsoncBoundedV1/Json5StandardV1)
     and `JsonSyntaxKind` (the closed lossless kind vocabulary with the
     stable query spellings);
@@ -136,7 +143,7 @@ eight format families and the CLI (per-milestone delivery records below).
     records come from go/document (0.16.0 G2.4); the operation registry
     is format-local.
 - `toml/` —the TOML family surface (0.15.0 G1.3; RFC 0001, RFC 0016 §5),
-  mirroring the capability face of consema-rs/crates/consema-toml:
+  mirroring the capability face of consema-rs/consema-toml:
   - `toml.go` —`TomlProfile` (Toml10V1), `TomlSyntaxKind` (the closed
     twelve-kind lossless vocabulary with the stable query spellings),
     `TomlItemKind` (the fifteen native item categories incl. table/
@@ -164,7 +171,7 @@ eight format families and the CLI (per-milestone delivery records below).
     The shared edit records come from go/document (0.16.0 G2.4); the
     operation registry is format-local.
 - `yaml/` —the YAML family surface (0.16.0 G2.1; RFC 0007, RFC 0016 §5),
-  mirroring the capability face of consema-rs/crates/consema-yaml:
+  mirroring the capability face of consema-rs/consema-yaml:
   - `yaml.go` —`YamlProfile` (Yaml12CoreV1 / Yaml11CompatV1, explicit
     selection never dialect guessing), `YamlSyntaxKind` (the closed
     twenty-five-kind lossless vocabulary with the stable query spellings),
@@ -199,7 +206,7 @@ eight format families and the CLI (per-milestone delivery records below).
     from go/document (0.16.0 G2.4); the operation registry is
     format-local.
 - `ini/` —the INI family surface (0.16.0 G2.2; RFC 0009, RFC 0016 §5),
-  mirroring the capability face of consema-rs/crates/consema-ini:
+  mirroring the capability face of consema-rs/consema-ini:
   - `profile.go` —`IniProfile` (PortableV1 / WindowsV1 /
     PythonConfigParserV1, explicit selection never dialect guessing),
     `IniEncodingSelection` (profile default, explicit UTF-8/UTF-16LE/
@@ -232,7 +239,7 @@ eight format families and the CLI (per-milestone delivery records below).
     go/document (0.16.0 G2.4); the operation registry is format-local.
 - `properties/` —the Java Properties family surface (0.16.0 G2.3; RFC
   0010, RFC 0016 §5), mirroring the capability face of
-  consema-rs/crates/consema-properties:
+  consema-rs/consema-properties:
   - `properties.go` —`PropertiesProfile` (ReaderV1 / Latin1V1, explicit
     encoding selection never platform guessing), `JavaString` (exact
     UTF-16 code units, unpaired surrogates preserved as native content,
@@ -270,7 +277,7 @@ eight format families and the CLI (per-milestone delivery records below).
     The shared edit records come from go/document (0.16.0 G2.4); the
     operation registry is format-local.
 - `xml/` —the XML family surface (0.17.0 G3.1; RFC 0012, RFC 0016 §5),
-  mirroring the capability face of consema-rs/crates/consema-xml:
+  mirroring the capability face of consema-rs/consema-xml:
   - `profile.go` —`XmlProfile` (SafeV1), `XmlEncodingSelection`
     (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `XmlParseLimits`
     (common limits plus the element/attribute/namespace-declaration/
@@ -316,7 +323,7 @@ eight format families and the CLI (per-milestone delivery records below).
     `FormatOperationRegistry`. The shared edit records come from
     go/document (0.16.0 G2.4); the operation registry is format-local.
 - `plist/` —the plist family surface (0.17.0 G3.2; RFC 0013), mirroring
-  the capability face of consema-rs/crates/consema-plist:
+  the capability face of consema-rs/consema-plist:
   - `profile.go` —`PlistProfile` (XmlV1/BinaryV1), `PlistEncodingSelection`
     (profile default, explicit UTF-8/UTF-16LE/UTF-16BE), `PlistParseLimits`
     (common limits plus object/dict/array/duplicate-key-group/string/data/
@@ -368,7 +375,7 @@ eight format families and the CLI (per-milestone delivery records below).
     offset table, trailer), and the six-operation `FormatOperationRegistry`.
     The shared edit records come from go/document (0.16.0 G2.4).
 - `hcl/` —the HCL family surface (0.18.0 G4.1; RFC 0014), mirroring the
-  capability face of consema-rs/crates/consema-hcl:
+  capability face of consema-rs/consema-hcl:
   - `profile.go` —`HclProfile` (NativeV1/TfvarsV1), `HclEncodingSelection`
     (profile default or explicit UTF-8; any other explicit encoding is a
     source-contract conflict with `hcl.parse.encoding@1`), `HclParseLimits`
@@ -426,7 +433,7 @@ eight format families and the CLI (per-milestone delivery records below).
     the `FormatOperationRegistry`. The shared edit records come from
     go/document.
 - `consema` (the package root, `*.go` directly in `go/`) —the facade
-  surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring consema-rs/crates/consema:
+  surface (0.15.0 G1.4; RFC 0016 §3.2), mirroring consema-rs/consema:
   - `document.go` —the `Document` union over the eight format families
     (JSON, TOML, YAML, INI, Properties, XML, plist, HCL; additive as
     the families landed through 0.15.0-0.18.0) with the typed adapters
@@ -435,10 +442,11 @@ eight format families and the CLI (per-milestone delivery records below).
   - `registry.go` —`Families`/`Profiles`/`QueryDomains`/
     `OperationRegistryFor` (8 families / 16 profiles / 21 query
     domains / 16 operation registries, RFC 0015 §6.2), derived from
-    the implementing packages where they exist (the json/toml
-    registries never re-declare the operation surface) and declared
-    capability facts for the not-yet-implemented families, plus the
-    `ParseDocument` single parse entry by profile id;
+    the implementing packages (all eight families are implemented —
+    G056, adversarial audit 2026-08-13, the "not-yet-implemented
+    families" note was stale; the registries never re-declare the
+    operation surface and drift-guard tests assert backend equality),
+    plus the `ParseDocument` single parse entry by profile id;
   - `conversion.go` —the eight `Convert*` entries
     (`ConvertJSON`/`ConvertTOML`/`ConvertYAML`/`ConvertINI`/
     `ConvertProperties`/`ConvertXML`/`ConvertPlist`/`ConvertHCL`), the
@@ -456,7 +464,8 @@ Boolean →`core.Boolean`, Null →`core.Null`, EntryMapping →`*core.EntryMapp
 allowed).
 ## SDK usage essentials (roadmap §21.2 / RFC 0016 §6)
 The Go public API is held to the six stability policies of roadmap §21.2
-(line 1825-1834); this is how each one shows up when using the SDK:
+(line 1831-1838; G114 line re-verification 2026-08-13); this is how each
+one shows up when using the SDK:
 1. **Completed objects are logically immutable.** Parse results
    (`Document`, every family document, `document.SourceSnapshot`),
    value objects (`core.Object`/`Array`/`EntryMapping`), `graph.Graph`,
@@ -465,7 +474,7 @@ The Go public API is held to the six stability policies of roadmap §21.2
    `(*core.Object).Entries`, `(*graph.Graph).Roots`) and the value
    constructors copy caller input. The only mutation paths are the
    explicit builders (`NewObjectBuilder`, `NewArray`,
-   `NewEditTransactionBuilder`, `graph.Builder`, —.
+   `NewEditTransactionBuilder`, `graph.Builder`, ….
 2. **`context.Context` carries cancellation/deadline only.** No business
    parameter is smuggled through context values (there is no
    `context.WithValue` in the module). Cancellable entries check the
@@ -480,7 +489,7 @@ The Go public API is held to the six stability policies of roadmap §21.2
    `hcl.parse.encoding@1`); `Error()` text is human presentation only
    and never participates in conformance comparison. The protocol layer
    classifies once: `protocol.ClassifyErrorCode` (RFC 0015 §5). Pattern:
-   `if failure != nil { switch failure.Code() { —} }`.
+   `if failure != nil { switch failure.Code() { …} }`.
 4. **Ordered results are never maps.** Query matches, projection
    results, materialization results, edit results, and change sets are
    ordered slices or structured records; objects are `*core.Object`
@@ -491,35 +500,46 @@ The Go public API is held to the six stability policies of roadmap §21.2
 5. **Iterators have explicit completion/error semantics.** The root
    cursors (`OrderedCursor`, `PortableCursor`) close with exactly one
    terminal state —`Completed`, `Cancelled`, or `Failed` —surfaced by
-   `TerminalState()`; family cursors (`JsonQueryCursor`, — signal
+   `TerminalState()`; family cursors (`JsonQueryCursor`, … signal
    exhaustion with a nil match and errors (including cancellation) with
    a `QueryFailure`. A failure never yields a partial result that could
    be mistaken for a complete one.
-6. **Minimum Go version.** `go.mod` declares `go 1.24` — the empirically
-   verified minimum (2026-08-12: gofmt/vet/build/test/race all green on
-   go1.24.13 and go1.25.12; plan §1.3 had suggested 1.26, see the go.mod
+6. **Minimum Go version.** `go.mod` declares `go 1.26` — frozen at 0.14.0
+   per RFC 0020 §9.2 / support-policy.md §2 (restored from a 2026-08-12
+   1.24 experiment by the G001 adversarial-audit ruling; see the go.mod
    header comment). The hcl-go-v1 oracle's older `go` directive is its own
    manifest-pinned legacy, not SDK policy. The roadmap §21.2 CI
    verification leg — the gates below running in CI on the declared
-   minimum version — is the `go-matrix` job (ci-go.yml: a 3-version matrix
-   1.24.x / 1.25.x / 1.26.5, fail-fast: false, each leg pinning its
-   setup-go version and running genuinely under GOTOOLCHAIN=auto; G5.5
-   finding F1, **closed** in 937b330); locally they are the commands in
-   the next section.
+   minimum version — is the `go-matrix` job (ci-go.yml: a 2-version matrix
+   '1.26.x' declared minimum + '1.26.5' current stable per RFC 0020 §9.2,
+   fail-fast: false, each leg pinning its setup-go version and running
+   genuinely under GOTOOLCHAIN=auto; G5.5 finding F1, **closed** in
+   937b330); locally they are the commands in the next section.
 ## Go CLI（0.19.0 G5.6；productVersion 1.0.0-rc.1）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
-0015; mirror of the Rust `consema-rs/crates/consema` bin). It is stdlib-only (self-
+0015; mirror of the Rust `consema-rs/consema` bin). It is stdlib-only (self-
 written deterministic argument parsing, no clap/flag-based guessing), sits
-inside the module, and reaches format semantics only through the root
-package's public API (RFC 0015 §2.3 hard gate 1).
+inside the module, and reaches format semantics through the root package
+and the family packages' public APIs — flow.go imports the eight family
+packages directly, a documented deviation from RFC 0015 §2.3 hard gate 1
+(the Rust bin reaches semantics only through the facade; G055, adversarial
+audit 2026-08-13).
 
 - **Command surface** — the 11 frozen commands of RFC 0015 §6.1:
   `inspect`, `capabilities`, `query`, `project`, `materialize`,
   `convert`, `edit` (dry-run only; `--write` refused), `plan` (read-only
   batch manifest), `apply` (batch write from a prior plan manifest),
   `conformance` (embedded self-check subset: envelope round-trip, exit
-  classification, redaction), `explain`.
+  classification, redaction), `explain`. **Per-command format wiring
+  (G066, adversarial audit 2026-08-13 — the command surface is fully
+  delivered, but the per-family wiring is partial and disclosed here):
+  `query` executes the portable-value domain only (native domains and
+  XML/plist/HCL sources are refused with `cli.data.invalid-request@1`);
+  `project` is wired for the json/toml families only; `edit` maps the
+  ini operation vocabulary only (anchor placement is not wired);
+  `materialize` and `convert` run across the eight families through the
+  facade composition; the remaining commands are family-neutral.**
 - **Machine protocol** — every command emits the `core.cli-output@1`
   envelope under `--json` (exactly one canonical JSON line + LF);
   diagnostics go to stderr; exit codes 0-5 classify exclusively through
@@ -563,6 +583,17 @@ gofmt -l .
 ```
 All quality gates are expected to be clean: `go build`, `go vet`, `go
 test`, `go test -race`, `gofmt -l`, and `go mod tidy` (plan §6).
+
+**Provision prerequisite (clean clone, mandatory; G065, adversarial audit
+2026-08-13 — this section previously omitted it):** conformance data is
+not in git (`.gitignore`); `go test ./...` runs the conformance runner
+against repository-relative paths (`conformance/vectors`, …) and fails
+loudly (never skips) when the data is missing. Before the first run, copy
+`conformance/` to the repository root and
+`docs/fc-manifest-0.13.0.json` to `docs/` from the consema spec
+repository checkout (see the root README "构建与测试" prerequisite and
+CONTRIBUTING.md "Conformance 数据同步"; the differential harness tests
+skip on missing case sets instead — G058).
 ## Stdlib-only policy
 `go.mod` declares zero third-party dependencies (no `require` lines); the
 module uses only the Go standard library (`math/big`, `hash/fnv`,
@@ -571,18 +602,18 @@ RFC 0016 §10 rejected alternatives.
 ## Golden-bytes provenance
 The PVCE/1 golden vectors in `core/pvce_test.go` (`TestPVCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `consema-rs/crates/consema-pvce/src/lib.rs:1192-1201` —`object_byte_vector_is_frozen`
+- `consema-rs/consema-pvce/src/lib.rs:1192-1201` —`object_byte_vector_is_frozen`
   (`{"a": Integer(1)}` →hex `5056434501410a01200201611003010101`);
-- `consema-rs/crates/consema-pvce/src/lib.rs:1336-1342` —`byte_vector_is_frozen`
+- `consema-rs/consema-pvce/src/lib.rs:1336-1342` —`byte_vector_is_frozen`
   (Null →`50564345010000`; Integer(-256) →`5056434501100402020100`).
 The additional-kind golden vectors in `core/fifteen_test.go`
 (`TestPVCEFifteenKindGoldenBytes`) are pinned to the Rust encoder's bytes
 for the exact values of the Rust `every_core_kind_round_trips` test
-(`consema-rs/crates/consema-pvce/src/lib.rs:1129-1174`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
+(`consema-rs/consema-pvce/src/lib.rs:1129-1174`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
 Date(-12345-02-28) →`505643450130070402023039021c`,
 Time(23:59:58.125) →`5056434501310c173b3a080301017d03020103`,
 LocalDateTime(-12345-02-28T23:59:58.125) →`50564345013215070402023039021c0c173b3a080301017d03020103`,
-OffsetDateTime(—23:00) →`5056434501331b070402023039021c0c173b3a080301017d03020103050203014370`,
+OffsetDateTime(−23:00) →`5056434501331b070402023039021c0c173b3a080301017d03020103050203014370`,
 EntryMapping{true →null} →`505643450142050102000000`, plus the
 seven-kind sequence vector. The canonical JSON transport golden vectors in
 `protocol/fifteen_transport_test.go` (`TestFifteenKindJSONGoldenVectors`)
@@ -590,10 +621,10 @@ are pinned to the Rust `value_transport.rs` encoder output for the same
 values.
 The PGCE/1 golden vectors in `graph/pgce_test.go` (`TestPGCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `consema-rs/crates/consema-graph/src/pgce.rs:664-678` —`scalar_byte_vector_is_frozen`
+- `consema-rs/consema-graph/src/pgce.rs:664-678` —`scalar_byte_vector_is_frozen`
   (scalar "x" tagged `tag:yaml.org,2002:str` →hex
   `504743450101010020157461673a79616d6c2e6f72672c323030323a7374720178`);
-- `consema-rs/crates/consema-graph/src/pgce.rs:680-686` —`empty_graph_byte_vector_is_frozen`
+- `consema-rs/consema-graph/src/pgce.rs:680-686` —`empty_graph_byte_vector_is_frozen`
   (empty graph →`50474345010000`).
 Both are also the shared conformance vector expectations
 (`conformance/vectors/portable-graph-v1.json`: `pgce.empty-vector` and
@@ -604,7 +635,7 @@ together.
 ## Fuzz targets
 Go native fuzzing (`go test -fuzz`) covering the 0.14.0 capability surface
 (milestone G0.5; roadmap §16.1 "Go fuzz targets"). Discipline mirrors the
-Rust fuzz targets of 0.13.0 (docs/fuzz-evidence-0.13.0.md §2): resource
+Rust fuzz targets of 0.13.0 (https://github.com/consema/consema/blob/main/docs/fuzz-evidence-0.13.0.md §2): resource
 limits are fixed at the production defaults
 (`core.DefaultDecodeLimits` / `graph.DefaultPGCELimits` /
 `protocol.DefaultProtocolLimits`), limit failures are passes, and property
@@ -623,8 +654,9 @@ reason the Rust fuzz drivers live per crate).
 | `FuzzCanonicalJSON` | `protocol/` | arbitrary bytes →`DecodeJSON`: never panic; limit semantics never bypassed; decode→encode fixed point |
 | `FuzzJSONEncodeDecode` | `protocol/` | canonical transport `decode(encode(x)) == x`, `Equal` holds, re-encode byte-stable |
 ### Full-family fuzz targets (0.19.0 G5.4)
-Milestone 0.19.0 G5.4 (docs/go-implementation-plan.md §2.6; roadmap §22.4
-line 1903 "release-candidate fuzz clean-run") extends the fuzz surface to
+Milestone 0.19.0 G5.4 (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6; roadmap §22.4
+line 1908 "release-candidate fuzz clean-run"; G114 line re-verification
+2026-08-13) extends the fuzz surface to
 every family: each `go/<family>/<family>_fuzz_test.go` feeds arbitrary
 bytes to the family's Parse entry under the production default limits and
 asserts the parse-closure invariants —a successful parse renders the
@@ -692,8 +724,15 @@ fuzzing with no panic, no hang, and no limit bypass:
 | `FuzzParseXML` (plist) | 369,315 | PASS |
 | `FuzzParseBinary` (plist) | 844,545 | PASS |
 | `FuzzParse` (hcl) | 1,003,079 | PASS |
-Four defects were found and fixed during the clean-run; each failing
-input is pinned as a regression seed under `testdata/fuzz/`:
+Four defects were found and fixed during the clean-run. Regression pins
+(G059, adversarial audit 2026-08-13 — the "each failing input is pinned
+under testdata/fuzz/" intro overstated the actual pins): defect 2 is a
+seed in the `json` fuzz target's `f.Add` corpus (json_fuzz_test.go);
+defect 3 has its seed under `yaml/testdata/fuzz/FuzzParse/`; defect 4 has
+its seeds under `plist/testdata/fuzz/FuzzParseXML/`; defect 1 (the
+`plist.binary@1` trailer-limit breach) has no separate corpus seed — its
+trigger is the trailer parameter-breach shape that the plist fuzz targets
+exercise through their parse-closure assertions:
 1. `plist.binary@1` trailer limit breach (offsetIntSize/objectRefSize/
    numObjects beyond `MaxOffsetIntSize`/`MaxObjectRefSize`/`MaxObjectCount`)
    reported a **Complete document with no native model and no diagnostics**
@@ -728,10 +767,14 @@ input is pinned as a regression seed under `testdata/fuzz/`:
 ## Security matrix (0.19.0 G5.4)
 `go/conformance/security_matrix_test.go` extends the 0.16.0 limits matrix
 (`limits_matrix_test.go`) to the recovery-capable families and mirrors the
-Rust hardening surface (consema-rs/crates/consema-conformance/tests/
-{xml,plist,hcl,yaml}_hardening.rs; roadmap §22.4:1908):
+Rust hardening surface (consema-rs/consema-conformance/tests/
+{xml,plist,hcl,yaml}_hardening.rs; roadmap §22.4:1911 "XML/YAML/HCL/binary
+plist 专项 threat tests 通过"; G114 line re-verification 2026-08-13):
 - **Limits matrices** —13 XML rows, 10 plist XML rows, 9 plist binary
-  rows, 13 HCL rows (32 boundary rows total), each pinning the exact
+  rows, 13 HCL rows (XML/plist 32 boundary rows + HCL 13 rows, 45 total;
+  G061, adversarial audit 2026-08-13 — the old "(32 boundary rows total)"
+  arithmetic only summed the XML+plist rows; SECURITY.md:18 already used
+  the correct split), each pinning the exact
   positive/negative boundary: N-1 fails with the family's frozen code
   (`xml.limit.*@1`, `plist.limit.*@1`, `hcl.limit.*@1`,
   `core.source.resource-limit@1`) and N succeeds. Rows whose parameter is
@@ -757,7 +800,7 @@ Rust hardening surface (consema-rs/crates/consema-conformance/tests/
   `yaml.projection.resource-limit@1`.
 ## Benchmark baseline (0.19.0 G5.4)
 Per-family parse/render baselines in the spirit of the Rust BENCHMARKS
-(docs/BENCHMARKS-0.13.0.md) —simple, `go test -bench` runnable, recorded
+(https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md) —simple, `go test -bench` runnable, recorded
 here only (no frozen budget; that is a Rust-side discipline):
 ```
 cd go
@@ -782,7 +825,7 @@ the Go conformance runner (G0.4) —this harness compares the encoders of
 both languages byte-for-byte on a data-driven case set, plus the
 bidirectional direction (Rust bytes →Go decode →Go re-encode).
 Go never imports or calls Rust (RFC 0016 §1.1 cgo ban): both sides encode
-the same checked-in case set, and the Rust encoder's bytes are compared as
+the same provisioned case set, and the Rust encoder's bytes are compared as
 files.
 - `conformance/differential/cases.json` —the shared input set: 68 cases
   (51 PVCE transport values + 17 PGCE graphs) covering all fifteen kinds,
@@ -790,7 +833,7 @@ files.
   cycles (68 is the exact frozen count; the integrity test fails if the
   file drifts from it or loses kind coverage). Single-authority location
   of the consema repository (migrated from go/ on 2026-08-12,
-  docs/five-language-ci-design.md §3.5): the normalized and protocol-exchange
+  https://github.com/consema/consema/blob/main/docs/five-language-ci-design.md §3.5): the normalized and protocol-exchange
   case files live at `conformance/differential/normalized/cases.json` and
   `conformance/differential/protocol-exchange/cases.json`.
 - `go/conformance/differential/differential_test.go` —the Go side: parses
@@ -801,7 +844,7 @@ files.
   the Rust bytes and re-encodes them. Without `CONSEMA_DIFFERENTIAL_RUST_DIR`
   the byte-parity test skips (documented skip, never silent) and the
   case-file integrity test still runs (when the case set is reachable).
-- `consema-rs/crates/consema-conformance/examples/emit_parity_bytes.rs` —the minimal
+- `consema-rs/consema-conformance/examples/emit_parity_bytes.rs` —the minimal
   Rust encoder driver (justification: no existing Rust entry point encodes
   arbitrary values to PVCE/PGCE and prints bytes; it reuses the published
   codecs only, no new encoding logic).
@@ -816,7 +859,8 @@ Measured 2026-08-07: **byte parity 68/68 equal (51 pvce, 17 pgce), zero
 byte differences**, bidirectional decode/re-encode stable on every case.
 ## Capability parity (0.18.0 G4.4 hard gate)
 The Go mandatory capability set equals the Rust Feature-Complete Manifest
-capability set (roadmap §16.5:1539; `docs/fc-manifest-0.13.0.json`
+capability set (roadmap §16.5:1545, the capability-parity hard gate; G114
+line re-verification 2026-08-13; `docs/fc-manifest-0.13.0.json`
 capability_set): **8 families / 16 profiles / 21 query domains / 16
 operation registries / 187 error codes**, with no "Rust-only" mandatory
 behavior. Pinned by `go/capability_parity_test.go` —every expected fact
@@ -834,22 +878,31 @@ inventory to **519/519 cases with zero skips** (18 suites, aggregate digest
 `cfd6e296…` — the same count the Rust/TS/Python/Kotlin runners pin);
 cross-language normalized-result differential **108/108**; byte parity
 **68/68**.
-## Three-platform verification (0.19.0 G5.4)
+## Three-platform verification (0.19.0 G5.4; status: Windows measured + Linux CI, macOS pending)
 Roadmap §22.4:1907 requires the Go side to pass on Windows/Linux/macOS.
-This machine (Windows 11, go 1.26.5) is the measured platform for the
+**Status (G069, adversarial audit 2026-08-13): Windows 11 is the measured
+platform; Linux runs in CI (go-matrix, ubuntu-latest); macOS has no CI
+job and no measured record — the macOS leg is pending.** Windows
+(go 1.26.5) is the measured platform for the
 G5.4 close-out: `gofmt -l .` clean, `go vet ./...` clean, `go build ./...`
 clean, `go test -count=1 ./...` all green, `go test -race -count=1 ./...`
 all green, `go mod tidy` no-op, all 16 fuzz targets 30s clean-run PASS,
 and all 8×2 benchmarks measured above.
 The Go gates run in CI as gatekeeper-landed jobs: `go-matrix` (ci-go.yml,
-ubuntu-latest, a 3-version matrix 1.24.x / 1.25.x / 1.26.5 with each leg
+ubuntu-latest, a 2-version matrix '1.26.x' declared minimum + '1.26.5'
+current stable per RFC 0020 §9.2, with each leg
 pinned — the G5.5 finding F1 was closed in 937b330) and `go-differential`
-(ci-go.yml, windows-latest, added 2026-08-12 — runs the
-go-verify-byte-parity / normalized-differential / protocol-exchange
-harnesses). plan §3's file-domain table still keeps `.github` off-limits to
-Go agents (the jobs are landed by the gatekeeper), so the remaining
-Linux/macOS legs below are completed on demand with the exact same
-commands —the full matrix is reproducible on any of the three OSes:
+(ci-go.yml, windows-latest, added 2026-08-12 — runs the four harnesses
+go-verify-byte-parity / normalized-differential / protocol-exchange /
+go-verify-shared-conformance; G062, adversarial audit 2026-08-13 — the
+harness list previously omitted the shared-conformance §16.6 hard-gate
+harness). plan §3's file-domain table still keeps `.github` off-limits to
+Go agents (the jobs are landed by the gatekeeper). The macOS leg is not
+yet executed — there is no macOS CI job and no measured record (G069,
+adversarial audit 2026-08-13: the old text presented three-platform as
+delivered; roadmap §22.4's three-platform requirement is pending); the
+remaining Linux/macOS legs below are completed on demand with the exact
+same commands:
 ```
 cd go
 gofmt -l .                 # must be empty
@@ -864,11 +917,17 @@ go test -fuzz='^FuzzParse$' -fuzztime=30s ./json/
 go test -fuzz='^FuzzAlias$' -fuzztime=30s ./yaml/
 go test -fuzz='^FuzzParseBinary$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParse$' -fuzztime=30s ./hcl/
+```
+
 **Note: the 6-target table below is the 0.14.0 historical state (2026-08-07
 record); the current 16-target 30s clean-run PASS is in the "Fuzz targets"
-section above. The table is kept as historical fact.**
+section above. The table is kept as historical fact.** (G060, adversarial
+audit 2026-08-13: this note and table previously sat inside the code fence
+above and rendered as literal text.)
+
 Measured 2026-08-07 (go 1.26.5, Windows 11): every target ran 30s of
 fuzzing with no panic, no hang, and no limit bypass:
+
 | Target | execs in 30s | result |
 |---|---|---|
 | `FuzzPVCE` | 16,868,081 | PASS |
@@ -877,6 +936,8 @@ fuzzing with no panic, no hang, and no limit bypass:
 | `FuzzPGCEEncodeDecode` | 10,970,351 | PASS |
 | `FuzzCanonicalJSON` | 15,530,209 | PASS |
 | `FuzzJSONEncodeDecode` | 6,637,952 | PASS |
+
+```
 go test -bench=. -benchtime=1s ./json/ ./toml/ ./yaml/ ./ini/ ./properties/ ./xml/ ./plist/ ./hcl/
 ```
 The completion path is documented, not a CI job (plan §2.6 G5.4: "没有则只文档化完成路径，不新建 CI job"). 拆分后本仓 .github/workflows 已是 Go 门禁域（ci-go.yml / release.yml / audit.yml / labeler.yml / pr-labels.yml / stale.yml 六个 workflow）。

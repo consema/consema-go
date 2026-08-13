@@ -1,25 +1,26 @@
 package consema
 
 // This file implements the additive facade registry surface
-// (consema-rs/crates/consema/src/lib.rs `registry` module; RFC 0015 §6.2; plan §2.2
+// (consema-rs/consema/src/lib.rs `registry` module; RFC 0015 §6.2; plan §2.2
 // G1.4): the unified enumeration of format families, profiles, query
 // domains, and per-profile operation registries, plus the single parse
 // entry by profile id.
 //
 // Derivation discipline (Rust facade precedent): the capability inventory
 // is the declared Feature-Complete Manifest capability set (roadmap §15.7
-// line 1445 — the Go starting point), and everything the Go packages can
-// derive is derived from them. The family and profile ids of the JSON and
-// TOML families come from go/json and go/toml (JsonProfile.ID(),
-// TomlProfile.ID(), FormatFamily()); the operation registries of the four
-// implemented profiles come from the family registries
-// (json.FormatOperationRegistryFor, toml.NewFormatOperationRegistry); the
-// query domains come from the protocol package's frozen domain
-// constructors. The inventory entries of the not-yet-implemented families
-// (yaml/ini/properties/xml/plist/hcl) are written out as declared
-// capability facts with drift-guard tests asserting equality with backend
-// facts, so a backend change fails this package's own tests (Rust facade
-// `registry` tests precedent).
+// line 1451 — "Go 以该 manifest 为起点"; G114 line re-verification
+// 2026-08-13), and everything the Go packages can
+// derive is derived from them. The family and profile ids come from the
+// implementing family packages (JsonProfile.ID(), TomlProfile.ID(),
+// FormatFamily(), ...); the operation registries come from the family
+// registries (json.FormatOperationRegistryFor,
+// toml.NewFormatOperationRegistry, ...); the query domains come from the
+// protocol package's frozen domain constructors. All eight families are
+// implemented (0.15.0-0.18.0) — the inventory entries are derived from the
+// backend facts with drift-guard tests asserting equality, so a backend
+// change fails this package's own tests (Rust facade `registry` tests
+// precedent; G056, adversarial audit 2026-08-13 — the
+// "not-yet-implemented families" wording was stale).
 
 import (
 	"context"

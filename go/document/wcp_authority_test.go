@@ -2,7 +2,7 @@
 // Windows code pages (874, 1250-1258), captured from the scratch cargo
 // project wcp-authority (encoding_rs =0.8.35, the exact version pinned by
 // Cargo.toml), 2026-08-07. Every byte 0x00-0xFF was decoded through the
-// exact Rust reference path (consema-rs/crates/consema-document/src/source.rs
+// exact Rust reference path (consema-rs/consema-document/src/source.rs
 // decode_windows_code_page: new_decoder_without_bom_handling +
 // decode_to_string_without_replacement, one byte per call, try_reserve(16)
 // before each call). Each entry is the decoded scalar of that byte; the

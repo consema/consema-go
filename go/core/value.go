@@ -1,11 +1,11 @@
 // Package core implements the language-neutral Consema value model for Go:
 // the closed fifteen-kind PortableValue (配置内容统一处理标准与 Rust 参考实现.md
-// §10; consema-rs/crates/consema-core/src/value.rs:622-652: Null, Boolean, Integer,
+// §10; consema-rs/consema-core/src/value.rs:622-652: Null, Boolean, Integer,
 // Decimal, BinaryFloat32, BinaryFloat64, String, Bytes, Date, Time,
 // LocalDateTime, OffsetDateTime, Sequence, Object, EntryMapping), strict
 // equality and deterministic hashing, and the PVCE/1 canonical byte codec
 // (RFC 0016 §4.2). The wire format is reimplemented from the Rust reference
-// codec (consema-rs/crates/consema-pvce/src/lib.rs) and its canonical bytes are pinned by
+// codec (consema-rs/consema-pvce/src/lib.rs) and its canonical bytes are pinned by
 // golden tests in this package.
 //
 // The fifteen kinds map exactly as follows:
@@ -32,9 +32,9 @@
 // the constructors reject duplicate keys (the RFC 0002 object contract),
 // mirroring the Rust ObjectBuilder uniqueness invariant. EntryMapping
 // associations allow arbitrary keys and duplicates, mirroring the Rust
-// EntryMappingBuilder (consema-rs/crates/consema-core/src/value.rs:959-984).
+// EntryMappingBuilder (consema-rs/consema-core/src/value.rs:959-984).
 //
-// The package is standard-library only (docs/go-implementation-plan.md §1.3);
+// The package is standard-library only (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §1.3);
 // it imports no third-party code.
 package core
 
@@ -50,7 +50,7 @@ type Kind uint8
 // §4.1 eight-kind numbering unchanged; kinds 8-14 are the seven additional
 // contract kinds in the language-neutral registry order of
 // 配置内容统一处理标准与 Rust 参考实现.md §10 (the Rust PortableValueKind
-// order, consema-rs/crates/consema-core/src/value.rs:622-652).
+// order, consema-rs/consema-core/src/value.rs:622-652).
 const (
 	KindObject Kind = iota
 	KindArray
@@ -280,7 +280,7 @@ func (a *Array) Kind() Kind { return KindArray }
 func (a *Array) isValue() {}
 
 // Bytes is a PortableValue octet sequence (配置内容统一处理标准与 Rust 参考实现.md
-// §10.5; the Rust Bytes kind, consema-rs/crates/consema-core/src/value.rs:737-739). No
+// §10.5; the Rust Bytes kind, consema-rs/consema-core/src/value.rs:737-739). No
 // UTF-8, base64, or hex interpretation is ever implied; Bytes and String are
 // always different kinds. Completed byte slices are logically immutable:
 // NewBytes copies, and Content returns a copy.
@@ -303,7 +303,7 @@ func (Bytes) isValue() {}
 
 // EntryMappingEntry is one ordered entry-mapping association with arbitrary
 // PortableValue key and value (配置内容统一处理标准与 Rust 参考实现.md §10.9;
-// the Rust EntryMappingEntry, consema-rs/crates/consema-core/src/value.rs:600-618).
+// the Rust EntryMappingEntry, consema-rs/consema-core/src/value.rs:600-618).
 // Duplicate associations and association order are value semantics.
 type EntryMappingEntry struct {
 	// Key is the arbitrary key value; it must not be nil.
@@ -349,7 +349,7 @@ func (m *EntryMapping) isValue() {}
 
 // EntryMappingBuilder incrementally constructs an EntryMapping. Unlike the
 // ObjectBuilder there is no deduplication: arbitrary keys may repeat (the
-// Rust EntryMappingBuilder::push semantics, consema-rs/crates/consema-core/src/value.rs:
+// Rust EntryMappingBuilder::push semantics, consema-rs/consema-core/src/value.rs:
 // 973-978).
 type EntryMappingBuilder struct {
 	entries []EntryMappingEntry

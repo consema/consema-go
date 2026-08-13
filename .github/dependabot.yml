@@ -1,6 +1,8 @@
 # Dependabot version updates: gomod ecosystem. The Go module lives at go/
-# (go.mod declares `go 1.24`, zero third-party requires — stdlib-only policy,
-# docs/go-implementation-plan.md §1.3), so this keeps module-level and
+# (go.mod declares `go 1.26` — RFC 0020 §9.2 frozen minimum; zero
+# third-party requires — stdlib-only policy,
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+# §1.3), so this keeps module-level and
 # toolchain updates tracked. Weekly cadence, at most 5 open PRs.
 version: 2
 updates:

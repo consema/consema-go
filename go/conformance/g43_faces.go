@@ -1,6 +1,6 @@
 package conformance
 
-// The G4.3 faces of the shared suites (docs/go-implementation-plan.md §2.5;
+// The G4.3 faces of the shared suites (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.5;
 // the 0.18.0 full-operation-parity flip of the remaining documented skips):
 //
 //   - protocol.change-set.actual-edit-roundtrip (protocol-v1): a real JSON

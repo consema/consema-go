@@ -1,12 +1,16 @@
 // Package conformance implements the Go conformance runner over the shared
-// language-neutral vectors (RFC 0016 §7; docs/go-implementation-plan.md
+// language-neutral vectors (RFC 0016 §7; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §4). One runner file per suite family mirrors
-// consema-rs/crates/consema-conformance/src/lib.rs:3-25; every runner validates the
+// consema-rs/consema-conformance/src/lib.rs:3-25; every runner validates the
 // suite identifier, rejects duplicate case IDs, asserts the frozen case
 // count, dispatches cases by capability, and rejects unknown cases. The
-// vector files themselves are the authority — the runner embeds no vector
-// copy and holds no expectation literals (conformance/README.md rules 3-4;
-// the go:embed boundary would create a second authority source).
+// vector files themselves are the authority for content — the runner
+// embeds no vector copy, while it pins the frozen per-suite case counts
+// and verifies the aggregate digest (conformance/README.md rule 4 requires
+// every suite to assert its case count; G146, adversarial audit
+// 2026-08-13 — "holds no expectation literals" overstated the in-runner
+// count pins; the go:embed boundary would create a second authority
+// source).
 //
 // Cases whose capability is not implemented by the current Go milestone
 // are documented skips (never silent; RFC 0016 §7): the skip record names
@@ -89,7 +93,7 @@ type Runner struct {
 }
 
 // DigestResult is the aggregate vector digest verification
-// (docs/go-implementation-plan.md §4.5; fc-manifest conformance_suite).
+// (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.5; fc-manifest conformance_suite).
 type DigestResult struct {
 	// OK reports whether the computed aggregate matches the manifest.
 	OK bool
@@ -169,7 +173,7 @@ type suiteDefinition struct {
 }
 
 // allSuites is the frozen 18-suite inventory in the fc-manifest order
-// (docs/go-implementation-plan.md §4.2 table; case counts re-pinned by the
+// (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.2 table; case counts re-pinned by the
 // digest check against the manifest).
 var allSuites = []suiteDefinition{
 	{File: "v1.json", SuiteID: "consema.conformance@1", ExpectedCases: 30, Run: runV1},
@@ -430,7 +434,7 @@ func caseExpected(vector *caseData, name string) (core.Value, bool) {
 
 // VerifyVectorsDigest computes the aggregate sha256 of the vector files and
 // compares it against the Feature-Complete Manifest conformance_suite
-// record (docs/go-implementation-plan.md §4.5; fc-manifest
+// record (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.5; fc-manifest
 // conformance_suite.note): file-name byte-order sort, per-file sha256
 // lowercase hex, lines `{basename}:{digest}` joined with '\n' without a
 // trailing newline, then sha256 of that UTF-8 string.

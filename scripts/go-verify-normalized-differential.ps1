@@ -1,23 +1,26 @@
 param(
     [string]$CaseFile = '',
     [string]$OutDir = '',
-    # consema-rs checkout directory (multi-repo mode); default: <repo root>\consema-rs
+    # consema-rs checkout directory (multi-repo mode); default: <repo
+    # root>\consema-rs (CI layout) or a sibling consema-rs checkout (G109)
     [string]$RustWorkspace = ''
 )
 
 # ---------------------------------------------------------------------------
 # Cross-language normalized-result differential verification (milestone
-# 0.15.0 G1.5, bidirectional since 0.19.0 G5.2; docs/go-implementation-plan.md
-# §4.4 and §2.6; roadmap §16.2 line 1488, §16.6 line 1548, §11.2 lines
-# 849-861).
+# 0.15.0 G1.5, bidirectional since 0.19.0 G5.2;
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+# §4.4 and §2.6; roadmap §16.2 line 1494 (the cross-language
+# normalized-result differential harness), §16.6 line 1554 (bidirectional),
+# §11.2 lines 849-861; G114 line re-verification 2026-08-13).
 #
 # Bidirectional pipeline (Go never imports or calls Rust, RFC 0016 §1.1):
 #   1. builds the minimal Rust evidence example
 #      (consema-conformance/examples/emit_normalized_results.rs);
-#   2. forward direction: runs it over the checked-in case set
+#   2. forward direction: runs it over the provisioned case set
 #      (conformance/differential/normalized/cases.json, the shared
-#      single-authority case directory of the consema repository) into
-#      <OutDir> as
+#      single-authority case directory of the consema repository;
+#      provisioned from the spec repository — G122) into <OutDir> as
 #      one `<case-id>.txt` normalized-facts file per case;
 #   3. forward comparison + reverse emission: runs the Go side
 #      (`go test ./conformance/differential/normalized/` with
@@ -42,7 +45,7 @@ param(
 # never a silent Rust-side "fix".
 #
 # --- Differential corpus append discipline (roadmap §17.4 line 1615;
-# docs/go-implementation-plan.md §4.4) ---
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4) ---
 # Any differential case found by a pilot or audit joins the input set:
 #   1. triage the finding per roadmap §11.3 and reduce it to a minimal
 #      cross-language reproducer;
@@ -74,8 +77,22 @@ $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
 # (multi-repo mode): this repository carries the Go implementation only.
-# -RustWorkspace overrides the default sibling checkout <repo root>\consema-rs.
-if (-not $RustWorkspace) { $RustWorkspace = Join-Path $workspaceRoot 'consema-rs' }
+# Default resolution (G109): <repo root>\consema-rs (CI) first, then a
+# sibling consema-rs checkout; -RustWorkspace overrides either.
+if (-not $RustWorkspace) {
+    $nested = Join-Path $workspaceRoot 'consema-rs'
+    $sibling = Join-Path (Split-Path -Parent $workspaceRoot) 'consema-rs'
+    if (Test-Path (Join-Path $nested 'Cargo.toml')) {
+        $RustWorkspace = $nested
+    }
+    elseif (Test-Path (Join-Path $sibling 'Cargo.toml')) {
+        $RustWorkspace = $sibling
+    }
+    else {
+        Write-Error "consema-rs checkout not found: tried $nested (CI multi-repo mode) and $sibling (side-by-side layout); pass -RustWorkspace explicitly"
+        exit 1
+    }
+}
 $RustWorkspace = [IO.Path]::GetFullPath($RustWorkspace)
 
 # --- repo layout sanity ------------------------------------------------------
@@ -166,8 +183,19 @@ $stdoutFile = Join-Path $logDir 'go-test.stdout.txt'
 $stderrFile = Join-Path $logDir 'go-test.stderr.txt'
 Push-Location $goDir
 try {
-    & go test -count=1 -v ./conformance/differential/normalized/ 1> $stdoutFile 2> $stderrFile
-    $testCode = $LASTEXITCODE
+    # G131 (adversarial audit 2026-08-13): under EAP=Stop, PowerShell 5.1
+    # turns native-command stderr with redirection into a terminating
+    # NativeCommandError — exactly on the failure path whose diagnostics
+    # this block exists to capture. EAP is relaxed around the native call.
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & go test -count=1 -v ./conformance/differential/normalized/ 1> $stdoutFile 2> $stderrFile
+        $testCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousEAP
+    }
 }
 finally {
     Pop-Location
@@ -209,8 +237,16 @@ if ($summary.Success) {
 Write-Host "[4/4] reverse: running the Rust consume mode against the Go evidence files ($goEvidenceDir)"
 $reverseLog = Join-Path $logDir 'rust-consume.stdout.txt'
 $reverseErr = Join-Path $logDir 'rust-consume.stderr.txt'
-& $example $CaseFile $OutDir --consume $goEvidenceDir 1> $reverseLog 2> $reverseErr
-$consumeCode = $LASTEXITCODE
+# G131: same EAP relaxation as the forward leg (PS 5.1 NativeCommandError).
+$previousEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $example $CaseFile $OutDir --consume $goEvidenceDir 1> $reverseLog 2> $reverseErr
+    $consumeCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousEAP
+}
 Get-Content $reverseLog | ForEach-Object { Write-Host $_ }
 if (Test-Path $reverseErr) {
     Get-Content $reverseErr | ForEach-Object { Write-Host $_ }

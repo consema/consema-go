@@ -5,7 +5,7 @@ import (
 )
 
 // This file transcribes the operator validation table of
-// consema-rs/crates/consema-core/src/query.rs:899-1897. Every operator row pins its
+// consema-rs/consema-core/src/query.rs:899-1897. Every operator row pins its
 // expected input role, its output role, and its argument value kinds; the
 // argument-value semantic checks (closed kind-name vocabularies, non-empty
 // tags, even byte lengths) follow at the end of validateOperator, in the

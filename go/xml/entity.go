@@ -1,7 +1,7 @@
 package xml
 
 // This file implements the safe internal DTD/entity boundary (RFC 0012
-// §3; consema-rs/crates/consema-xml/src/entity.rs). The Profile permits no DOCTYPE or
+// §3; consema-rs/consema-xml/src/entity.rs). The Profile permits no DOCTYPE or
 // an internal-only DOCTYPE with a bounded subset. External subsets,
 // external/unparsed/parameter entities, notation, and
 // `ELEMENT`/`ATTLIST`/conditional declarations never trigger fallback

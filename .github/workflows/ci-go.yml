@@ -1,21 +1,22 @@
 # Consema Go SDK gates (roadmap §16.1 "Rust 与 Go 的 PVCE/PGCE bytes 完全
-# 一致", §16.2, §16.6; docs/go-implementation-plan.md §4.4; the §14.12
-# "differential" gate plan). Six jobs:
+# 一致", §16.2, §16.6; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+# §4.4; the §14.12 "differential" gate plan). Seven jobs:
 #
 #   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race,
-#            §21.2 "最低版本 CI 验证"), a 3-version matrix
-#            (1.24.x / 1.25.x / 1.26.5, fail-fast: false). go.mod declares
-#            `go 1.24` — the empirical minimum (verified 2026-08-12:
-#            gofmt/vet/build/test/race all green on go1.24.13 and go1.25.12,
-#            which is what setup-go's 1.24.x/1.25.x resolve to), so each leg
-#            pins its setup-go version and runs genuinely, with no
-#            GOTOOLCHAIN auto-switch. `go test ./...` runs the conformance
-#            runner (go/conformance, repository-relative paths), so this job
-#            also uses the multi-repo checkout mode: it checks out
-#            consema/consema (the spec repository) beside this repository
-#            and provisions the conformance data (conformance/vectors +
-#            fixtures, the docs/fc-manifest-0.13.0.json; the
-#            toml.corpus.cargo-manifest corpus reads the committed fixture
+#            §21.2 "最低版本 CI 验证"), a 2-version matrix
+#            ('1.26.x' declared minimum + '1.26.5' current stable,
+#            fail-fast: false) per RFC 0020 §9.2 ("CI runs the module on the
+#            declared minimum and on current stable"). go.mod declares
+#            `go 1.26` (frozen at 0.14.0; RFC 0020 §9.2, support-policy.md
+#            §2), so each leg pins its setup-go version and runs genuinely,
+#            with no GOTOOLCHAIN auto-switch. `go test ./...` runs the
+#            conformance runner (go/conformance, repository-relative paths),
+#            so this job also uses the multi-repo checkout mode: it checks
+#            out consema/consema (the spec repository) beside this
+#            repository and provisions the conformance data
+#            (conformance/vectors + fixtures, the
+#            docs/fc-manifest-0.13.0.json; the toml.corpus.cargo-manifest
+#            corpus reads the committed fixture
 #            conformance/fixtures/toml/Cargo.toml).
 #   coverage: the statement-coverage gate (go test -coverprofile +
 #            go tool cover -func; initial threshold 60% — conservative,
@@ -37,7 +38,17 @@
 #            harness (go-verify-shared-conformance.ps1) runs the same 18
 #            vector suites with both runners in one batch and compares the
 #            reports case by case — the roadmap §16.6 hard gate — so it is
-#            wired into this job's PR/release execution path.
+#            wired into this job's PR execution path (the tag-triggered
+#            release path runs the same four harnesses in release.yml's
+#            differential job).
+#   govulncheck: the standing dependency audit (the official Go vulnerability
+#            scanner, golang.org/x/vuln; G135, 2026-08-13 — the job is
+#            defined here so the aggregate check can include it; a needs
+#            entry must name a job in the same workflow). The go.mod surface
+#            is zero-require today; the scanner is wired now so the day a
+#            dependency enters go.mod the standing gate is already running.
+#            The daily-cron track lives in audit.yml (the schedule that
+#            ci-go.yml cannot express, rs standing shape).
 #   check-version-consistency: asserts the README release-train "Version:"
 #            line (go.mod declares no package version, so the line is the
 #            train bump's CI hook) and that the conformance CLI pins the
@@ -46,7 +57,7 @@
 #            conformance data, so no multi-repo checkout or provision step).
 #   check: the alls-green aggregate gate ("check (all gates green)", the
 #            SINGLE required check for branch protection; depends on the
-#            other five jobs and runs with `if: always()`).
+#            other six jobs and runs with `if: always()`).
 #
 # The scripts are Windows PowerShell 5.1 compatible and locate the Rust
 # example binary under <consema-rs checkout>\target\debug\examples, so the
@@ -77,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24.x', '1.25.x', '1.26.5']
+        go: ['1.26.x', '1.26.5']
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -112,8 +123,13 @@ jobs:
           # Cargo.toml is provisioned anymore.
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
-      - name: gofmt gate (test -z, real failure semantics) && go vet && go build && go test && go test -race -shuffle=on
-        run: cd go && test -z "$(gofmt -l .)" && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
+      # G064 (adversarial audit, 2026-08-13): `test -z "$(gofmt -l .)"` only
+      # substitutes stdout — gofmt's own exit code was swallowed and a
+      # failing gofmt (non-zero rc, empty stdout) passed the gate. Assign
+      # the substitution inside the && chain so the assignment carries
+      # gofmt's exit status.
+      - name: gofmt gate (real failure semantics) && go vet && go build && go test && go test -race -shuffle=on
+        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
 
   # Coverage gate (gate plan §4 M3 standing toolchain; roadmap §18.3
   # "Coverage 不替代语义证明"): go test measures the whole module with the
@@ -169,6 +185,13 @@ jobs:
           go test -coverprofile=coverage.out ./...
           total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/, "", $3); print $3}')
           echo "total statement coverage: ${total}%"
+          # G154 (adversarial audit, 2026-08-13, documented disposition):
+          # the threshold sits at 60% with only a ~0.5pp buffer — the
+          # measured total on 2026-08-13 was 60.5% (~300 statements above
+          # the line). The threshold is intentionally NOT tightened here;
+          # this gate is deliberately fragile so a coverage drop surfaces
+          # loudly. Any statement-removal or test-removal PR must re-check
+          # the total before landing.
           awk "BEGIN { exit !(${total} >= 60.0) }" || {
             echo "::error::total coverage ${total}% below the initial 60% threshold (initial threshold, tightened as coverage improves)"
             exit 1
@@ -244,19 +267,52 @@ jobs:
           $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-protocol-exchange.ps1'
           & $script
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: scripts/go-verify-shared-conformance.ps1
+      # G057 (adversarial audit, 2026-08-13): -StrictSkips is passed so the
+      # "skip 必须两侧同 skip" rule of the roadmap §16.6 hard gate is
+      # actually enforced — without it a one-sided documented skip passes
+      # the gate.
+      - name: scripts/go-verify-shared-conformance.ps1 -StrictSkips
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $script = Join-Path $env:GITHUB_WORKSPACE 'scripts/go-verify-shared-conformance.ps1'
-          & $script
+          & $script -StrictSkips
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # Dependency audit (govulncheck — the official Go vulnerability scanner),
+  # the standing security gate in the aggregate check (rs ci.yml shape; G135,
+  # 2026-08-13). Identical to the audit.yml govulncheck job, which adds the
+  # daily cron that ci-go.yml cannot express. `go run
+  # golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...` downloads the pinned
+  # scanner (G136 pin; the module-scoped download does not modify go.mod or
+  # go.sum) and audits ./... against the live Go vulnerability database. The
+  # job is unconditional (no `if:`) so it can never be skipped — a skipped
+  # job in the aggregate would fail the alls-green gate (the ts allowed-skips
+  # disposition: unconditional jobs need no skip allowance).
+  govulncheck:
+    name: govulncheck ./... (Go vuln DB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.26.5'
+      - name: govulncheck ./... (official Go vulnerability scanner, pinned v1.6.0)
+        working-directory: go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
   # Version-consistency gate (tokio check-readme pattern): go.mod declares no
   # package version (module consema.dev/consema), so the README "Version:"
   # line rides the release train (currently 1.0.0-rc.1) and must be present
-  # — a train bump that forgets the README line (or the conformance CLI's
-  # productVersion in go/cmd/consema-conformance/main.go) fails CI.
+  # — a train bump that forgets the README line (or either CLI's
+  # productVersion — go/cmd/consema-conformance/main.go and
+  # go/cmd/consema/version.go, G127 extension) fails CI. The README match is
+  # whole-line (^Version: 1.0.0-rc.1$), so a train bump to a *longer*
+  # version (e.g. 1.0.0) cannot be masked by the rc-prefix substring match
+  # (G116: asymmetric grep fixed).
   check-version-consistency:
     name: check README Version line (version consistency)
     runs-on: ubuntu-latest
@@ -269,8 +325,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -qF 'Version: 1.0.0-rc.1' README.md || {
-            echo "::error::README.md does not declare 'Version: 1.0.0-rc.1'"
+          grep -qE '^Version: 1\.0\.0-rc\.1(（|$)' README.md || {
+            echo "::error::README.md does not declare 'Version: 1.0.0-rc.1' at the start of its Version line (anchored match so a stale rc prefix cannot pass after a bump)"
             exit 1
           }
           echo 'README version line present: 1.0.0-rc.1'
@@ -279,16 +335,25 @@ jobs:
             exit 1
           }
           echo 'conformance CLI product_version present: 1.0.0-rc.1'
+          grep -qF 'productVersion = "1.0.0-rc.1"' go/cmd/consema/version.go || {
+            echo "::error::go/cmd/consema/version.go does not pin productVersion = '1.0.0-rc.1' (must match the README Version line)"
+            exit 1
+          }
+          echo 'main CLI product_version present: 1.0.0-rc.1'
 
   # SDK examples gate: go/examples/sdk_chain is the committed five-language
   # SDK chain example (parse -> native query -> best-exact projection ->
   # semantic edit -> canonical materialization -> TOML conversion;
-  # language-neutral contract reference: consema repository docs/cookbook.md).
-  # It must stay vet-clean and actually run (`go run` must exit 0). The
-  # example is a pure SDK chain (no conformance data), so no multi-repo
-  # checkout or provision step is needed.
+  # language-neutral contract reference: consema repository cookbook.md).
+  # go/examples/quickstart is the repository's copy of the root README
+  # quick-start snippet (parse -> query -> edit -> render), kept in sync by
+  # hand — running it in CI is what compiles and runs the documented example
+  # (G053: the quick start previously crashed on the typed-nil *EditFailure
+  # error interface trap). Both must stay vet-clean and actually run
+  # (`go run` must exit 0). The examples are pure SDK chains (no conformance
+  # data), so no multi-repo checkout or provision step is needed.
   examples:
-    name: examples (go vet + run sdk_chain)
+    name: examples (go vet + run sdk_chain + quickstart)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -300,8 +365,8 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: '1.26.5'
-      - name: go vet ./examples/... && go run ./examples/sdk_chain (must exit 0)
-        run: cd go && go vet ./examples/... && go run ./examples/sdk_chain
+      - name: go vet ./examples/... && go run ./examples/sdk_chain ./examples/quickstart (must exit 0)
+        run: cd go && go vet ./examples/... && go run ./examples/sdk_chain && go run ./examples/quickstart
 
   # Alls-green aggregate gate (tokio/pydantic pattern): `check (all gates
   # green)` is the SINGLE required check for branch protection on this
@@ -314,7 +379,7 @@ jobs:
   check:
     name: check (all gates green)
     if: always()
-    needs: [go-matrix, go-differential, coverage, check-version-consistency, examples]
+    needs: [go-matrix, go-differential, coverage, govulncheck, check-version-consistency, examples]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

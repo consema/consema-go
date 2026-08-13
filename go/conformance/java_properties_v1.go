@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.java-properties.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/properties_v1.rs). The 0.16.0 milestone
+// (consema-rs/consema-conformance/src/properties_v1.rs). The 0.16.0 milestone
 // (G2.3) implements the full Java Properties surface: both exact profiles
 // with explicit encoding selection, lossless natural/logical lines, exact
 // Java UTF-16 strings with unpaired-surrogate preservation, recovery with
@@ -9,8 +9,10 @@ package conformance
 // EntryMapping and explicit unique-Object projection, canonical
 // Reader/Latin-1 materialization with exact closure, the five frozen
 // structural edits with atomic patch/proof artifacts, and the resource
-// limit matrices. All 22 published cases are executed; the vector files
-// are the authority and the runner embeds no expectation literals.
+// limit matrices. All 25 published cases are executed (22 pre-P2-B + 3
+// java-properties parse/encoding cases added by the 2026-08-12 vector
+// reinforcement; G125, adversarial audit 2026-08-13); the vector files are
+// the authority and the runner embeds no expectation literals.
 
 import (
 	"context"

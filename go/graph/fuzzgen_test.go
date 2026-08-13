@@ -2,11 +2,11 @@ package graph
 
 // ---------------------------------------------------------------------------
 // Deterministic PortableGraph generator for the round-trip fuzz target
-// (milestone 0.14.0 G0.5; docs/go-implementation-plan.md §2.1). It lives in
+// (milestone 0.14.0 G0.5; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.1). It lives in
 // package graph (test files) because it constructs graphs: any package that
 // imports graph would create an import cycle with graph's own fuzz tests
 // (the same reason the Rust fuzz drivers live in the per-crate fuzz
-// directories, docs/fuzz-evidence-0.13.0.md §2).
+// directories, https://github.com/consema/consema/blob/main/docs/fuzz-evidence-0.13.0.md §2).
 //
 // The same (seed, blob) input always produces the same graph, so a fuzz
 // input fully determines its generated graph. Sharing and cycles are

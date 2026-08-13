@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.ini.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/ini_v1.rs). The 0.16.0 milestone (G2.2)
+// (consema-rs/consema-conformance/src/ini_v1.rs). The 0.16.0 milestone (G2.2)
 // implements the full INI family surface: the three explicit profiles
 // (portable, Windows, Python ConfigParser), lossless physical/logical line
 // facts, native and syntax queries, exact EntryMapping and explicit Object

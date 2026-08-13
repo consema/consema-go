@@ -14,7 +14,7 @@ import (
 )
 
 // This file implements the lossless JSON/JSONC/JSON5 lexer and parser
-// (consema-rs/crates/consema-json/src/parser.rs). The language-neutral surface —
+// (consema-rs/consema-json/src/parser.rs). The language-neutral surface —
 // token/trivia/error-region coverage, recovery diagnostics with their
 // codes and categories, native value categories, and the JSON5 lexical
 // extensions — mirrors the Rust semantics; the Go structure is
@@ -627,19 +627,33 @@ func isJSON5Whitespace(character rune) bool {
 }
 
 // isJSON5IdentifierStart reports one ID_Start scalar including the JSON5
-// dollar/underscore additions (parser.rs:616-623).
+// dollar/underscore additions (parser.rs:616-623). The Go stdlib category
+// tables do not include the Unicode Other_ID_Start characters, so the
+// unicode-id-start 1.4.0 set pinned by the Rust reference is added
+// explicitly (U+1885, U+1886, U+2118, U+212E, U+309B, U+309C; G067,
+// adversarial audit 2026-08-13 \u2014 without them `a\u00b7b`-style JSON5
+// identifiers tokenize differently from the Rust implementation).
 func isJSON5IdentifierStart(character rune) bool {
 	if character == '$' || character == '_' {
+		return true
+	}
+	switch character {
+	case 0x1885, 0x1886, 0x2118, 0x212e, 0x309b, 0x309c:
 		return true
 	}
 	return unicode.IsLetter(character) || unicode.Is(unicode.Nl, character)
 }
 
 // isJSON5IdentifierContinue reports one ID_Continue scalar including the
-// JSON5 additions (parser.rs:619-623).
+// JSON5 additions (parser.rs:619-623). As with the start set, the
+// unicode-id-start 1.4.0 Other_ID_Continue characters that the Go stdlib
+// tables do not cover are added explicitly (U+00B7, U+0387, U+1369-U+1371,
+// U+19DA; G067).
 func isJSON5IdentifierContinue(character rune) bool {
 	switch character {
-	case '$', '_', '\u200c', '\u200d':
+	case '$', '_', '\u200c', '\u200d',
+		0x00b7, 0x0387, 0x1369, 0x136a, 0x136b, 0x136c, 0x136d, 0x136e,
+		0x136f, 0x1370, 0x1371, 0x19da:
 		return true
 	}
 	return unicode.IsLetter(character) || unicode.Is(unicode.Nl, character) ||

@@ -58,7 +58,7 @@ body:
     attributes:
       label: 环境信息
       description: |
-        - `go version`（go.mod go 1.24）
+        - `go version`（go.mod go 1.26）
         - 模块 `consema.dev/consema` 版本
         - OS / 平台
       placeholder: |

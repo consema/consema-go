@@ -79,9 +79,10 @@ func executeQuery(input *RequestInput) (*protocol.QueryResultMessage, *FlowError
 	domain := definition.Domain()
 	if domain.ID() != portableQueryDomain || domain.Version() != 1 {
 		return nil, queryFailure(protocol.QueryFailureDomainMismatch(domain),
-			fmt.Sprintf("query domain '%s@%d' is not wired in this milestone; only "+
+			fmt.Sprintf("query domain '%s@%d' is not wired; only "+
 				"%s@1 is supported (native domains need caller-externalized node "+
-				"locators, which the facade does not yet expose)",
+				"locators, which the facade does not expose; G121, adversarial "+
+				"audit 2026-08-13 — the milestone phrasing was removed)",
 				domain.ID(), domain.Version(), portableQueryDomain))
 	}
 	document, err := parseDocument(input.Source, &input.Profile)
@@ -100,7 +101,7 @@ func executeQuery(input *RequestInput) (*protocol.QueryResultMessage, *FlowError
 		return nil, newFlowError("cli.data.invalid-request@1",
 			fmt.Sprintf("the %s@1 domain cannot query %s sources: their default "+
 				"projection publishes a versioned internal record (the native query "+
-				"domains require caller locators not yet exposed by the facade)",
+				"domains require caller locators not exposed by the facade; G121)",
 				portableQueryDomain, family))
 	}
 	value, err := projectValue(document, mustDefaultProjection(family))

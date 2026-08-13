@@ -11,7 +11,7 @@ import (
 )
 
 // fixtureBytes reads one read-only fixture under the repository
-// conformance/fixtures/yaml directory (docs/go-implementation-plan.md
+// conformance/fixtures/yaml directory (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §1.1: fixtures are consumed by repository-relative path, never copied).
 func fixtureBytes(t *testing.T, name string) []byte {
 	t.Helper()

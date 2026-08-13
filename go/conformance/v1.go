@@ -1,11 +1,12 @@
 package conformance
 
-// The `consema.conformance@1` suite runner (consema-rs/crates/consema-conformance
-// src/lib.rs run_v1). The 0.14.0 milestone implements the core/PVCE surface
-// (value.*, pvce.*) and the QueryDefinition protocol surface
-// (query.reject-role-mismatch, query.protocol-roundtrip); the JSON-family
-// cases (parse/query/projection/edit) and the portable query execution
-// cases are documented skips until 0.15.0.
+// The `consema.conformance@1` suite runner (consema-rs/consema-conformance
+// src/lib.rs run_v1). All 30 published cases execute — the core/PVCE
+// surface (value.*, pvce.*), the QueryDefinition protocol surface
+// (query.reject-role-mismatch, query.protocol-roundtrip), and the JSON
+// family / portable-query-execution faces (delivered 0.15.0; the milestone
+// gates below were the 0.14.0-0.15.0 documented-skips era and are closed
+// since 0.15.0 — G054, adversarial audit 2026-08-13).
 
 import (
 	"encoding/hex"
@@ -632,30 +633,7 @@ func runQueryProtocolRoundtrip(vector *caseData, report *SuiteReport) {
 	report.Passed = append(report.Passed, vector.ID)
 }
 
-func skipJSONFamily(vector *caseData, report *SuiteReport) {
-	report.Skipped = append(report.Skipped, SkipRecord{
-		ID: vector.ID, Capability: vector.Capability,
-		Reason: "JSON family formation/query surface lands with 0.15.0 (G1.2)",
-	})
-}
-
-func skipQueryExecution(vector *caseData, report *SuiteReport) {
-	report.Skipped = append(report.Skipped, SkipRecord{
-		ID: vector.ID, Capability: vector.Capability,
-		Reason: "portable-value query execution lands with the family packages (0.15.0+)",
-	})
-}
-
-func skipJSONProjection(vector *caseData, report *SuiteReport) {
-	report.Skipped = append(report.Skipped, SkipRecord{
-		ID: vector.ID, Capability: vector.Capability,
-		Reason: "JSON projection surface lands with 0.15.0 (G1.2)",
-	})
-}
-
-func skipJSONEdit(vector *caseData, report *SuiteReport) {
-	report.Skipped = append(report.Skipped, SkipRecord{
-		ID: vector.ID, Capability: vector.Capability,
-		Reason: "JSON edit surface lands with 0.15.0 (G1.2)",
-	})
-}
+// The four skip helpers that existed here (skipJSONFamily,
+// skipQueryExecution, skipJSONProjection, skipJSONEdit) were dead code with
+// zero callers since 0.15.0 flipped the JSON faces; removed by G054
+// (adversarial audit 2026-08-13) — the suite executes 30/30 cases.

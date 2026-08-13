@@ -1,9 +1,9 @@
 package normalized
 
 // The Go test driver of the cross-language normalized-result differential
-// harness (milestone 0.15.0 G1.5; docs/go-implementation-plan.md §4.4).
+// harness (milestone 0.15.0 G1.5; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4).
 //
-// TestCaseFileIntegrity always runs and guards the checked-in case set
+// TestCaseFileIntegrity always runs and guards the provisioned case set
 // (manifest id, case count, unique ids, schema validity), so `go test
 // ./...` protects the input set even without the orchestrator.
 //
@@ -15,7 +15,8 @@ package normalized
 // reported as case id + field + both values.
 //
 // Since milestone 0.19.0 G5.2 the harness is bidirectional (roadmap §16.6
-// line 1548; docs/go-implementation-plan.md §2.6): TestEmitGoNormalizedResults
+// line 1554; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6; G114 line
+// re-verification 2026-08-13): TestEmitGoNormalizedResults
 // emits the Go-side evidence files for the same input set (one
 // `<case-id>.txt` per case, the same line-oriented key=value format the
 // forward direction reads), and the Rust example's consume mode compares
@@ -71,7 +72,7 @@ func resolveCasesDir(t *testing.T) string {
 	return ""
 }
 
-// loadCaseJSON reads the checked-in normalized case file from the shared
+// loadCaseJSON reads the provisioned normalized case file from the shared
 // differential directory.
 func loadCaseJSON(t *testing.T) []byte {
 	t.Helper()
@@ -82,12 +83,12 @@ func loadCaseJSON(t *testing.T) []byte {
 	return data
 }
 
-// expectedCaseCount is the exact size of the checked-in input set (frozen
+// expectedCaseCount is the exact size of the provisioned input set (frozen
 // test data; measured from cases.json: 108 cases). The integrity test fails
-// if the checked-in file's case count drifts from it.
+// if the provisioned file's case count drifts from it.
 const expectedCaseCount = 108
 
-// loadCaseFile parses and validates the checked-in case set.
+// loadCaseFile parses and validates the provisioned case set.
 func loadCaseFile(t *testing.T) []fileCase {
 	t.Helper()
 	var file struct {
@@ -172,7 +173,7 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the checked-in case set. It always runs,
+// TestCaseFileIntegrity validates the provisioned case set. It always runs,
 // so `go test ./...` guards the input set even without the orchestrator.
 func TestCaseFileIntegrity(t *testing.T) {
 	loadCaseFile(t)

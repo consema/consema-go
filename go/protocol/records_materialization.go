@@ -1,7 +1,7 @@
 package protocol
 
 // Materialization request and result records
-// (consema-rs/crates/consema-protocol/src/materialization.rs): the
+// (consema-rs/consema-protocol/src/materialization.rs): the
 // `core.materialization-request@1|2` and `core.materialization-result@2`
 // records together with the report and provenance-map records they carry.
 

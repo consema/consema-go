@@ -2,7 +2,7 @@ package protocol
 
 // ProtocolLimits are the resource limits shared by the canonical JSON and
 // PVCE/1 protocol transports, mirroring the Rust ProtocolLimits
-// (consema-rs/crates/consema-protocol/src/limits.rs). The zero value rejects every
+// (consema-rs/consema-protocol/src/limits.rs). The zero value rejects every
 // operation; use DefaultProtocolLimits.
 type ProtocolLimits struct {
 	// MaxBytes is the maximum encoded transport bytes.
@@ -22,7 +22,7 @@ type ProtocolLimits struct {
 }
 
 // DefaultProtocolLimits returns the frozen defaults (Rust
-// consema-rs/crates/consema-protocol/src/limits.rs:20-31).
+// consema-rs/consema-protocol/src/limits.rs:20-31).
 func DefaultProtocolLimits() ProtocolLimits {
 	return ProtocolLimits{
 		MaxBytes:            64 << 20, // 64 MiB

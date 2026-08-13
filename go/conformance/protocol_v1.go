@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.protocol.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/protocol_v1.rs). Every case constructs
+// (consema-rs/consema-conformance/src/protocol_v1.rs). Every case constructs
 // its scenario through the protocol records; the vector `expected` facts
 // drive the assertions and the runner holds no expectation literals.
 

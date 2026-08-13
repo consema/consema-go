@@ -1,9 +1,9 @@
 package json
 
 // ---------------------------------------------------------------------------
-// Benchmark baseline (milestone 0.19.0 G5.4; docs/go-implementation-plan.md
+// Benchmark baseline (milestone 0.19.0 G5.4; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §2.6). Simple Go-side parse/render baselines in the spirit of the Rust
-// BENCHMARKS (docs/BENCHMARKS-0.13.0.md): one representative fixture per
+// BENCHMARKS (https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md): one representative fixture per
 // family, production default limits, `go test -bench` runnable. The
 // numbers are recorded in go/README.md "Benchmark baseline"; no budget is
 // frozen (that is a Rust-side discipline).

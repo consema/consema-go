@@ -1,9 +1,9 @@
 package protocol
 
 // ---------------------------------------------------------------------------
-// Go native fuzz targets (milestone 0.14.0 G0.5; docs/go-implementation-plan.md
+// Go native fuzz targets (milestone 0.14.0 G0.5; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §2.1; roadmap §16.1 "Go fuzz targets"). Discipline mirrors the Rust fuzz
-// targets of 0.13.0 (docs/fuzz-evidence-0.13.0.md §2): resource limits are
+// targets of 0.13.0 (https://github.com/consema/consema/blob/main/docs/fuzz-evidence-0.13.0.md §2): resource limits are
 // fixed at the production defaults (DefaultProtocolLimits), limit failures
 // are passes, and property assertions detect encode/decode asymmetry.
 //

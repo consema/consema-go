@@ -1,7 +1,7 @@
 package conformance
 
 // The `consema.portable-graph.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/portable_graph_v1.rs). Every case builds
+// (consema-rs/consema-conformance/src/portable_graph_v1.rs). Every case builds
 // its graph from the vector `input` and asserts the vector `expected`
 // facts; the runner holds no expectation literals.
 

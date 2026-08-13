@@ -381,7 +381,9 @@ func TestQueryNativeDomainIsRejectedClearly(t *testing.T) {
 	if code != 2 {
 		t.Fatalf("exit = %d", code)
 	}
-	if !strings.Contains(stderrText(stderr), "not wired in this milestone") {
+	// G121 (adversarial audit 2026-08-13): the milestone phrasing was
+	// removed from the message; the rejection and its code are unchanged.
+	if !strings.Contains(stderrText(stderr), "is not wired") {
 		t.Fatalf("stderr = %s", stderr)
 	}
 }

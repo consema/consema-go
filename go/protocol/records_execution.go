@@ -1,7 +1,7 @@
 package protocol
 
 // Completion, cancellation, and execution-policy wire records
-// (consema-rs/crates/consema-protocol/src/execution.rs). These are the
+// (consema-rs/consema-protocol/src/execution.rs). These are the
 // `core.completion@1`, `core.cancellation-request@1`, and
 // `core.execution-policy@1` language-neutral records; cancellation tokens
 // themselves stay process-local and are never serialized.

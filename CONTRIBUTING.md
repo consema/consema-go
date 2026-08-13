@@ -11,8 +11,8 @@ Consema 六仓拆分的 Go 仓：本仓承载 Go 实现（`go/` 模块 `consema.
 
 ## 开发环境
 
-- Go 1.24（`go.mod` 声明的最小版本；CI go-matrix 以 1.24.x / 1.25.x /
-  1.26.5 三版本验证，本地开发可用任意 ≥ 1.24 工具链）。
+- Go 1.26（`go.mod` 声明的最小版本，RFC 0020 §9.2 冻结；CI go-matrix 以
+  1.26.x / 1.26.5 两版本验证，本地开发可用任意 ≥ 1.26 工具链）。
 - 无运行时第三方依赖。
 
 ## 构建与测试
@@ -25,9 +25,11 @@ go test -race ./...
 ```
 
 前置：conformance 数据不入 git（见 `.gitignore`），`go test ./...` 的
-conformance 用例（go/conformance，固定仓库相对路径，无 skip 直接失败）
-在干净克隆上会失败——先按下方「Conformance 数据同步」provision（并排检出
-母仓 conformance 数据），或直接运行 CI 同款脚本
+conformance 套件用例（go/conformance，固定仓库相对路径）在干净克隆上
+直接失败；差分 harness 用例（go/conformance/differential*）在 case 集
+不可达时跳过（G058，对抗审计 2026-08-13——两条路径口径不同，均不伪造
+成功）——先按下方「Conformance 数据同步」provision（并排检出母仓
+conformance 数据），或直接运行 CI 同款脚本
 （`scripts/go-verify-shared-conformance.ps1` 等，见「贡献点」）。
 
 ## 贡献点
@@ -46,13 +48,16 @@ conformance 用例（go/conformance，固定仓库相对路径，无 skip 直接
 
 ## CI 门禁
 
-`.github/workflows/ci-go.yml`：gofmt / vet / build / test / race 门禁 +
-Go-Rust 差分门禁（windows-latest 多仓 checkout）。push 到 main 或 PR 均
-触发；PR 另受 pr-labels.yml 的 kind 标签门禁约束（标签见规范仓
+`.github/workflows/ci-go.yml`：6 个 job（G123，对抗审计 2026-08-13）——
+go-matrix（gofmt / vet / build / test / race）、coverage、go-differential
+（Go-Rust 差分门禁，windows-latest 多仓 checkout）、
+check-version-consistency、examples、check（聚合门禁）。push 到 main 或
+PR 均触发；PR 另受 pr-labels.yml 的 kind 标签门禁约束（标签见规范仓
 .github/LABELS.md）。
 
 ## 发布与安全
 
-- 发布：本仓 [RELEASING.md](RELEASING.md)（Go proxy `consema.dev/consema`
-  + GitHub Release，tag 即发布；tag 不可变，发布前确认）。
+- 发布：本仓 [RELEASING.md](RELEASING.md)（GitHub Release + tag 即发布
+  建档；Go proxy `consema.dev/consema` 收录待域名与模块路径就绪——G108，
+  对抗审计 2026-08-13；tag 不可变，发布前确认）。
 - 安全：[SECURITY.md](SECURITY.md)；披露统一走规范仓 SECURITY.md 的渠道。

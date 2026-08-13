@@ -13,7 +13,7 @@ import (
 
 // This file implements the canonical tagged JSON transport
 // `core.portable-value-json@1` (RFC 0015 §3.2; RFC 0016 §4.2), byte-identical
-// to the Rust transport (consema-rs/crates/consema-protocol/src/value_transport.rs).
+// to the Rust transport (consema-rs/consema-protocol/src/value_transport.rs).
 //
 // The decoder is a strict JSON parser (no comments, no trailing commas,
 // duplicate members rejected, canonical string/number forms only, followed by
@@ -66,7 +66,7 @@ type parser struct {
 }
 
 // parseJSONDocument strictly parses one complete JSON document
-// (consema-rs/crates/consema-protocol/src/value_transport.rs:26-53, using the strict
+// (consema-rs/consema-protocol/src/value_transport.rs:26-53, using the strict
 // JSON profile of consema-json). Any syntax error, duplicate member, or
 // trailing content yields KindInvalidJson; parse-level resource bounds use
 // the generous mapped limits of the Rust path.
@@ -427,7 +427,7 @@ func (s *decodeState) container(count int, path string) error {
 
 // EncodeJSON encodes a PortableValue as canonical `core.portable-value-json@1`
 // bytes, byte-identical to the Rust encoder
-// (consema-rs/crates/consema-protocol/src/value_transport.rs:12-23).
+// (consema-rs/consema-protocol/src/value_transport.rs:12-23).
 func EncodeJSON(value core.Value, limits ProtocolLimits) ([]byte, error) {
 	var builder strings.Builder
 	if err := encodeTransportNode(&builder, valueToNode(value), limits); err != nil {
@@ -454,7 +454,7 @@ func encodeTransportNode(builder *strings.Builder, valueNode *jsonNode, limits P
 
 // DecodeJSON strictly decodes canonical `core.portable-value-json@1` bytes
 // and returns the transported PortableValue
-// (consema-rs/crates/consema-protocol/src/value_transport.rs:26-75). The record decode
+// (consema-rs/consema-protocol/src/value_transport.rs:26-75). The record decode
 // runs before the canonicality re-encode check, matching the Rust ordering
 // (a resource-limit or field error is reported before a non-canonical form).
 func DecodeJSON(bytes []byte, limits ProtocolLimits) (core.Value, error) {
@@ -1529,7 +1529,7 @@ func jsonParseI32(node *jsonNode, path string, limits ProtocolLimits) (int32, er
 }
 
 // EncodePVCE encodes a PortableValue as canonical PVCE/1 under protocol
-// limits (consema-rs/crates/consema-protocol/src/value_transport.rs:78-89).
+// limits (consema-rs/consema-protocol/src/value_transport.rs:78-89).
 func EncodePVCE(value core.Value, limits ProtocolLimits) ([]byte, error) {
 	bytes, err := core.EncodePVCEBounded(value, core.EncodeLimits{
 		MaxBytes:            limits.MaxBytes,
@@ -1546,7 +1546,7 @@ func EncodePVCE(value core.Value, limits ProtocolLimits) ([]byte, error) {
 }
 
 // DecodePVCE strictly decodes canonical PVCE/1 under protocol limits
-// (consema-rs/crates/consema-protocol/src/value_transport.rs:92-112). The Go codec
+// (consema-rs/consema-protocol/src/value_transport.rs:92-112). The Go codec
 // rejects records outside the closed fifteen-kind model (only the extended
 // 0x7f record, via core.ErrUnknownCoreTag), reported as KindInvalidPvce.
 func DecodePVCE(bytes []byte, limits ProtocolLimits) (core.Value, error) {

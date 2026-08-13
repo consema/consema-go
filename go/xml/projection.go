@@ -1,7 +1,7 @@
 package xml
 
 // This file implements XML projection targets and explicit mapping
-// policies (RFC 0012 §9; consema-rs/crates/consema-xml/src/projection.rs). The exact
+// policies (RFC 0012 §9; consema-rs/consema-xml/src/projection.rs). The exact
 // default target is the versioned `xml.element-tree@1` record. There is no
 // `xml-to-json-default`, automatic attribute `@` prefix, automatic text
 // `#text` key, singular/plural heuristic, namespace stripping, or child

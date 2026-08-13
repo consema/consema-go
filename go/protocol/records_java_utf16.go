@@ -1,7 +1,7 @@
 package protocol
 
 // Exact Java UTF-16 code-unit strings: the `core.java-utf16-string@1` record
-// (consema-rs/crates/consema-protocol/src/java_utf16.rs). Java strings are transported
+// (consema-rs/consema-protocol/src/java_utf16.rs). Java strings are transported
 // as canonical big-endian UTF-16 units; byte and unit forms are
 // cross-verified on decode.
 

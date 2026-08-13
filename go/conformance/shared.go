@@ -1,8 +1,8 @@
 // Orchestration report hooks for the shared dual-runner conformance
-// orchestration (milestone 0.19.0 G5.1; docs/go-implementation-plan.md §2.6,
+// orchestration (milestone 0.19.0 G5.1; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6,
 // §4.1, §4.5; roadmap §16.6 line 1547).
 //
-// The Go runner and the Rust runner (consema-rs/crates/consema-conformance, driven by
+// The Go runner and the Rust runner (consema-rs/consema-conformance, driven by
 // the auxiliary example emit_conformance_reports.rs) each execute the same
 // 18 vector suites. This file defines the shared machine-readable report
 // contract ("consema.shared-conformance@1") both sides emit, the Go-side

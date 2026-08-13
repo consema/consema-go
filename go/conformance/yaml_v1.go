@@ -1,13 +1,15 @@
 package conformance
 
 // The `consema.yaml.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/yaml_v1.rs). The 0.16.0 milestone (G2.1)
+// (consema-rs/consema-conformance/src/yaml_v1.rs). The 0.16.0 milestone (G2.1)
 // implements the full YAML surface: both profiles, lossless syntax, native
 // facts, native queries, best-exact graph and value projection,
 // canonical-flow materialization, the eight structural edits with
-// anchor-safe rules, resource limits, and the regression corpus. All 27
-// published cases are executed; the vector files are the authority and the
-// runner embeds no expectation literals.
+// anchor-safe rules, resource limits, and the regression corpus. All 31
+// published cases are executed (27 pre-P2-B + 4 yaml recovery/depth/alias
+// cases added by the 2026-08-12 vector reinforcement; G125, adversarial
+// audit 2026-08-13); the vector files are the authority and the runner
+// embeds no expectation literals.
 
 import (
 	"encoding/hex"

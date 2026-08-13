@@ -1,13 +1,15 @@
 package conformance
 
 // The `consema.plist.conformance@1` suite runner
-// (consema-rs/crates/consema-conformance/src/plist_v1.rs). The 0.17.0 milestone (G3.2)
+// (consema-rs/consema-conformance/src/plist_v1.rs). The 0.17.0 milestone (G3.2)
 // implements the full plist surface: XML and binary formation with
 // recovery, the three query domains, value-tree and require-object
 // projection, both canonical materializations with the reparse closure,
-// cross-representation conversion, and the six structural edits. All 45
-// published cases are executed; the vector files are the authority and the
-// runner embeds no expectation literals.
+// cross-representation conversion, and the six structural edits. All 49
+// published cases are executed (45 pre-P2-B + 4 plist limit cases added by
+// the 2026-08-12 vector reinforcement; G125, adversarial audit
+// 2026-08-13); the vector files are the authority and the runner embeds no
+// expectation literals.
 
 import (
 	"context"

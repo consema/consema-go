@@ -1,7 +1,7 @@
 package consema
 
 // This file implements the ordered query cursor terminal semantics
-// (consema-rs/crates/consema-core/src/query.rs `OrderedQueryCursor` /
+// (consema-rs/consema-core/src/query.rs `OrderedQueryCursor` /
 // `QueryTerminalState`; capability `core.query.cursor-terminal@1`). The
 // cursor is the language-neutral pull primitive behind the query streams:
 // every value is yielded in standard order, and the stream terminates with
@@ -12,8 +12,10 @@ package consema
 //
 // The query engine of go/protocol owns the complete-execution surface; this
 // root package hosts the cursor primitive so the conformance faces can
-// exercise the terminal semantics without a protocol package change (the
-// go/protocol cursor API lands with the 0.19.0 Go CLI work).
+// exercise the terminal semantics without a protocol package change (G054,
+// adversarial audit 2026-08-13: the stale "the go/protocol cursor API
+// lands with the 0.19.0 Go CLI work" plan note was removed — the cursor
+// remains a root-package primitive).
 
 import (
 	"context"

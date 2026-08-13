@@ -1,21 +1,23 @@
 param(
     [string]$CaseFile = '',
     [string]$OutDir = '',
-    # consema-rs checkout directory (multi-repo mode); default: <repo root>\consema-rs
+    # consema-rs checkout directory (multi-repo mode); default: <repo
+    # root>\consema-rs (CI layout) or a sibling consema-rs checkout (G109)
     [string]$RustWorkspace = ''
 )
 
 # ---------------------------------------------------------------------------
 # Cross-language PVCE/PGCE byte-parity verification (milestone 0.14.0 G0.5;
-# docs/go-implementation-plan.md §4.4; roadmap §16.1 hard gate: "Rust 与 Go
-# 的 PVCE/PGCE bytes 完全一致").
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+# §4.4; roadmap §16.1 hard gate: "Rust 与 Go 的 PVCE/PGCE bytes 完全一致").
 #
 # Pipeline (Go never imports or calls Rust, RFC 0016 §1.1):
 #   1. builds the minimal Rust encoder example
 #      (consema-conformance/examples/emit_parity_bytes.rs);
-#   2. runs it over the checked-in case set
+#   2. runs it over the provisioned case set
 #      (conformance/differential/cases.json, the shared single-authority
-#      case directory of the consema repository) into <OutDir> as one
+#      case directory of the consema repository; provisioned from the spec
+#      repository — G122, adversarial audit 2026-08-13) into <OutDir> as one
 #      `<case-id>.hex` file per case;
 #   3. runs the Go side (`go test ./conformance/differential/` with
 #      CONSEMA_DIFFERENTIAL_RUST_DIR set) which compares Go encode bytes
@@ -33,8 +35,23 @@ $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
 # (multi-repo mode): this repository carries the Go implementation only.
-# -RustWorkspace overrides the default sibling checkout <repo root>\consema-rs.
-if (-not $RustWorkspace) { $RustWorkspace = Join-Path $workspaceRoot 'consema-rs' }
+# Default resolution (G109, adversarial audit 2026-08-13 — the old default
+# only matched the CI nested layout): <repo root>\consema-rs (CI) first,
+# then a sibling consema-rs checkout; -RustWorkspace overrides either.
+if (-not $RustWorkspace) {
+    $nested = Join-Path $workspaceRoot 'consema-rs'
+    $sibling = Join-Path (Split-Path -Parent $workspaceRoot) 'consema-rs'
+    if (Test-Path (Join-Path $nested 'Cargo.toml')) {
+        $RustWorkspace = $nested
+    }
+    elseif (Test-Path (Join-Path $sibling 'Cargo.toml')) {
+        $RustWorkspace = $sibling
+    }
+    else {
+        Write-Error "consema-rs checkout not found: tried $nested (CI multi-repo mode) and $sibling (side-by-side layout); pass -RustWorkspace explicitly"
+        exit 1
+    }
+}
 $RustWorkspace = [IO.Path]::GetFullPath($RustWorkspace)
 
 # --- repo layout sanity ------------------------------------------------------
@@ -63,8 +80,11 @@ if (-not (Test-Path $CaseFile)) {
 # UTF8 explicit: PowerShell 5.1 Get-Content defaults to the ANSI codepage.
 $cases = Get-Content $CaseFile -Raw -Encoding UTF8 | ConvertFrom-Json
 $caseCount = @($cases.cases).Count
-if ($caseCount -lt 40) {
-    Write-Error "differential case file has $caseCount cases, want >= 40"
+# G157 (adversarial audit 2026-08-13): the loose >= 40 floor was widened
+# from the test's exact frozen count; guard exactly (differential_test.go
+# expectedCaseCount = 68) so a drift to 40..67 is caught here too.
+if ($caseCount -ne 68) {
+    Write-Error "differential case file has $caseCount cases, want exactly 68 (differential_test.go expectedCaseCount)"
     exit 1
 }
 
@@ -119,8 +139,19 @@ $stdoutFile = Join-Path $logDir 'go-test.stdout.txt'
 $stderrFile = Join-Path $logDir 'go-test.stderr.txt'
 Push-Location $goDir
 try {
-    & go test -count=1 -v ./conformance/differential/ 1> $stdoutFile 2> $stderrFile
-    $testCode = $LASTEXITCODE
+    # G131 (adversarial audit 2026-08-13): under EAP=Stop, PowerShell 5.1
+    # turns native-command stderr with redirection into a terminating
+    # NativeCommandError — exactly on the failure path whose diagnostics
+    # this block exists to capture. EAP is relaxed around the native call.
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & go test -count=1 -v ./conformance/differential/ 1> $stdoutFile 2> $stderrFile
+        $testCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousEAP
+    }
 }
 finally {
     Pop-Location

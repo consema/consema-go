@@ -9,11 +9,11 @@ import (
 
 // ---------------------------------------------------------------------------
 // Shared dual-runner conformance integration hook (milestone 0.19.0 G5.1;
-// docs/go-implementation-plan.md §2.6, §4.1, §4.5; roadmap §16.6 line
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6, §4.1, §4.5; roadmap §16.6 line
 // 1547).
 //
 // The orchestrator scripts/go-verify-shared-conformance.ps1 provisions the
-// Rust side's shared report (consema-rs/crates/consema-conformance/examples/
+// Rust side's shared report (consema-rs/consema-conformance/examples/
 // emit_conformance_reports.rs -> <dir>/shared-conformance.json) and runs
 // this test with CONSEMA_SHARED_CONFORMANCE_RUST_DIR set to that directory.
 // The test executes the Go runner over the same 18 vector suites, converts

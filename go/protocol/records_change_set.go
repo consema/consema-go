@@ -1,6 +1,6 @@
 package protocol
 
-// The `core.change-set@1` record (consema-rs/crates/consema-protocol/src/change.rs):
+// The `core.change-set@1` record (consema-rs/consema-protocol/src/change.rs):
 // transferable source edits, node mappings, and diagnostics of one edit
 // commit, with caller-assigned stable source identities.
 

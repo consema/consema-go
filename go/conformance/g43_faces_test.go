@@ -5,7 +5,7 @@ import (
 )
 
 // TestG43FlippedCasesPass data-drives the G4.3 flipped faces directly
-// against the shared vector files (docs/go-implementation-plan.md §2.5:
+// against the shared vector files (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.5:
 // protocol.change-set.actual-edit-roundtrip, the v1 portable query
 // execution cases, and the syntax.cursor.* terminal cases). The faces run
 // through their handlers here so the flipped cases are executed and pinned
