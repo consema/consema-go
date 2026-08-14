@@ -30,11 +30,14 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
    2026-08-13：旧文把顺序写成"先校验后 provision"，实际 workflow 先做
    conformance 数据 provision、再跑校验）：
    - `verify` job（ubuntu-latest）：provision conformance 数据（多仓
-     checkout，规范仓钉 096e5f8）→ 校验 tag 指向 origin/main HEAD →
-     校验 tag↔版本一致（tag 去掉 `v` 前缀必须等于仓根 `README.md` 的
-     `Version:` 行，不一致即 exit 1 中止）→ 在 tag 上重跑完整门禁
-     （gofmt + vet + build + test + race，含 conformance 数据，与 ci-go.yml
-     同款）；
+     checkout，规范仓钉 096e5f8）→ 校验 tag 提交是 origin/main 的祖先
+     （`git merge-base --is-ancestor` 判定；G071，对抗审计 2026-08-14：
+     不比 job 时刻的 origin/main HEAD——tag 提交在推送时已固定
+     （$GITHUB_SHA），祖先判定无竞态，main 前进不会误拒合法 tag，也不
+     允许 divergent 分支上的 tag 发布）→ 校验 tag↔版本一致（tag 去掉
+     `v` 前缀必须等于仓根 `README.md` 的 `Version:` 行，不一致即 exit 1
+     中止）→ 在 tag 上重跑完整门禁（gofmt + vet + build + test + race，
+     含 conformance 数据，与 ci-go.yml 同款）；
    - `differential` job（windows-latest，G106）：在 tag 上重跑四个跨语言
      差分 harness（byte parity / normalized / protocol exchange / shared
      conformance -StrictSkips，与 ci-go.yml go-differential 同款）；

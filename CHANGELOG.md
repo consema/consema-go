@@ -2,7 +2,7 @@
 
 Consema 遵循 Semantic Versioning。本仓变更记录以规范仓 CHANGELOG 为权威；完整历史与跨语言时间线见 github.com/consema/consema 的 CHANGELOG.md。
 
-## 1.0.0-rc.1（2026-08-10；版本推进 commit 日期——规范仓 2209582 "Land 1.0.0-rc.1"，六仓统一，G063 对抗审计 2026-08-14）
+## 1.0.0-rc.1（2026-08-10；版本推进 commit 日期——规范仓 commit [2209582ff3cd2f237194c3a2523d08e4fdd4dd48](https://github.com/consema/consema/commit/2209582ff3cd2f237194c3a2523d08e4fdd4dd48)（Land 1.0.0-rc.1：RFC 0020、five-element review、SemVer envelope、canonical digest），六仓统一，G063 对抗审计 2026-08-14）
 
 六仓拆分落地：本仓自规范仓（github.com/consema/consema）拆分独立（2026-08-12），承载 Go 实现（go 1.26，module `consema.dev/consema`，运行时零第三方依赖）。
 

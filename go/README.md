@@ -525,8 +525,10 @@ message 分离、有序结果不用 map、iterator 显式 Close、最低版本 C
    genuinely under GOTOOLCHAIN=auto — G031, adversarial audit 2026-08-14:
    the minimum leg is the exact 1.26.0 patch, replacing '1.26.x' which
    resolved to the latest 1.26 patch and never exercised the declared
-   minimum; G5.5 finding F1, **closed** in
-   937b330); locally they are the commands in the next section.
+   minimum; G5.5 finding F1, **closed** in consema 仓 commit
+   [937b33028e970794c4dcb2bd9819a48bd06cdb1f](https://github.com/consema/consema/commit/937b33028e970794c4dcb2bd9819a48bd06cdb1f)
+   （Deliver Go 0.19.0 G5.4-G5.5: fuzz matrix, security matrix, usability
+   review）; locally they are the commands in the next section.
 ## Go CLI（0.19.0 G5.6；productVersion 随 release train，见仓根 README `Version:` 行——G073，对抗审计 2026-08-14：节标题不再内联版本串）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
@@ -917,7 +919,9 @@ ubuntu-latest, a 2-version matrix '1.26.0' declared minimum + '1.26.5'
 current stable per RFC 0020 §9.2, with each leg
 pinned — G031, adversarial audit 2026-08-14: the minimum leg is the exact
 1.26.0 patch ('1.26.x' resolved to the latest patch and never exercised the
-declared minimum); the G5.5 finding F1 was closed in 937b330) and `go-differential`
+declared minimum); the G5.5 finding F1 was closed in consema 仓 commit
+[937b33028e970794c4dcb2bd9819a48bd06cdb1f](https://github.com/consema/consema/commit/937b33028e970794c4dcb2bd9819a48bd06cdb1f)
+（Deliver Go 0.19.0 G5.4-G5.5: fuzz matrix, security matrix, usability review）) and `go-differential`
 (ci-go.yml, windows-latest, added 2026-08-12 — runs the four harnesses
 go-verify-byte-parity / normalized-differential / protocol-exchange /
 go-verify-shared-conformance; G062, adversarial audit 2026-08-13 — the

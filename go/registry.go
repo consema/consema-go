@@ -82,10 +82,12 @@ func Families() []document.FormatFamilyId {
 }
 
 // Profiles returns all sixteen profiles with their owning family (RFC
-// 0015 §6.2 `profiles`), sorted by profile id. The four implemented
-// profile ids are derived from the backend packages (JsonProfile.ID(),
+// 0015 §6.2 `profiles`), sorted by profile id. The json/toml entries are
+// derived from the backend packages' profile-id facts (JsonProfile.ID(),
 // TomlProfile.ID()) and asserted by the drift-guard tests; the remaining
-// ids are declared capability facts.
+// entries are declared capability facts of the implementing families —
+// all eight families are implemented (0.15.0-0.18.0) and every one of the
+// sixteen profiles resolves an operation registry.
 func Profiles() []FormatProfile {
 	profiles := []FormatProfile{
 		familyProfile("hcl", document.NewProfileId("hcl.native", 1)),
@@ -155,8 +157,8 @@ func QueryDomains() []*protocol.QueryDomain {
 // profile (RFC 0015 §6.2 `operations`), derived from the family
 // registries of the implementing packages. The profile inventory
 // (sixteen registries, one per profile) is the declared capability set;
-// the registries of the four implemented profiles carry the derived
-// operation surface.
+// every registry is derived from the family registries of the
+// implementing packages.
 type OperationRegistry struct {
 	profile    document.ProfileId
 	operations []OperationDescriptor

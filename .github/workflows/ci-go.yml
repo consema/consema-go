@@ -344,15 +344,17 @@ jobs:
         working-directory: go
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
-  # Version-consistency gate (tokio check-readme pattern): go.mod declares no
-  # package version (module consema.dev/consema), so the README "Version:"
-  # line rides the release train (currently 1.0.0-rc.1) and must be present
-  # — a train bump that forgets the README line (or either CLI's
-  # productVersion — go/cmd/consema-conformance/main.go and
-  # go/cmd/consema/version.go, G127 extension) fails CI. The README match is
-  # whole-line (^Version: 1.0.0-rc.1$), so a train bump to a *longer*
-  # version (e.g. 1.0.0) cannot be masked by the rc-prefix substring match
-  # (G116: asymmetric grep fixed).
+  # Version-consistency gate (tokio check-readme pattern; description per
+  # the step below — G073, adversarial audit 2026-08-14: the gate previously
+  # hardcoded the '1.0.0-rc.1' literal, so a train bump reddened the gate
+  # even after every pin was bumped): go.mod declares no package version
+  # (module consema.dev/consema), so the README "Version:" line rides the
+  # release train and is the single version source. The step requires the
+  # line to exist and be SemVer-shaped (^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$),
+  # then requires both CLI productVersion pins (go/cmd/consema-conformance/
+  # main.go and go/cmd/consema/version.go, G127 extension) to equal the
+  # README line exactly — a train bump must land in all three places; a
+  # partial bump (README-only, or one CLI only) fails.
   check-version-consistency:
     name: check README Version line (version consistency)
     runs-on: ubuntu-latest
@@ -399,7 +401,8 @@ jobs:
   # language-neutral contract reference: consema repository cookbook.md).
   # go/examples/quickstart is the repository's copy of the root README
   # quick-start snippet (parse -> query -> edit -> render), kept in sync by
-  # hand — running it in CI is what compiles and runs the documented example
+  # hand — CI compiles and runs the repository copy only; it never compares
+  # the copy against the README fence text (manual sync, G032-aligned)
   # (G053: the quick start previously crashed on the typed-nil *EditFailure
   # error interface trap). Both must stay vet-clean and actually run
   # (`go run` must exit 0). The examples are pure SDK chains (no conformance
