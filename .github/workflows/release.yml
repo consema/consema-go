@@ -122,8 +122,13 @@ jobs:
       # G064 (adversarial audit, 2026-08-13): the assignment inside the &&
       # chain carries gofmt's exit status (the old `test -z "$(gofmt -l .)"`
       # swallowed it).
-      - name: gofmt gate (real failure semantics) && go vet && go build && go test && go test -race -shuffle=on
-        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test ./... && go test -race -shuffle=on ./...
+      # G027/W3-32 (adversarial audit, 2026-08-14): -count=1 disables the Go
+      # test result cache — a cached "ok (cached)" replay could skip the
+      # conformance digest/case-count assertions after provisioning (the
+      # race leg already runs -shuffle=on, which bypasses the cache); same
+      # form as ci-go.yml go-matrix.
+      - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on
+        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./...
 
   # G106 (adversarial audit, 2026-08-13): the release path previously ran
   # only the Go-side gates — the four cross-language differential harnesses
