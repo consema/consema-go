@@ -21,12 +21,15 @@ check-version-consistency job 断言本行存在）。
 ## 快速开始（30 秒跑通）
 
 ```text
-go get consema.dev/consema@latest（1.0.0-rc.1 发布后可用）
+go get consema.dev/consema@latest
 ```
 
 **发布前不可执行（G026，对抗审计 2026-08-14）：** `consema.dev` 域名
-（DNS + vanity import meta）与模块发布均未就绪，该命令在域名与模块
-就绪前不会被 Go proxy 服务（见 [RELEASING.md](RELEASING.md)）。当前在
+（DNS + vanity import meta）与模块发布均未就绪，且发布前须先完成
+module 路径决策（`go.mod` 移至仓根使 module 保持
+`consema.dev/consema`，或模块路径改为 `consema.dev/consema/go`）——
+决策与域名均未完成前，该命令不会被 Go proxy 服务；下方 `go get` 路径
+以发布时决策为准（见 [RELEASING.md](RELEASING.md) §1/§2）。当前在
 仓库内运行：下方示例的入库副本在 [`go/examples/quickstart`](go/examples/quickstart)
 （独立 `package main` 目录；CI examples job 编译运行它，与下方代码人工
 同步），执行 `cd go && go run ./examples/quickstart`（一个 JSON 文档走完

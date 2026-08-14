@@ -209,11 +209,14 @@ eight format families and the CLI (per-milestone delivery records below).
     cycles, canonical byte-closure verification, UTF-16 output, mapping
     policy) with the frozen failure codes;
   - `edit.go`/`operation_registry.go`/`untouched.go` —    `EditTransaction` (+ builder, the eight frozen operations with the
-    anchor-safe rules), atomic `Commit`/`DryRun` with `ChangeSet`,
-    `SourcePatch` derivation, `UntouchedByteProof`, and the eight-
-    operation `FormatOperationRegistry`. The shared edit records come
-    from go/document (0.16.0 G2.4); the operation registry is
-    format-local.
+    anchor-safe rules), atomic `Commit` with `ChangeSet`, `SourcePatch`
+    derivation, `UntouchedByteProof`, and the eight-operation
+    `FormatOperationRegistry`. **G2.1 gap:** go/yaml publishes `Commit`
+    but no `DryRun` (its Rust counterpart publishes dry_run; see the
+    root-package `go/edits.go` note), so YAML transactions cannot produce
+    a transferable plan through the root dispatch. The shared edit
+    records come from go/document (0.16.0 G2.4); the operation registry
+    is format-local.
 - `ini/` —the INI family surface (0.16.0 G2.2; RFC 0009, RFC 0016 §5),
   mirroring the capability face of consema-rs/consema-ini:
   - `profile.go` —`IniProfile` (PortableV1 / WindowsV1 /

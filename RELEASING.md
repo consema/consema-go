@@ -21,7 +21,11 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
    `CHANGELOG.md`）。
 3. **质量门禁全绿**：main 分支 CI `check (all gates green)` 全绿
    （清单见各仓 ci 配置）。
-4. **打 tag 并推送**（发布动作的唯一触发点）：
+4. **module 路径决策（发布前置项）**：发布前必须完成 Go module 路径
+   决策——将 `go.mod` 移至仓根使 module 保持 `consema.dev/consema`，
+   或把模块路径改为 `consema.dev/consema/go`（二选一，见 §2）；决策
+   未完成前 §2 的 `go get` 路径不可执行。
+5. **打 tag 并推送**（发布动作的唯一触发点）：
    ```bash
    git tag vX.Y.Z
    git push origin vX.Y.Z
@@ -45,19 +49,22 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
      `softprops/action-gh-release@v2` 创建 GitHub Release（自动生成
      notes），**需要 `contents: write` 权限**。
 
-## 2. Go proxy 收录（待域名就绪；无需凭证）
+## 2. Go proxy 收录（域名就绪前不可执行；无需凭证）
 
-- `consema.dev` 域名解析就绪后，tag 推送会使 proxy.golang.org 在首次
-  `go get` 时收录版本（G108：域名就绪前本节不生效）：
+- **发布前必须完成 module 路径决策**（§1 步骤 4 检查单）：`go.mod`
+  位于 `go/` 子目录，Go 按模块路径解析仓库子目录，不会自动补子目录
+  后缀——域名就绪时 vanity import meta 必须按模块路径提供服务，故
+  二选一：将 `go.mod` 移至仓根使 module 保持 `consema.dev/consema`，
+  或将模块路径改为 `consema.dev/consema/go`（G026，对抗审计
+  2026-08-14：旧文「无需路径后缀」与 Go 模块解析规则矛盾；决策未完成
+  前本节不可执行）。
+- 决策完成后、`consema.dev` 域名（DNS + vanity import meta）解析
+  就绪后，tag 推送会使 proxy.golang.org 在首次 `go get` 时收录版本
+  （G108：域名就绪前本节不生效；版本校验以 `vX.Y.Z` tag 为准；下方
+  `go get` 路径以发布时决策为准）：
   ```bash
   go get consema.dev/consema@vX.Y.Z
   ```
-  （决策点：`go.mod` 位于 `go/` 子目录，Go 按模块路径解析仓库子目录，
-  不会自动补子目录后缀——域名就绪时 vanity import meta 必须按模块路径
-  提供服务，故模块路径须为 `consema.dev/consema/go`，或将 `go.mod`
-  移至仓根后使用 `consema.dev/consema`；G026，对抗审计 2026-08-14：
-  旧文「无需路径后缀」与 Go 模块解析规则矛盾。版本校验以 `vX.Y.Z`
-  tag 为准。）
 - 用户侧核对：pkg.go.dev/consema.dev/consema 的版本列表出现新版本
   （首次收录可能需要几分钟到一小时）。
 - 注意事项：tag 一经 Go proxy 收录即**不可变**——不要删除/重推已收录
