@@ -110,8 +110,9 @@ func main() {
 
 - `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.26，RFC 0020
   §9.2 冻结）。完整文档见 [go/README.md](go/README.md)（全部里程碑
-  0.14.0-0.19.0 G0.1-G5.6 已交付：core / graph / protocol / document +
-  八格式家族 + CLI）。
+  0.14.0-0.19.0 G0.1-G5.6 已交付——G5.4 三平台验证中 macOS 腿 pending，
+  见 go/README「Three-platform verification」，G028 口径：core / graph /
+  protocol / document + 八格式家族 + CLI）。
 - `scripts/`：跨语言差分验证脚本（byte parity / normalized differential /
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
