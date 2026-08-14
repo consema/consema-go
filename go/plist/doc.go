@@ -1,6 +1,7 @@
 // Package plist implements the lossless `plist.xml@1` and `plist.binary@1`
-// documents under the RFC 0013 boundary (milestone 0.17.0 G3.2; docs/go-
-// implementation-plan.md §2.4).
+// documents under the RFC 0013 boundary (milestone 0.17.0 G3.2;
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §2.4——G079，对抗审计 2026-08-14：裸 docs/ 路径改完整 URL).
 //
 // The two profiles share one native value model and the immutable-snapshot,
 // recovery, transaction, proof, and patch infrastructure. They do not share

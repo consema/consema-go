@@ -10,9 +10,9 @@ param(
 # Cross-language normalized-result differential verification (milestone
 # 0.15.0 G1.5, bidirectional since 0.19.0 G5.2;
 # https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
-# §4.4 and §2.6; roadmap §16.2 line 1494 (the cross-language
-# normalized-result differential harness), §16.6 line 1554 (bidirectional),
-# §11.2 lines 849-861; G114 line re-verification 2026-08-13).
+# §4.4 and §2.6; roadmap §16.2（跨语言 normalized-result 差分 harness）、
+# §16.6（bidirectional）与 §11.2（差分设计）——G050，对抗审计 2026-08-14：
+# 改引节锚，行号删除; G114 line re-verification 2026-08-13).
 #
 # Bidirectional pipeline (Go never imports or calls Rust, RFC 0016 §1.1):
 #   1. builds the minimal Rust evidence example

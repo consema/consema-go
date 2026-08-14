@@ -572,13 +572,16 @@ func decodeLatin1(bytes []byte, limits SourceLimits) (string, error) {
 // returning the decoded text and the raw byte width of every decoded
 // scalar (document source.rs:896-1014). The single-byte pages and CP932
 // use the frozen Python-stdlib data shared with go/protocol; CP936,
-// CP949, and CP950 are recognized but not decoded — a documented skip per
-// RFC 0016 §7 (never silent: non-ASCII bytes fail loudly with
+// CP949, and CP950 are recognized but not decoded — a documented skip
+// (never silent: non-ASCII bytes fail loudly with
 // SourceErrorInvalidSequence, exactly as go/protocol rejects them today;
 // G165, adversarial audit 2026-08-13 — the Rust reference decodes these
 // pages fully via encoding_rs, so CP936/CP949/CP950 sources diverge
 // between implementations; disclosed in go/README.md; no conformance
-// vector case touches these pages).
+// vector case touches these pages; G104, adversarial audit 2026-08-14 —
+// the "per RFC 0016 §7" attribution was removed: §7 is the conformance
+// integration contract and defines no code-page skip; the disclosure here
+// and in go/README.md is the carrier).
 func decodeWindowsCodePage(bytes []byte, page WindowsCodePage, limits SourceLimits) (string, []byte, error) {
 	switch page.Number() {
 	case 65001:

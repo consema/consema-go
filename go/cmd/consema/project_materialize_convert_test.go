@@ -350,10 +350,11 @@ func TestMaterializeHumanModeWritesRawBytesToStdout(t *testing.T) {
 }
 
 func TestMaterializeOutputFlagIsUsageExitOne(t *testing.T) {
-	request := materializeRequestBytes(t, "7b2261223a317d", "json.strict",
-		"json.strict", "json.canonical-compact")
-	code, stdout, stderr := runRequestCommand(t,
-		[]string{"materialize", "--profile", "json.strict", "--output", "out.json"}, request)
+	// G089 (adversarial audit, 2026-08-14): --output is plan/apply-only and
+	// is now rejected at parse time (previously it parsed and was refused at
+	// runtime); the assertion runs through runCLIUnit.
+	code, stdout, stderr := runCLIUnit("materialize", "--profile", "json.strict",
+		"--output", "out.json")
 	if code != 1 || len(stdout) != 0 {
 		t.Fatalf("exit = %d, stdout = %s", code, stdout)
 	}
@@ -453,10 +454,11 @@ func TestConvertAtomicFailureIsADataErrorWithoutTargetBytes(t *testing.T) {
 func TestConvertOutputFlagIsUsageExitOne(t *testing.T) {
 	dir := newTestDir(t, "convert-output")
 	source := writeTestFile(t, dir, "src.json", []byte("{\"a\":1}"))
-	request := convertRequestBytes(t, "7b2261223a317d", "json.strict",
-		"json.projection.best-exact-core", "json.strict", "json.canonical-compact")
-	code, stdout, stderr := runRequestCommand(t,
-		[]string{"convert", source, "--profile", "json.strict", "--output", "out.json"}, request)
+	// G089 (adversarial audit, 2026-08-14): --output is plan/apply-only and
+	// is now rejected at parse time (previously it parsed and was refused at
+	// runtime); the assertion runs through runCLIUnit.
+	code, stdout, stderr := runCLIUnit("convert", source, "--profile", "json.strict",
+		"--output", "out.json")
 	if code != 1 || len(stdout) != 0 {
 		t.Fatalf("exit = %d, stdout = %s", code, stdout)
 	}

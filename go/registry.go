@@ -1,7 +1,11 @@
 package consema
 
 // This file implements the additive facade registry surface
-// (consema-rs/consema/src/lib.rs `registry` module; RFC 0015 §6.2; plan §2.2
+// (https://github.com/consema/consema-rs/blob/main/consema/src/lib.rs,
+// inline `registry` module — G077, adversarial audit 2026-08-14: the bare
+// "consema-rs/consema/src/lib.rs `registry` module" path does not resolve
+// inside this checkout and "registry.rs" does not exist as a separate
+// file; RFC 0015 §6.2; plan §2.2
 // G1.4): the unified enumeration of format families, profiles, query
 // domains, and per-profile operation registries, plus the single parse
 // entry by profile id.
@@ -40,7 +44,10 @@ import (
 )
 
 // FormatProfile is one profile together with the format family that
-// publishes it (registry.rs:50-69).
+// publishes it (the inline `registry` module of
+// https://github.com/consema/consema-rs/blob/main/consema/src/lib.rs — G077,
+// adversarial audit 2026-08-14: "registry.rs:50-69" was a phantom bare-file
+// reference; the module is inline in lib.rs).
 type FormatProfile struct {
 	family  document.FormatFamilyId
 	profile document.ProfileId

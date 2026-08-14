@@ -200,7 +200,8 @@ func TestCapabilityParityQueryDomains(t *testing.T) {
 // yaml 8, ini 8, properties 5, xml 8, plist 6, hcl.native 6,
 // hcl.tfvars 4. The comparison is exact in both directions (no missing
 // Rust operation, no extra Go operation), which is the
-// no-"Rust-only"-mandatory-behavior gate of roadmap §16.5 line 1539.
+// no-"Rust-only"-mandatory-behavior gate of roadmap §16.5（capability
+// parity 硬门禁——G050，对抗审计 2026-08-14：改引节锚，行号删除）.
 func TestCapabilityParityOperationSets(t *testing.T) {
 	// The frozen (profile, operation id set, count) surface of the Rust
 	// registries. ExistingTypedCapability operations (json/toml/yaml/ini

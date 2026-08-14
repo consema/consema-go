@@ -9,7 +9,9 @@ package xml
 // the production defaults, limit failures are passes, and property
 // assertions detect closure violations.
 //
-// The entity face is the XML-specific high-value surface (SECURITY.md:32):
+// The entity face is the XML-specific high-value surface (SECURITY.md「Go
+// 侧对抗/边界覆盖」段——G057，对抗审计 2026-08-14：旧行号 :32 指向 toml 段，
+// 改引节锚):
 // billion-laughs, cyclic, and deep reference chains must never panic and
 // must never fabricate bytes; the document-wide entity accounting
 // (declaration/reference counts, expansion depth, expanded bytes, and the

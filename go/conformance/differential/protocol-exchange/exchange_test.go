@@ -18,8 +18,9 @@ import (
 
 // ---------------------------------------------------------------------------
 // Cross-language protocol exchange harness (milestone 0.19.0 G5.3;
-// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.4; roadmap §16.6 line 1549 and
-// §22.2 line 1882: "protocol cross-encode/decode 100%").
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.4; roadmap §16.6「protocol
+// exchange」与 §22.2「protocol cross-encode/decode 100%」——G050，对抗审计
+// 2026-08-14：改引节锚，行号删除).
 //
 // The harness never imports or calls Rust (RFC 0016 §1.1 cgo ban): the
 // provisioned case set (cases.json, the shared conformance/differential/
@@ -273,14 +274,17 @@ func TestCaseFileIntegrity(t *testing.T) {
 func TestProtocolExchange(t *testing.T) {
 	cases := loadCaseFile(t)
 	rustDir := os.Getenv(rustDirEnv)
-	if rustDir == "" {
-		t.Skipf("%s is not set: run scripts/go-verify-protocol-exchange.ps1 to provision the Rust side", rustDirEnv)
-	}
 	goOutDir := os.Getenv(goOutDirEnv)
-	if goOutDir != "" {
-		if err := os.MkdirAll(goOutDir, 0o755); err != nil {
-			t.Fatalf("cannot create the Go output directory %q: %v", goOutDir, err)
-		}
+	// G069 (adversarial audit, 2026-08-14): the skip gate previously checked
+	// only the Rust direction — with CONSEMA_EXCHANGE_GO_DIR missing, the
+	// Go-encode -> Rust-decode direction was silently dropped (writeHex never
+	// ran) while the test still reported all green. Both directions must be
+	// provisioned together (the orchestrator always sets both).
+	if rustDir == "" || goOutDir == "" {
+		t.Skipf("%s and %s must both be set: run scripts/go-verify-protocol-exchange.ps1 to provision the Rust side and the Go output directory", rustDirEnv, goOutDirEnv)
+	}
+	if err := os.MkdirAll(goOutDir, 0o755); err != nil {
+		t.Fatalf("cannot create the Go output directory %q: %v", goOutDir, err)
 	}
 
 	knownIDs := make(map[string]bool, len(cases))

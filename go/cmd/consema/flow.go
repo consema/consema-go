@@ -797,7 +797,7 @@ type WireProjectionRequest struct {
 // defaultProjectionRequest returns the default exact projection request of
 // each format family. These are the SDK's conservative exact defaults
 // (duplicates rejected, no authorized loss); the request commands never
-// invent policies (roadmap §10 line 818).
+// invent policies (roadmap §10——G050，对抗审计 2026-08-14：改引节锚，行号删除).
 func defaultProjectionRequest(family string) (WireProjectionRequest, *FlowError) {
 	switch family {
 	case "json":

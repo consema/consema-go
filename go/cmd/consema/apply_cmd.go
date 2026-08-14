@@ -55,7 +55,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	consema "consema.dev/consema"
@@ -77,7 +76,13 @@ const (
 
 // applyInjections is the documented process-level injection seam; an
 // absent, malformed, or out-of-range value disables the injection, and no
-// other command reads the environment.
+// other command reads the environment. The environment read itself
+// (fromEnv) is build-tag gated: dev/test builds (the default) keep the
+// seam for the e2e tests, while a production binary built with `-tags
+// release` compiles it out entirely — a stray environment variable can
+// never inject a fake write failure or interruption into a release binary
+// (G114, adversarial audit 2026-08-14, rs G045-aligned; see
+// apply_injections_dev.go / apply_injections_release.go).
 type applyInjections struct {
 	// InterruptAfter fires the graceful-shutdown sequence after the pending
 	// manifest of this 0-based file index.
@@ -92,37 +97,6 @@ type applyInjections struct {
 type writeFailureInjection struct {
 	code    string
 	message string
-}
-
-func (i *applyInjections) fromEnv() {
-	if value := os.Getenv(interruptAfterEnv); value != "" {
-		if index, err := parseInt(value); err == nil {
-			i.interruptAfter = &index
-		}
-	}
-	switch os.Getenv(writeFailureEnv) {
-	case "permission":
-		i.writeFailure = &writeFailureInjection{
-			code:    "cli.write.permission@1",
-			message: "injected permission failure (" + writeFailureEnv + "=permission)",
-		}
-	case "io":
-		i.writeFailure = &writeFailureInjection{
-			code:    "cli.write.io@1",
-			message: "injected disk-full failure (" + writeFailureEnv + "=io)",
-		}
-	}
-}
-
-func parseInt(text string) (int, error) {
-	value := 0
-	for _, ch := range text {
-		if ch < '0' || ch > '9' {
-			return 0, fmt.Errorf("not a number")
-		}
-		value = value*10 + int(ch-'0')
-	}
-	return value, nil
 }
 
 // takeWriteFailure returns the injected write failure, consumed exactly

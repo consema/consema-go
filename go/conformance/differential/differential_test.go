@@ -132,8 +132,10 @@ type mappingDesc struct {
 }
 
 // loadCaseFile parses and validates the provisioned case set: manifest id,
-// case count lower bound, unique ids, known codecs, decodable PVCE values,
-// buildable PGCE graphs, and fifteen-kind coverage.
+// exact case count (the frozen 68 — G066, adversarial audit 2026-08-14:
+// the comment previously said "lower bound" while the guard is exact
+// equality, see expectedCaseCount), unique ids, known codecs, decodable
+// PVCE values, buildable PGCE graphs, and fifteen-kind coverage.
 func loadCaseFile(t *testing.T) []fileCase {
 	t.Helper()
 	var file struct {

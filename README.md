@@ -1,8 +1,13 @@
 # Consema Go SDK（consema-go）
 
 ![CI](https://img.shields.io/github/actions/workflow/status/consema/consema-go/ci-go.yml?branch=main)
-![Version](https://img.shields.io/github/v/tag/consema/consema-go)
 ![License](https://img.shields.io/github/license/consema/consema-go)
+
+<!-- G063 (adversarial audit, 2026-08-14): the version badge was removed —
+it rendered from git tags, and this repository has no tags yet, so it
+permanently displayed "no tags" instead of the release-train version. The
+authoritative version declaration is the `Version:` line below, which the
+check-version-consistency gate asserts. -->
 
 Consema 语言中立契约（RFC 0016）的 **Go 实现**仓库。本仓库是 Consema 六仓
 拆分中的 Go 仓：规范权威（RFC、docs、路线图、跨语言 conformance suites）在
@@ -15,10 +20,16 @@ check-version-consistency job 断言本行存在）。
 ## 快速开始（30 秒跑通）
 
 ```text
-go get consema.dev/consema@latest
+go get consema.dev/consema@latest（1.0.0-rc.1 发布后可用）
 ```
 
-把下面代码放进任意包（一个 JSON 文档走完 parse → query → edit → render 四条链）：
+**发布前不可执行（G026，对抗审计 2026-08-14）：** `consema.dev` 域名
+（DNS + vanity import meta）与模块发布均未就绪，该命令在域名与模块
+就绪前不会被 Go proxy 服务（见 [RELEASING.md](RELEASING.md)）。当前在
+仓库内运行：下方示例的入库副本在 [`go/examples/quickstart`](go/examples/quickstart)
+（独立 `package main` 目录；CI examples job 编译运行它，与下方代码人工
+同步），执行 `cd go && go run ./examples/quickstart`（一个 JSON 文档走完
+parse → query → edit → render 四条链）：
 
 ```go
 package main
@@ -79,7 +90,7 @@ func main() {
 }
 ```
 
-完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。上方快速开始代码的仓库副本在 [`go/examples/quickstart`](go/examples/quickstart)（CI examples job 编译并运行它，防止文档示例漂移；G053）。
+完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。上方快速开始代码的仓库副本在 [`go/examples/quickstart`](go/examples/quickstart)，与 README 栅栏**人工同步**（CI examples job 编译并运行该副本，只保证示例可运行，不比对栅栏文本——G032，对抗审计 2026-08-14：旧文「防止文档示例漂移」过强，examples job 从不比对 README 栅栏）。
 
 ## API 摘要
 
@@ -105,11 +116,12 @@ func main() {
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
   conformance 数据来自规范仓 checkout。
-- `.github/workflows/ci-go.yml`：6 个 job（G123，对抗审计 2026-08-13）——
-  go-matrix（1.26.x 声明最小版本 / 1.26.5 当前稳定两版本
-  gofmt/vet/build/test/race，与 go.mod 声明的 `go 1.26` 最小版本真实对齐，
-  RFC 0020 §9.2）、coverage（≥60% 语句覆盖）、go-differential（windows-latest
-  多仓 checkout，四个跨语言差分 harness）、check-version-consistency、
+- `.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
+  旧文 6 个 job 漏 govulncheck）——go-matrix（1.26.0 声明最小版本 /
+  1.26.5 当前稳定两版本 gofmt/vet/build/test/race，与 go.mod 声明的
+  `go 1.26` 最小版本真实对齐，RFC 0020 §9.2）、coverage（≥60% 语句覆盖）、
+  go-differential（windows-latest 多仓 checkout，四个跨语言差分
+  harness）、govulncheck（Go 漏洞库每日审计）、check-version-consistency、
   examples、check（alls-green 聚合门禁，branch protection 唯一必选
   check）。
 
@@ -138,7 +150,7 @@ conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
 - **与 encoding/json、gopkg.in/yaml.v3 等的关系？** 互不包装：Consema 是语言中立契约（RFC 0016）的独立 Go 实现，go.mod 零第三方依赖、纯标准库；JSON/YAML 等格式在 Consema 内是"格式内容处理面"（无损文档、查询、投影、原子编辑、跨格式转换），不是类型编解码。
 - **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md`。
 - **零依赖吗？** 是——`go.mod` 零 `require`，只使用标准库（math/big、hash/fnv、crypto/sha256、unicode/utf8 等）。
-- **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与 Go-Rust 差分门禁（byte parity / normalized differential / protocol-exchange）。
+- **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与四个 Go-Rust 差分门禁（byte parity / normalized differential / protocol exchange / shared conformance；G029，对抗审计 2026-08-14：旧文只列三个 harness，漏 shared-conformance）。
 - **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.26，RFC 0020 §9.2 冻结）与当前稳定上真实验证；兼容与支持政策见 RFC 0020。
 - **如何贡献？** 见本仓 [CONTRIBUTING.md](CONTRIBUTING.md)（规范仓为权威版）；conformance 向量/夹具/oracle/差分数据权威在规范仓——向量变更是五仓同步事件，必须先回规范仓提交再同步五个语言仓。
 - **"默认拒绝信息损失"是什么意思？** 投影/转换/编辑中的任何 loss（如 YAML 共享结构展开、Properties 重复键折叠、数值舍入）必须显式授权；未授权时操作原子失败（`ConversionResult.Failed`；fidelity 三档：Exact / Transformed / Lossy）。

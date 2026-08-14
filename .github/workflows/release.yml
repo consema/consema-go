@@ -20,6 +20,13 @@ on:
   push:
     tags: ['v*']
 
+# G122 (adversarial audit, 2026-08-14): one release run per tag — a re-push
+# or continued run while the previous run is still going would start a
+# second concurrent publish (mirrors the consema-rs release.yml shape).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -32,15 +39,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      # G111 (adversarial audit, 2026-08-13): the spec-repository checkout
-      # is pinned to the commit that carries the cfd6e296 vector inventory
-      # (ad667021, the P2-B reinforcement), so the release-time provision
-      # and the go-module pinned digest always agree (py ci-python.yml
-      # pins the same commit).
+      # G111 (adversarial audit, 2026-08-13; pin advanced 2026-08-14,
+      # G070/G080): the spec-repository checkout is pinned to the commit
+      # that carries the cfd6e296 vector inventory, so the release-time
+      # provision and the go-module pinned digest always agree. The pin is
+      # 096e5f8 — its vectors are byte-identical to the prior pins
+      # ad667021/6cfd389 (same cfd6e296 manifest digest) and it carries
+      # the fixed conformance doc copies (conformance/README.md,
+      # corpora/README.md, oracle manifests) plus the 2026-08-14 wave-2
+      # audit fixes (all five language repos pin it).
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: consema/consema
-          ref: ad667021
+          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
           path: consema-repo
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
@@ -70,22 +81,29 @@ jobs:
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
       # Release guard (rc 前六角色审计 P1, 2026-08-12; G106 extension,
-      # 2026-08-13): the tag must point at origin/main HEAD — a tag pushed
-      # from a stale or divergent commit must not publish — and, because Go
-      # has no go.mod package version, the tag minus the leading v must
-      # equal the repo-root README.md "Version:" line (the
+      # 2026-08-13): the tag must point at a commit on origin/main's history
+      # — a tag pushed from a stale or divergent commit must not publish —
+      # and, because Go has no go.mod package version, the tag minus the
+      # leading v must equal the repo-root README.md "Version:" line (the
       # check-version-consistency authority), otherwise a mismatched tag
       # could publish the wrong version.
-      - name: verify tag points at main HEAD
+      # G071 (adversarial audit, 2026-08-14): the guard previously compared
+      # HEAD against the job-time origin/main HEAD — a commit landing on
+      # main between the tag push and this step made a valid tag fail and
+      # forced a force re-push. The tag's commit is fixed at push time
+      # ($GITHUB_SHA), so the ancestor check is race-free: the tagged commit
+      # must be an ancestor of main (on its history), not a divergent
+      # branch.
+      - name: verify tag points at a commit on origin/main
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main --quiet
-          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse FETCH_HEAD)" ]]; then
-            echo "::error::tag $GITHUB_REF_NAME does not point at origin/main HEAD"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "::error::tag $GITHUB_REF_NAME does not point at a commit on origin/main"
             exit 1
           fi
-          echo "tag $GITHUB_REF_NAME points at origin/main HEAD"
+          echo "tag $GITHUB_REF_NAME points at a commit on origin/main"
       - name: verify tag matches manifest version (README Version line)
         shell: bash
         run: |
@@ -114,7 +132,8 @@ jobs:
   # ci-go.yml's go-differential job exactly (same checkouts, provision and
   # harness steps) so a released tag carries the same cross-language parity
   # evidence as a merged PR. The spec-repository checkout is pinned to
-  # ad667021 (the cfd6e296 inventory commit, G111).
+  # 096e5f8 (the cfd6e296 inventory commit with the fixed conformance doc
+  # copies, G111/G070/G080).
   differential:
     name: go differential on tag (byte parity + normalized + protocol exchange + shared conformance)
     needs: verify
@@ -127,17 +146,26 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          # G070 (adversarial audit, 2026-08-14): the Rust emitter workspace
+          # is ref-pinned for reproducibility (same pin as ci-go.yml and the
+          # py/ts/kt repos).
           repository: consema/consema-rs
+          ref: bd5734eab969fa7c8a1a1564d4ee50b85f3d10d6 # cfd6e296 519-case vendored conformance + emitter pin
           path: consema-rs
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ad667021
+          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
           path: consema-repo
-      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+      # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
+      # pinned to 1.97.1 — the version this harness was locally verified
+      # with (钉定本机实测版本), so the differential goldens are
+      # bit-reproducible (位级可复现) and independent of the runner's
+      # current stable; same pin as ci-go.yml.
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # 1.97.1
         with:
-          toolchain: stable
+          toolchain: 1.97.1
       - uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: consema-rs

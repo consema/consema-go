@@ -2,8 +2,13 @@
 # (go.mod declares `go 1.26` — RFC 0020 §9.2 frozen minimum; zero
 # third-party requires — stdlib-only policy,
 # https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
-# §1.3), so this keeps module-level and
-# toolchain updates tracked. Weekly cadence, at most 5 open PRs.
+# §1.3). There is no dependabot update surface today: go.mod has zero
+# `require` lines, and the `go` / `toolchain` directives are not
+# dependabot-gomod update targets — the config is kept so the day a
+# dependency enters go.mod the standing update track already exists
+# (G030, adversarial audit 2026-08-14: the old "keeps module-level and
+# toolchain updates tracked" claim was vacuous — this entry would never
+# produce an update PR). Weekly cadence, at most 5 open PRs.
 version: 2
 updates:
   - package-ecosystem: gomod

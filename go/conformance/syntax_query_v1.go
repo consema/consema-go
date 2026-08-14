@@ -21,10 +21,14 @@ func runSyntaxQueryV1(_ *Runner, data *suiteData) *SuiteReport {
 		case strings.HasPrefix(vector.ID, "syntax.cursor."):
 			RunSyntaxCursorFace(vector, report)
 		default:
-			report.Skipped = append(report.Skipped, SkipRecord{
-				ID:         vector.ID,
-				Capability: vector.Capability,
-				Reason:     "cursor-terminal capability is protocol-layer (core.query.ordered-results@1); lands after 0.15.0",
+			// G067 (adversarial audit, 2026-08-14): an unknown case id is a
+			// hard failure, never a skip — the old default branch skipped it
+			// with a stale "lands after 0.15.0" reason, which could mask a
+			// vector-inventory drift as success (the cursor cases execute
+			// since 0.15.0, see the header note).
+			report.Failed = append(report.Failed, CaseFailure{
+				ID:      vector.ID,
+				Message: "unknown syntax-query case id prefix (rejected, not skipped)",
 			})
 		}
 	}

@@ -120,10 +120,31 @@ func TestCommandSpecificFlagsScoped(t *testing.T) {
 		err.Code() != "cli.usage.unknown-argument@1" {
 		t.Fatalf("pre-command --request-file must be rejected: %v", err)
 	}
+	// G089 (adversarial audit, 2026-08-14): --output is plan/apply-only.
+	// plan/apply accept it; every other command rejects it at parse time
+	// (previously it parsed everywhere and six commands silently ignored it).
+	parsed, err = parseTest(t, "plan", "a.conf", "--profile", "ini.portable", "--output", "plan.json")
+	if err != nil || parsed.output == nil || *parsed.output != "plan.json" {
+		t.Fatalf("plan --output: %v", err)
+	}
+	if _, err := parseTest(t, "apply", "plan.json", "--output", "result.json"); err != nil {
+		t.Fatalf("apply --output: %v", err)
+	}
+	for _, args := range [][]string{
+		{"inspect", "x.conf", "--output", "out.json"},
+		{"capabilities", "--output", "out.json"},
+		{"query", "--profile", "x", "--output", "out.json"},
+		{"conformance", "--output", "out.json"},
+	} {
+		if _, err := parseTest(t, args...); err == nil ||
+			err.Code() != "cli.usage.unknown-argument@1" {
+			t.Fatalf("%v must be rejected as unknown-argument: %v", args, err)
+		}
+	}
 }
 
 func TestMissingAndEmptyFlagValuesAreUsage(t *testing.T) {
-	for _, args := range [][]string{{"--profile"}, {"conformance", "--output"}, {"--max-bytes"}} {
+	for _, args := range [][]string{{"--profile"}, {"plan", "a.conf", "--output"}, {"--max-bytes"}} {
 		if _, err := parseTest(t, args...); err == nil ||
 			err.Code() != "cli.usage.invalid-argument@1" {
 			t.Fatalf("%v: expected invalid-argument, got %v", args, err)
@@ -140,11 +161,13 @@ func TestMissingAndEmptyFlagValuesAreUsage(t *testing.T) {
 }
 
 func TestEqualsFormCarriesDashPrefixedValues(t *testing.T) {
-	parsed, err := parseTest(t, "conformance", "--output=-weird.json")
+	// G089 (adversarial audit, 2026-08-14): --output is plan/apply-only, so
+	// the equals-form test now runs against the plan command.
+	parsed, err := parseTest(t, "plan", "a.conf", "--profile", "ini.portable", "--output=-weird.json")
 	if err != nil || parsed.output == nil || *parsed.output != "-weird.json" {
 		t.Fatalf("--output=-weird.json: %v", err)
 	}
-	if _, err := parseTest(t, "conformance", "--output", "-weird.json"); err == nil {
+	if _, err := parseTest(t, "plan", "a.conf", "--profile", "ini.portable", "--output", "-weird.json"); err == nil {
 		t.Fatal("dash-prefixed value without = must be rejected")
 	}
 	if _, err := parseTest(t, "--json=true", "conformance"); err == nil {

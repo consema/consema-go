@@ -15,7 +15,6 @@
 // Language-neutral contract reference (consema spec repository):
 //   - https://github.com/consema/consema/blob/main/docs/cookbook.md — the CLI recipes for the same operations
 //   - https://github.com/consema/consema/blob/main/docs/multi-language-implementation-plan.md — the five-language SDK design
-//     https://github.com/consema/consema/blob/main/docs/cookbook.md
 package main
 
 import (

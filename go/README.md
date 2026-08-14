@@ -2,7 +2,12 @@
 The Go implementation of the language-neutral Consema contracts (RFC 0016;
 [`docs/go-implementation-plan.md`](https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md)).
 All milestones 0.14.0-0.19.0
-(G0.1-G5.6) are delivered: G0.1 delivered the scaffold and the `core`
+(G0.1-G5.6) are delivered — with the G5.4 three-platform caveat: Windows is
+the measured platform, Linux runs in CI, and the macOS leg is pending (no
+CI job, no measured record; see "Three-platform verification" below)
+(G028, adversarial audit 2026-08-14: the unqualified "all delivered"
+claim conflicted with the same file's macOS-pending statement). G0.1
+delivered the scaffold and the `core`
 package; G0.2 delivered the `graph` package; G0.3 delivered the `protocol`
 package; 0.15.0 G1.1 delivered the `document` package (source snapshots,
 structural locations, formation status, limits, materialization requests,
@@ -110,9 +115,12 @@ eight format families and the CLI (per-milestone delivery records below).
     `LosslessStructuralIndex` (the shared exhaustive token/trivia/
     error-region coverage; 0.16.0 G2.4). The shared edit records are the
     canonical implementations of the consema-document records
-    (change_set.rs, edit_plan.rs, untouched_proof.rs, lib.rs); the five
+    (change_set.rs, edit_plan.rs, untouched_proof.rs, lib.rs); the seven
     family packages expose them under their established local names as
-    aliases and thin wrappers;
+    aliases and thin wrappers — json/toml/yaml/ini/properties/xml/hcl,
+    while plist uses `document.ChangeSet` directly (G029, adversarial
+    audit 2026-08-14: the "five family packages" count predated the xml
+    and hcl families, and plist never re-exports the records);
 - `json/` —the JSON family surface (0.15.0 G1.2; RFC 0016 §5), mirroring
   the capability face of consema-rs/consema-json:
   - `profile.go` —`JsonProfile` (StrictV1/JsoncBoundedV1/Json5StandardV1)
@@ -511,11 +519,14 @@ one shows up when using the SDK:
    manifest-pinned legacy, not SDK policy. The roadmap §21.2 CI
    verification leg — the gates below running in CI on the declared
    minimum version — is the `go-matrix` job (ci-go.yml: a 2-version matrix
-   '1.26.x' declared minimum + '1.26.5' current stable per RFC 0020 §9.2,
+   '1.26.0' declared minimum + '1.26.5' current stable per RFC 0020 §9.2,
    fail-fast: false, each leg pinning its setup-go version and running
-   genuinely under GOTOOLCHAIN=auto; G5.5 finding F1, **closed** in
+   genuinely under GOTOOLCHAIN=auto — G031, adversarial audit 2026-08-14:
+   the minimum leg is the exact 1.26.0 patch, replacing '1.26.x' which
+   resolved to the latest 1.26 patch and never exercised the declared
+   minimum; G5.5 finding F1, **closed** in
    937b330); locally they are the commands in the next section.
-## Go CLI（0.19.0 G5.6；productVersion 1.0.0-rc.1）
+## Go CLI（0.19.0 G5.6；productVersion 随 release train，见仓根 README `Version:` 行——G073，对抗审计 2026-08-14：节标题不再内联版本串）
 
 `cmd/consema` is the Go implementation of the official `consema` CLI (RFC
 0015; mirror of the Rust `consema-rs/consema` bin). It is stdlib-only (self-
@@ -559,8 +570,10 @@ audit 2026-08-13).
 - **Redaction** — presentation-only (RFC 0015 §11): the frozen key-name
   pattern set plus `--redact-keys` globs; `--show-secrets` is the sole
   opt-out; on-disk manifests are never redacted.
-- **Version** — `productVersion` defaults to the workspace version
-  `1.0.0-rc.1` (go/cmd/consema/version.go; RFC 0015 §3.3: SemVer core
+- **Version** — `productVersion` defaults to the workspace version of the
+  release train, the value asserted by the check-version-consistency gate
+  against the repo-root README `Version:` line (go/cmd/consema/version.go;
+  RFC 0015 §3.3: SemVer core
   syntax with an optional prerelease suffix, no git hashes or build
   metadata; the Go module version follows the product release train,
   RFC 0016 §9), with a build-time override via
@@ -576,13 +589,18 @@ audit 2026-08-13).
 cd go
 go build ./...
 go vet ./...
-go test ./...
-go test -race ./...
+go test -count=1 ./...
+go test -race -count=1 ./...
 go mod tidy
 gofmt -l .
 ```
-All quality gates are expected to be clean: `go build`, `go vet`, `go
-test`, `go test -race`, `gofmt -l`, and `go mod tidy` (plan §6).
+The enforced quality gates (all run by the ci-go.yml go-matrix job) are
+`go build`, `go vet`, `go test -count=1`, `go test -race`, and
+`gofmt -l` — all expected to be clean. `go mod tidy` is a **local hygiene
+check only**: no workflow or script executes it, so a go.mod/go.sum drift
+stays green in CI (G028, adversarial audit 2026-08-14: the old "all quality
+gates" wording implied CI enforcement of `go mod tidy`, which nothing
+executes).
 
 **Provision prerequisite (clean clone, mandatory; G065, adversarial audit
 2026-08-13 — this section previously omitted it):** conformance data is
@@ -703,7 +721,7 @@ go test -fuzz='^FuzzParseXML$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParseBinary$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParse$' -fuzztime=30s ./hcl/
 ```
-**Release-candidate fuzz clean-run (0.19.0 G5.4; roadmap §22.4:1903).**
+**Release-candidate fuzz clean-run (0.19.0 G5.4; roadmap §22.4「release-candidate fuzz clean-run」——G050，对抗审计 2026-08-14：改引节锚，行号删除).**
 Measured 2026-08-10 (go 1.26.5, Windows 11): every target ran 30s of
 fuzzing with no panic, no hang, and no limit bypass:
 | Target | execs in 30s | result |
@@ -872,7 +890,10 @@ Runner state at 0.18.0: **506 passed / 2 documented skips / 0 failed**
 (18 suites / 508 cases, aggregate digest `35bebc8d…`, defined against the
 canonical LF checkout — the 2026-08-07 CRLF-working-tree value
 `e3d6578858…` was replaced on 2026-08-10). This is the 0.18.0 historical
-state: the G5.3 exchange findings (ada5020) later flipped the 2 documented
+state: the G5.3 exchange findings (consema 仓 commit
+[ada5020](https://github.com/consema/consema/commit/ada5020daa7ce04512fd56cf81e8f57fd2147c56)，
+G078 对抗审计 2026-08-14：改引母仓完整 URL——该 SHA 在本仓 git 对象库不存在)
+later flipped the 2 documented
 skips to executed, and the 2026-08-12 P2-B vector reinforcement grew the
 inventory to **519/519 cases with zero skips** (18 suites, aggregate digest
 `cfd6e296…` — the same count the Rust/TS/Python/Kotlin runners pin);
@@ -889,9 +910,11 @@ clean, `go test -count=1 ./...` all green, `go test -race -count=1 ./...`
 all green, `go mod tidy` no-op, all 16 fuzz targets 30s clean-run PASS,
 and all 8×2 benchmarks measured above.
 The Go gates run in CI as gatekeeper-landed jobs: `go-matrix` (ci-go.yml,
-ubuntu-latest, a 2-version matrix '1.26.x' declared minimum + '1.26.5'
+ubuntu-latest, a 2-version matrix '1.26.0' declared minimum + '1.26.5'
 current stable per RFC 0020 §9.2, with each leg
-pinned — the G5.5 finding F1 was closed in 937b330) and `go-differential`
+pinned — G031, adversarial audit 2026-08-14: the minimum leg is the exact
+1.26.0 patch ('1.26.x' resolved to the latest patch and never exercised the
+declared minimum); the G5.5 finding F1 was closed in 937b330) and `go-differential`
 (ci-go.yml, windows-latest, added 2026-08-12 — runs the four harnesses
 go-verify-byte-parity / normalized-differential / protocol-exchange /
 go-verify-shared-conformance; G062, adversarial audit 2026-08-13 — the

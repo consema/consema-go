@@ -30,7 +30,7 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
    2026-08-13：旧文把顺序写成"先校验后 provision"，实际 workflow 先做
    conformance 数据 provision、再跑校验）：
    - `verify` job（ubuntu-latest）：provision conformance 数据（多仓
-     checkout，规范仓钉 ad667021）→ 校验 tag 指向 origin/main HEAD →
+     checkout，规范仓钉 096e5f8）→ 校验 tag 指向 origin/main HEAD →
      校验 tag↔版本一致（tag 去掉 `v` 前缀必须等于仓根 `README.md` 的
      `Version:` 行，不一致即 exit 1 中止）→ 在 tag 上重跑完整门禁
      （gofmt + vet + build + test + race，含 conformance 数据，与 ci-go.yml
@@ -49,8 +49,12 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
   ```bash
   go get consema.dev/consema@vX.Y.Z
   ```
-  （模块根为 `go/` 子目录，但 `go get` 按模块路径解析，无需路径后缀；
-  版本校验以 `vX.Y.Z` tag 为准。）
+  （决策点：`go.mod` 位于 `go/` 子目录，Go 按模块路径解析仓库子目录，
+  不会自动补子目录后缀——域名就绪时 vanity import meta 必须按模块路径
+  提供服务，故模块路径须为 `consema.dev/consema/go`，或将 `go.mod`
+  移至仓根后使用 `consema.dev/consema`；G026，对抗审计 2026-08-14：
+  旧文「无需路径后缀」与 Go 模块解析规则矛盾。版本校验以 `vX.Y.Z`
+  tag 为准。）
 - 用户侧核对：pkg.go.dev/consema.dev/consema 的版本列表出现新版本
   （首次收录可能需要几分钟到一小时）。
 - 注意事项：tag 一经 Go proxy 收录即**不可变**——不要删除/重推已收录
@@ -62,4 +66,7 @@ Go CLI（`go/cmd/consema`，路线图 §16.6）的跨平台二进制发布后续
 goreleaser 接线（tag 触发，产出 GitHub Release assets：各平台可执行
 文件 + checksum + SBOM）；届时在 release.yml 增加 goreleaser job
 （`goreleaser/goreleaser-action@v6`，`permissions: contents: write`），
+**且必须以 `-tags release` 构建**——`CONSEMA_APPLY_INTERRUPT_AFTER` /
+`CONSEMA_APPLY_WRITE_FAILURE` 注入缝在 release 构建中被编译掉，发布
+二进制绝不读取这两个变量（G114，对抗审计 2026-08-14，对齐 rs G045）。
 本 workflow 当前保持最小化（仅测试确认 + GitHub release）。

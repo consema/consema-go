@@ -386,8 +386,11 @@ func runMaterializeTomlNative(vector *caseData, report *SuiteReport) {
 
 // runMaterializeTomlMapping covers the explicit-mapping and
 // implicit-mapping-rejected cases; the input source is strict JSON
-// projected as an EntryMapping (the JSON family projection; the mini
-// decoder keeps the runner self-contained until the JSON package lands).
+// projected as an EntryMapping (the JSON family projection; the
+// runner-local strict-JSON decoder keeps the runner self-contained —
+// G084, adversarial audit 2026-08-14: the "until the JSON package lands"
+// rationale was stale; the go/json family package shipped in 0.15.0 and
+// the runner-local decoder remains a deliberate self-contained choice).
 func runMaterializeTomlMapping(vector *caseData, report *SuiteReport) {
 	source, ok := stringField(vector.Input, "source")
 	if !ok {
@@ -1128,8 +1131,11 @@ func runTomlConflictMatrix(vector *caseData, report *SuiteReport) {
 // strictJSONValue decodes one strict-JSON text into the core value model
 // with exact number preservation; when asMapping is set, every object
 // becomes an EntryMapping (the ProjectAsEntryMapping face of the
-// materialize-toml cases; the decoder keeps the runner self-contained
-// until the JSON family package lands).
+// materialize-toml cases; the runner-local decoder keeps the runner
+// self-contained — G084, adversarial audit 2026-08-14: the "until the JSON
+// family package lands" rationale was stale; the go/json family package
+// shipped in 0.15.0 and the runner-local decoder remains a deliberate
+// self-contained choice).
 func strictJSONValue(bytes []byte, asMapping bool) (core.Value, string) {
 	decoder := json.NewDecoder(strings.NewReader(string(bytes)))
 	decoder.UseNumber()

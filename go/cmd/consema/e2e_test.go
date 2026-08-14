@@ -11,12 +11,14 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"consema.dev/consema/protocol"
 )
@@ -95,6 +97,15 @@ func TestE2EHelpAndVersion(t *testing.T) {
 }
 
 func TestE2EExitCodeMatrix(t *testing.T) {
+	// G091 (adversarial audit, 2026-08-14): the missing-file paths used to
+	// be fixed literals — a residual file with the same name would flip the
+	// data-class assertions. Each run uses a nonce-ized path inside a fresh
+	// per-test temp directory and removes it first.
+	missing := filepath.Join(t.TempDir(),
+		fmt.Sprintf("definitely-missing-%d.conf", time.Now().UnixNano()))
+	if err := os.Remove(missing); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("cannot clear the missing-file path: %v", err)
+	}
 	cases := []struct {
 		name     string
 		args     []string
@@ -106,8 +117,8 @@ func TestE2EExitCodeMatrix(t *testing.T) {
 		{"usage-unknown-argument", []string{"--bogus"}, 1, false},
 		{"usage-missing-profile", []string{"query", "--request-file", "r.json"}, 1, false},
 		{"usage-pretty-without-json", []string{"conformance", "--pretty"}, 1, false},
-		{"data-missing-inspect", []string{"inspect", "definitely-missing.conf", "--json"}, 2, true},
-		{"limit-max-bytes", []string{"inspect", "definitely-missing.conf"}, 2, false},
+		{"data-missing-inspect", []string{"inspect", missing, "--json"}, 2, true},
+		{"limit-max-bytes", []string{"inspect", missing}, 2, false},
 		{"precondition-explain-unknown", []string{"explain", "nope@1"}, 2, false},
 		{"internal-classification", []string{"explain", "example.unknown@1", "--json"}, 2, true},
 	}

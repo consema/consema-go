@@ -163,8 +163,9 @@ Commands (RFC 0015 §6.1):
   materialize    explicit materialization request
   convert        two-phase cross-format conversion
   edit           single-file structural edit (dry-run only)
-  plan           batch plan manifest (read-only)
-  apply          batch apply from a prior plan manifest; env injection seam
+  plan           batch plan manifest (read-only); --output persists it
+  apply          batch apply from a prior plan manifest; --output names the
+                 result manifest; env injection seam
                  CONSEMA_APPLY_INTERRUPT_AFTER / CONSEMA_APPLY_WRITE_FAILURE
                  (documented in RFC 0015 §5.4; testing/CI only)
   conformance    embedded protocol self-check subset
@@ -175,7 +176,6 @@ Global options:
   --pretty            indent the envelope JSON (requires --json)
   --profile <id>      explicit profile selection (required for parse-class
                       commands); --format is an alias
-  --output <path>     result or manifest write target
   --request-file <path>  strict request input (query/project/materialize/
                          convert/edit/plan)
   --max-bytes <n>     CLI-layer per-file read budget in bytes
@@ -309,7 +309,7 @@ func parseFlag(name string, inlineValue *string, parsed *ParsedArgs,
 			return conflictingProfileError()
 		}
 	case "output", "request-file", "redact-keys":
-		if flag == "request-file" {
+		if flag == "request-file" || flag == "output" {
 			if err := commandSpecificFlag(flag, command, hasCommand); err != nil {
 				return err
 			}
@@ -375,6 +375,18 @@ func commandSpecificFlag(flag string, command protocol.CliCommand,
 		case protocol.CommandQuery, protocol.CommandProject,
 			protocol.CommandMaterialize, protocol.CommandConvert,
 			protocol.CommandEdit, protocol.CommandPlan:
+			return nil
+		}
+		return flagNotAllowedError(flag, command, hasCommand)
+	case "output":
+		// G089 (adversarial audit, 2026-08-14): --output is a plan/apply-only
+		// flag. It used to be a global option while six commands never
+		// consumed it and silently exited 0 without writing anything;
+		// convert/materialize/edit also refuse it at runtime. The parse-time
+		// rejection covers the remaining commands (inspect/capabilities/
+		// query/project/conformance/explain).
+		switch command {
+		case protocol.CommandPlan, protocol.CommandApply:
 			return nil
 		}
 		return flagNotAllowedError(flag, command, hasCommand)

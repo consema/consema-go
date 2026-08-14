@@ -241,7 +241,9 @@ func (e *DuplicateKeyError) Error() string {
 }
 
 // Code returns the frozen registered code "core.pvce.duplicate-object-key@1"
-// (consema-rs/consema-pvce/src/lib.rs:1082).
+// (https://github.com/consema/consema-rs/blob/main/consema-pvce/src/lib.rs,
+// `DecodeError::DuplicateObjectKey` — G057, adversarial audit 2026-08-14:
+// line number dropped, the symbol is the anchor).
 func (e *DuplicateKeyError) Code() string {
 	return codeDuplicateObjectKey
 }

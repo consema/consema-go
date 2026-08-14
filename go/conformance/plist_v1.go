@@ -15,10 +15,12 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"consema.dev/consema/core"
@@ -356,28 +358,28 @@ func plistValueF64(value core.Value) (float64, bool) {
 	return 0, false
 }
 
-// decimalToF64 converts one exact decimal to its double value.
+// decimalToF64 converts one exact decimal to its double value with a
+// single correctly-rounded conversion (strconv.ParseFloat over the
+// canonical coefficient×10^exponent spelling), clamping the exponent to
+// ±308 like the Rust reference implementation, which always returns a
+// value (an exponent beyond ±308 after the clamp can still overflow to
+// ±Inf; ErrRange carries the correctly rounded ±Inf). G088, adversarial
+// audit 2026-08-14: the previous float64(coefficient)*math.Pow10 path
+// double-rounded and could disagree with the reference rounding.
 func decimalToF64(decimal *core.Decimal) (float64, bool) {
 	coefficient := decimal.Coefficient()
 	exponent := decimal.Exponent()
 	if !coefficient.IsInt64() || !exponent.IsInt64() {
 		return 0, false
 	}
-	value := float64(coefficient.Int64())
-	exponentValue := exponent.Int64()
-	if exponentValue > 0 {
-		power := exponentValue
-		if power > 308 {
-			power = 308
-		}
-		value *= math.Pow10(int(power))
-	} else if exponentValue < 0 {
-		power := -exponentValue
-		if power > 308 {
-			power = 308
-		}
-		value /= math.Pow10(int(power))
+	exp := exponent.Int64()
+	if exp > 308 {
+		exp = 308
+	} else if exp < -308 {
+		exp = -308
 	}
+	text := fmt.Sprintf("%de%d", coefficient.Int64(), exp)
+	value, _ := strconv.ParseFloat(text, 64)
 	return value, true
 }
 

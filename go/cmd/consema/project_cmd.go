@@ -232,8 +232,9 @@ func executeProject(input *RequestInput) (*protocol.ProjectionResultMessage, *Fl
 	if family != "json" && family != "toml" {
 		return nil, newFlowError("cli.data.invalid-request@1",
 			fmt.Sprintf("the project command is not wired for the '%s' family "+
-				"(its report/provenance externalization is not yet implemented); "+
-				"refusing instead of emitting an incomplete record", family))
+				"(per the G066 disclosure in go/README.md, project is wired for "+
+				"the json/toml families only; refusing instead of emitting an "+
+				"incomplete record", family))
 	}
 	message, err := (&protocol.ProjectionRequestMessage{}).FromValue(input.Payload)
 	if err != nil {

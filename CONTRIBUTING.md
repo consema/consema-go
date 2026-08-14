@@ -12,7 +12,8 @@ Consema 六仓拆分的 Go 仓：本仓承载 Go 实现（`go/` 模块 `consema.
 ## 开发环境
 
 - Go 1.26（`go.mod` 声明的最小版本，RFC 0020 §9.2 冻结；CI go-matrix 以
-  1.26.x / 1.26.5 两版本验证，本地开发可用任意 ≥ 1.26 工具链）。
+  1.26.0（声明最小版本，G031 对抗审计 2026-08-14）/ 1.26.5 两版本验证，
+  本地开发可用任意 ≥ 1.26 工具链）。
 - 无运行时第三方依赖。
 
 ## 构建与测试
@@ -48,10 +49,11 @@ conformance 数据），或直接运行 CI 同款脚本
 
 ## CI 门禁
 
-`.github/workflows/ci-go.yml`：6 个 job（G123，对抗审计 2026-08-13）——
-go-matrix（gofmt / vet / build / test / race）、coverage、go-differential
-（Go-Rust 差分门禁，windows-latest 多仓 checkout）、
-check-version-consistency、examples、check（聚合门禁）。push 到 main 或
+`.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
+旧文 6 个 job 漏 govulncheck）——go-matrix（gofmt / vet / build / test /
+race）、coverage、go-differential（Go-Rust 差分门禁，windows-latest 多仓
+checkout）、govulncheck、check-version-consistency、examples、check
+（聚合门禁）。push 到 main 或
 PR 均触发；PR 另受 pr-labels.yml 的 kind 标签门禁约束（标签见规范仓
 .github/LABELS.md）。
 

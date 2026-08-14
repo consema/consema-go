@@ -13,9 +13,11 @@ package main
 // the envelope snapshot and stdout carries exactly the one envelope line
 // (RFC 0015 §3.3).
 //
-// This build never writes files: `--output` is refused as a usage error
-// until the CLI wires file output for this command (hard gate 4). The
-// facade's record-consumption gate is re-checked here: a record-format
+// This build never writes files: `--output` is refused as a usage error —
+// the materialized bytes always go to stdout (the command's result data),
+// a permanent state, not a milestone gap (G084, adversarial audit
+// 2026-08-14: the "until the CLI wires file output" phrasing was stale).
+// The facade's record-consumption gate is re-checked here: a record-format
 // source projects a versioned internal record that only its owning family's
 // materializer consumes, and presenting it to a foreign family would be an
 // internal record dump.

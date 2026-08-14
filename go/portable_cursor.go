@@ -14,8 +14,10 @@ package consema
 // (ExecutableQuery.Definition().Expression() etc.) and mirrors the
 // operator subset of protocol query execution (core.take,
 // core.distinct-by-identity) plus core.try-sequence-elements. The
-// go/protocol cursor API lands with the 0.19.0 Go CLI work; until then the
-// root package hosts the engine so the shared vectors execute.
+// root package hosts the cursor engine so the shared vectors execute —
+// the go/protocol package has no cursor API (G084, adversarial audit
+// 2026-08-14: the stale "lands with the 0.19.0 Go CLI work" plan note was
+// removed; the cursor remains a root-package primitive, see go/cursor.go).
 
 import (
 	"context"

@@ -2,7 +2,8 @@ package conformance
 
 // Security matrix (milestone 0.19.0 G5.4; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §2.6 deliverable "full corpus、fuzz、benchmark 和 security matrix";
-// roadmap §22.4:1911 "XML/YAML/HCL/binary plist 专项 threat tests 通过";
+// roadmap §22.4「XML/YAML/HCL/binary plist 专项 threat tests 通过」——G050，
+// 对抗审计 2026-08-14：改引节锚，行号删除；
 // G129 encoding fix + G114 line re-verification 2026-08-13).
 //
 // Extends the 0.16.0 limits matrix (limits_matrix_test.go, five families)

@@ -1,7 +1,9 @@
 // Package conformance implements the Go conformance runner over the shared
 // language-neutral vectors (RFC 0016 §7; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 // §4). One runner file per suite family mirrors
-// consema-rs/consema-conformance/src/lib.rs:3-25; every runner validates the
+// https://github.com/consema/consema-rs/blob/main/consema-conformance/src/lib.rs
+// (G077, adversarial audit 2026-08-14: bare path + line numbers replaced by
+// the full URL); every runner validates the
 // suite identifier, rejects duplicate case IDs, asserts the frozen case
 // count, dispatches cases by capability, and rejects unknown cases. The
 // vector files themselves are the authority for content — the runner
@@ -12,10 +14,13 @@
 // count pins; the go:embed boundary would create a second authority
 // source).
 //
-// Cases whose capability is not implemented by the current Go milestone
-// are documented skips (never silent; RFC 0016 §7): the skip record names
-// the capability and the reason, and the count still participates in the
-// suite-level case-count assertion.
+// The SkipRecord type below documents the skip vocabulary of the shared
+// report contract (RFC 0016 §7); no Go runner constructs a SkipRecord
+// today — every published case executes and unknown cases are rejected as
+// hard failures (G067, adversarial audit 2026-08-14: the old "cases whose
+// capability is not implemented by the current Go milestone are documented
+// skips" wording was stale — all milestones are delivered, and the last
+// skip construction was removed with the syntax-query unknown-case fix).
 package conformance
 
 import (
@@ -124,9 +129,15 @@ type RunReport struct {
 }
 
 // Conformant reports whether every applicable case passed, every count
-// assertion held, and the aggregate digest matched the manifest.
+// assertion held, and the aggregate digest matched the manifest, and that
+// the executed inventory equals the frozen one (18 suites / 519 cases).
+// The suite/case floors close the "runner definition vanished" gap: the
+// digest only counts vector files on disk, so a suite whose runner
+// definition disappeared from allSuites would otherwise still pass with a
+// matching digest and zero executed cases for that suite (G067, adversarial
+// audit 2026-08-14).
 func (r *RunReport) Conformant() bool {
-	if !r.Digest.OK {
+	if !r.Digest.OK || len(r.Suites) != len(allSuites) || r.Total != frozenCaseTotal {
 		return false
 	}
 	for _, suite := range r.Suites {
@@ -136,6 +147,16 @@ func (r *RunReport) Conformant() bool {
 	}
 	return true
 }
+
+// frozenCaseTotal is the 519-case total of the frozen 18-suite inventory
+// (the sum of the per-suite ExpectedCases pins in allSuites).
+var frozenCaseTotal = func() int {
+	total := 0
+	for _, definition := range allSuites {
+		total += definition.ExpectedCases
+	}
+	return total
+}()
 
 // Run executes every shared vector suite and verifies the aggregate digest.
 func (r *Runner) Run() (*RunReport, error) {
