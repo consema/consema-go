@@ -566,12 +566,14 @@ func (e *ProfileError) Error() string {
 // (2026-08-15): "unknown profile" is not an encoding conflict, so
 // `core.source.encoding-conflict@1` was replaced with
 // `core.materialization.unsupported-profile@1` ("Requested materialization
-// profile is unavailable") — the only frozen v1-v7 registry code whose
-// noun is "profile" and whose semantics is "requested profile is unknown
-// or unimplemented" (registry grep: no core.source.* profile code exists;
-// unsupported-code-page names a code page, not a profile; choice recorded
-// per the wave-4 ruling; the old code mirrored the Rust facade's
-// misclassification, consema-rs consema/src/lib.rs parse_document).
+// profile is unavailable") — five-language unified selection (grep of the
+// frozen v1-v7 187-code registry, consema-rs consema-protocol
+// error_registry.rs: the only code whose literal name is
+// `unsupported-profile`, the closest frozen semantic for an unknown or
+// unimplemented profile id; no core.source.* profile code exists;
+// unsupported-code-page names a code page, not a profile; no new code
+// before 1.0.0, v8 is post-1.0.0). The old code mirrored the Rust
+// facade's misclassification, consema-rs consema/src/lib.rs parse_document.
 func (e *ProfileError) Code() string { return "core.materialization.unsupported-profile@1" }
 
 // familyProfile pairs one family id with one profile id.
