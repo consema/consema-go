@@ -73,6 +73,11 @@ param(
 # ---------------------------------------------------------------------------
 
 $ErrorActionPreference = 'Stop'
+# Per-invocation unique directory suffix (G44, 2026-08-14): a fixed shared
+# capture/evidence/output/workDir path would let two concurrent runs
+# truncate or interleave each other's files and flip the SKIPPED/PASSED
+# verdicts; every default TEMP/target path below carries this nonce.
+$nonce = [Guid]::NewGuid().ToString('N')
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
@@ -150,7 +155,7 @@ if (-not (Test-Path $example)) {
     exit 1
 }
 if ($OutDir -eq '') {
-    $OutDir = Join-Path $targetDir 'go-differential-normalized'
+    $OutDir = Join-Path $targetDir "go-differential-normalized-$nonce"
 }
 # The env vars are consumed by `go test` from the package directory, so
 # they must be absolute.
@@ -167,7 +172,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # --- Go side: forward comparison + reverse emission ---------------------------
-$goEvidenceDir = Join-Path $targetDir 'go-differential-normalized-go'
+$goEvidenceDir = Join-Path $targetDir "go-differential-normalized-go-$nonce"
 $goEvidenceDir = [System.IO.Path]::GetFullPath($goEvidenceDir)
 if (Test-Path $goEvidenceDir) { Remove-Item $goEvidenceDir -Recurse -Force }
 Write-Host "[3/4] running the Go differential test (normalized_test.go) + emitting the Go evidence files -> $goEvidenceDir"
@@ -177,7 +182,7 @@ $env:CONSEMA_DIFFERENTIAL_CASES_DIR = Join-Path $workspaceRoot 'conformance\diff
 # Capture files live outside $OutDir and $goEvidenceDir: those directories
 # must contain only the `<case-id>.txt` evidence files (the Go test and the
 # consume mode each reject any other file).
-$logDir = Join-Path $env:TEMP 'consema-go-normalized'
+$logDir = Join-Path $env:TEMP "consema-go-normalized-$nonce"
 New-Item -ItemType Directory -Force $logDir | Out-Null
 $stdoutFile = Join-Path $logDir 'go-test.stdout.txt'
 $stderrFile = Join-Path $logDir 'go-test.stderr.txt'

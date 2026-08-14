@@ -31,6 +31,11 @@ param(
 # ---------------------------------------------------------------------------
 
 $ErrorActionPreference = 'Stop'
+# Per-invocation unique directory suffix (G44, 2026-08-14): a fixed shared
+# capture/evidence/output/workDir path would let two concurrent runs
+# truncate or interleave each other's files and flip the SKIPPED/PASSED
+# verdicts; every default TEMP/target path below carries this nonce.
+$nonce = [Guid]::NewGuid().ToString('N')
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
@@ -112,7 +117,7 @@ if (-not (Test-Path $example)) {
     exit 1
 }
 if ($OutDir -eq '') {
-    $OutDir = Join-Path $targetDir 'go-differential-parity'
+    $OutDir = Join-Path $targetDir "go-differential-parity-$nonce"
 }
 # The env var is consumed by `go test` from the package directory, so it
 # must be absolute.
@@ -133,7 +138,7 @@ $env:CONSEMA_DIFFERENTIAL_RUST_DIR = $OutDir
 $env:CONSEMA_DIFFERENTIAL_CASES_DIR = Join-Path $workspaceRoot 'conformance\differential'
 # Capture files live outside $OutDir: that directory must contain only the
 # Rust encoder's `<case-id>.hex` files (the Go test rejects any other file).
-$logDir = Join-Path $env:TEMP 'consema-go-parity'
+$logDir = Join-Path $env:TEMP "consema-go-parity-$nonce"
 New-Item -ItemType Directory -Force $logDir | Out-Null
 $stdoutFile = Join-Path $logDir 'go-test.stdout.txt'
 $stderrFile = Join-Path $logDir 'go-test.stderr.txt'

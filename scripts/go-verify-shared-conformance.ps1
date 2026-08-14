@@ -64,6 +64,11 @@ param(
 # ---------------------------------------------------------------------------
 
 $ErrorActionPreference = 'Stop'
+# Per-invocation unique directory suffix (G44, 2026-08-14): a fixed shared
+# capture/evidence/output/workDir path would let two concurrent runs
+# truncate or interleave each other's files and flip the SKIPPED/PASSED
+# verdicts; every default TEMP/target path below carries this nonce.
+$nonce = [Guid]::NewGuid().ToString('N')
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $goDir = Join-Path $workspaceRoot 'go'
 # The Rust emitter workspace lives in the consema-rs repository checkout
@@ -208,7 +213,7 @@ if (-not (Test-Path $example)) {
     exit 1
 }
 if ($RustOutDir -eq '') {
-    $RustOutDir = Join-Path $targetDir 'go-shared-conformance'
+    $RustOutDir = Join-Path $targetDir "go-shared-conformance-$nonce"
 }
 $RustOutDir = [System.IO.Path]::GetFullPath($RustOutDir)
 if (Test-Path $RustOutDir) { Remove-Item $RustOutDir -Recurse -Force }
@@ -232,7 +237,7 @@ if (-not (Test-Path $rustReport)) {
 }
 
 # --- [3/6] Go side: run the same 18 suites with the Go runner CLI ------------
-$logDir = Join-Path $env:TEMP 'consema-shared-conformance'
+$logDir = Join-Path $env:TEMP "consema-shared-conformance-$nonce"
 New-Item -ItemType Directory -Force $logDir | Out-Null
 if ($GoReportFile -eq '') {
     $GoReportFile = Join-Path $logDir 'go-shared-conformance.json'
