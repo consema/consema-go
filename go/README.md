@@ -966,4 +966,4 @@ fuzzing with no panic, no hang, and no limit bypass:
 ```
 go test -bench=. -benchtime=1s ./json/ ./toml/ ./yaml/ ./ini/ ./properties/ ./xml/ ./plist/ ./hcl/
 ```
-The completion path is documented, not a CI job (plan §2.6 G5.4: "没有则只文档化完成路径，不新建 CI job"). 拆分后本仓 .github/workflows 已是 Go 门禁域（ci-go.yml / release.yml / audit.yml / labeler.yml / pr-labels.yml / stale.yml 六个 workflow）。
+The completion path is documented, not a CI job (go-implementation-plan §2.6「0.19.0 — 双语言一致性与产品 Beta」G5.4「三平台验证」；five-language-ci-design §5.3「每语言 rollout 顺序」L5 行「三平台矩阵按 Go 先例走文档化完成路径或显式 3-OS 矩阵 job——二选一」决策，已处置 2026-08-12：文档化完成路径，§10 记录)。拆分后本仓 .github/workflows 已是 Go 门禁域（ci-go.yml / release.yml / audit.yml / labeler.yml / pr-labels.yml / stale.yml 六个 workflow）。
