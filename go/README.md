@@ -472,8 +472,9 @@ Boolean →`core.Boolean`, Null →`core.Null`, EntryMapping →`*core.EntryMapp
 allowed).
 ## SDK usage essentials (roadmap §21.2 / RFC 0016 §6)
 The Go public API is held to the six stability policies of roadmap §21.2
-(line 1831-1838; G114 line re-verification 2026-08-13); this is how each
-one shows up when using the SDK:
+「Go API」（未导出字段/只读方法、context 只做取消、error code 与
+message 分离、有序结果不用 map、iterator 显式 Close、最低版本 CI
+验证）; this is how each one shows up when using the SDK:
 1. **Completed objects are logically immutable.** Parse results
    (`Document`, every family document, `document.SourceSnapshot`),
    value objects (`core.Object`/`Array`/`EntryMapping`), `graph.Graph`,
@@ -673,8 +674,8 @@ reason the Rust fuzz drivers live per crate).
 | `FuzzJSONEncodeDecode` | `protocol/` | canonical transport `decode(encode(x)) == x`, `Equal` holds, re-encode byte-stable |
 ### Full-family fuzz targets (0.19.0 G5.4)
 Milestone 0.19.0 G5.4 (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6; roadmap §22.4
-line 1908 "release-candidate fuzz clean-run"; G114 line re-verification
-2026-08-13) extends the fuzz surface to
+「安全与质量」「release-candidate fuzz clean-run 达标」) extends the fuzz
+surface to
 every family: each `go/<family>/<family>_fuzz_test.go` feeds arbitrary
 bytes to the family's Parse entry under the production default limits and
 asserts the parse-closure invariants —a successful parse renders the
@@ -786,8 +787,8 @@ exercise through their parse-closure assertions:
 `go/conformance/security_matrix_test.go` extends the 0.16.0 limits matrix
 (`limits_matrix_test.go`) to the recovery-capable families and mirrors the
 Rust hardening surface (consema-rs/consema-conformance/tests/
-{xml,plist,hcl,yaml}_hardening.rs; roadmap §22.4:1911 "XML/YAML/HCL/binary
-plist 专项 threat tests 通过"; G114 line re-verification 2026-08-13):
+{xml,plist,hcl,yaml}_hardening.rs; roadmap §22.4「安全与质量」
+「XML/YAML/HCL/binary plist 专项 threat tests 通过」):
 - **Limits matrices** —13 XML rows, 10 plist XML rows, 9 plist binary
   rows, 13 HCL rows (XML/plist 32 boundary rows + HCL 13 rows, 45 total;
   G061, adversarial audit 2026-08-13 — the old "(32 boundary rows total)"
@@ -877,8 +878,9 @@ Measured 2026-08-07: **byte parity 68/68 equal (51 pvce, 17 pgce), zero
 byte differences**, bidirectional decode/re-encode stable on every case.
 ## Capability parity (0.18.0 G4.4 hard gate)
 The Go mandatory capability set equals the Rust Feature-Complete Manifest
-capability set (roadmap §16.5:1545, the capability-parity hard gate; G114
-line re-verification 2026-08-13; `docs/fc-manifest-0.13.0.json`
+capability set (roadmap §16.5「`0.18.0`：Go HCL 与全操作 parity」
+capability-parity 硬门禁「Go mandatory capability set 与 Rust
+Feature-Complete Manifest 对齐」; `docs/fc-manifest-0.13.0.json`
 capability_set): **8 families / 16 profiles / 21 query domains / 16
 operation registries / 187 error codes**, with no "Rust-only" mandatory
 behavior. Pinned by `go/capability_parity_test.go` —every expected fact
@@ -900,7 +902,8 @@ inventory to **519/519 cases with zero skips** (18 suites, aggregate digest
 cross-language normalized-result differential **108/108**; byte parity
 **68/68**.
 ## Three-platform verification (0.19.0 G5.4; status: Windows measured + Linux CI, macOS pending)
-Roadmap §22.4:1907 requires the Go side to pass on Windows/Linux/macOS.
+Roadmap §22.4「安全与质量」「Windows/Linux/macOS 全部正式 target 通过」
+requires the Go side to pass on Windows/Linux/macOS.
 **Status (G069, adversarial audit 2026-08-13): Windows 11 is the measured
 platform; Linux runs in CI (go-matrix, ubuntu-latest); macOS has no CI
 job and no measured record — the macOS leg is pending.** Windows

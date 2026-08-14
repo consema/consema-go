@@ -15,8 +15,8 @@
 // registries remain format-local because the operation descriptors are
 // family-specific facts.
 //
-// Cancellation follows the SDK convention (roadmap §21.2 line 1833:
-// "`context.Context` 只用于取消/deadline，不隐藏业务参数" — G114 line
-// re-verification 2026-08-13): context.Context carries cancellation and
-// deadlines only, never business parameters.
+// Cancellation follows the SDK convention (roadmap §21.2「Go API」
+// 「`context.Context` 只用于取消/deadline，不隐藏业务参数」):
+// context.Context carries cancellation and deadlines only, never business
+// parameters.
 package json

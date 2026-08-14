@@ -12,8 +12,8 @@ package consema
 //
 // Derivation discipline (Rust facade precedent): the capability inventory
 // is the declared Feature-Complete Manifest capability set (roadmap §15.7
-// line 1451 — "Go 以该 manifest 为起点"; G114 line re-verification
-// 2026-08-13), and everything the Go packages can
+// 「Feature-Complete Manifest」「Go 以该 manifest 为起点，不以某个本地
+// Rust 工作树的偶然状态为起点」), and everything the Go packages can
 // derive is derived from them. The family and profile ids come from the
 // implementing family packages (JsonProfile.ID(), TomlProfile.ID(),
 // FormatFamily(), ...); the operation registries come from the family

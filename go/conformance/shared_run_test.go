@@ -9,8 +9,9 @@ import (
 
 // ---------------------------------------------------------------------------
 // Shared dual-runner conformance integration hook (milestone 0.19.0 G5.1;
-// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6, §4.1, §4.5; roadmap §16.6 line
-// 1547).
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6, §4.1, §4.5; roadmap §16.6
+// 「`0.19.0`：双语言一致性与产品 Beta」「shared conformance runner
+// orchestration」).
 //
 // The orchestrator scripts/go-verify-shared-conformance.ps1 provisions the
 // Rust side's shared report (consema-rs/consema-conformance/examples/

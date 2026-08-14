@@ -19,8 +19,8 @@
 //     query domains / 16 operation registries), mirroring the Rust
 //     facade's `registry` module. The inventory is the declared
 //     capability set of the Feature-Complete Manifest (the Go starting
-//     point, roadmap §15.7 line 1451; G114 line re-verification
-//     2026-08-13); everything the Go packages can
+//     point, roadmap §15.7「Feature-Complete Manifest」「Go 以该 manifest
+//     为起点」); everything the Go packages can
 //     derive is derived from them — family ids, profile ids, and
 //     operation registries for json/toml come from go/json and go/toml
 //     themselves, and the drift-guard tests assert that derivation

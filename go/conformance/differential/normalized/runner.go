@@ -1,8 +1,10 @@
 // Package normalized implements the Go side of the cross-language
 // normalized-result differential harness (milestone 0.15.0 G1.5;
-// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4 and §2.2; roadmap §16.2 line 1494
-// (the cross-language normalized-result differential harness) and §11.2
-// lines 849-861; G114 line re-verification 2026-08-13).
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4 and §2.2; roadmap §16.2
+// 「`0.15.0`：Go Document、JSON family 与 TOML」硬门禁「对应 Rust
+// capability set 的共享向量 100% 一致」与 §11.2「Go 不是 Rust 的翻译」
+// 「Rust 和 Go 可以拥有不同的内部树、缓存和算法，但必须在语言无关
+// 行为上一致」).
 //
 // The harness compares the language-neutral normalized results of the same
 // data-driven input set (`cases.json`, this directory) executed by the Rust
@@ -11,7 +13,8 @@
 // the Rust side emits one `<case-id>.txt` evidence file per case, and the
 // Go test computes the same normalized facts and compares them field by
 // field. Since milestone 0.19.0 G5.2 the comparison is bidirectional
-// (roadmap §16.6 line 1548; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6): the Go
+// (roadmap §16.6「`0.19.0`：双语言一致性与产品 Beta」「Rust/Go
+// bidirectional differential runs」; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6): the Go
 // side also emits its evidence files for the same input set, and the Rust
 // example's consume mode (--consume) reads them and compares them with its
 // own results field by field. Orchestration:

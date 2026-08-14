@@ -15,8 +15,9 @@ package normalized
 // reported as case id + field + both values.
 //
 // Since milestone 0.19.0 G5.2 the harness is bidirectional (roadmap §16.6
-// line 1554; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6; G114 line
-// re-verification 2026-08-13): TestEmitGoNormalizedResults
+// 「`0.19.0`：双语言一致性与产品 Beta」「Rust/Go bidirectional
+// differential runs」; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6):
+// TestEmitGoNormalizedResults
 // emits the Go-side evidence files for the same input set (one
 // `<case-id>.txt` per case, the same line-oriented key=value format the
 // forward direction reads), and the Rust example's consume mode compares

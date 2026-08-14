@@ -10,7 +10,8 @@ package main
 // re-implements projection semantics, it only selects published targets and
 // policies). The conservative default policy
 // (`core.projection.exact-or-reject@1`, no rules, no limits) is the SDK's
-// own default, never invented (roadmap §10 line 818).
+// own default, never invented (roadmap §10「产品级 CLI」「CLI 的便利选择
+// 不能成为核心语义默认值」).
 //
 // The machine payload is the `core.projection-result@1` record (RFC 0015
 // §6.1): value, fidelity, report, and provenance. The report/provenance

@@ -4,7 +4,7 @@ package conformance
 // §2.6 deliverable "full corpus、fuzz、benchmark 和 security matrix";
 // roadmap §22.4「XML/YAML/HCL/binary plist 专项 threat tests 通过」——G050，
 // 对抗审计 2026-08-14：改引节锚，行号删除；
-// G129 encoding fix + G114 line re-verification 2026-08-13).
+// G129 encoding fix).
 //
 // Extends the 0.16.0 limits matrix (limits_matrix_test.go, five families)
 // to the recovery-capable families shipped in 0.16.0-0.18.0 (xml/plist/hcl)

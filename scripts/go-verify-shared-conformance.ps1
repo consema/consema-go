@@ -14,8 +14,9 @@ param(
 
 # ---------------------------------------------------------------------------
 # Shared dual-runner conformance verification (milestone 0.19.0 G5.1;
-# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.1/§4.5; roadmap §16.6 line
-# 1547).
+# https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6 and §4.1/§4.5; roadmap §16.6
+# 「`0.19.0`：双语言一致性与产品 Beta」「shared conformance runner
+# orchestration」).
 #
 # Runs the same 18 vector suites with both independent runners in one batch
 # and compares them case by case:

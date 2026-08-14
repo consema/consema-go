@@ -1,6 +1,7 @@
 // Orchestration report hooks for the shared dual-runner conformance
 // orchestration (milestone 0.19.0 G5.1; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §2.6,
-// §4.1, §4.5; roadmap §16.6 line 1547).
+// §4.1, §4.5; roadmap §16.6「`0.19.0`：双语言一致性与产品 Beta」
+// 「shared conformance runner orchestration」).
 //
 // The Go runner and the Rust runner (consema-rs/consema-conformance, driven by
 // the auxiliary example emit_conformance_reports.rs) each execute the same

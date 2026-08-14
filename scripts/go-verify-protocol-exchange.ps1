@@ -11,7 +11,7 @@ param(
 # https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 # §2.6 and §4.4; roadmap §16.6「cross-language protocol exchange」与
 # §22.2「protocol cross-encode/decode 100%」——G050，对抗审计 2026-08-14：
-# 改引节锚，行号删除; G114 line re-verification 2026-08-13).
+# 改引节锚，行号删除).
 #
 # Pipeline (Go never imports or calls Rust, RFC 0016 §1.1):
 #   1. builds the Rust example (consema-conformance/examples/

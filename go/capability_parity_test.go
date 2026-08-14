@@ -1,7 +1,8 @@
 package consema
 
-// Capability parity hard gate (roadmap §16.5 line 1545; plan §2.5 G4.4;
-// G114 line re-verification 2026-08-13):
+// Capability parity hard gate (roadmap §16.5「`0.18.0`：Go HCL 与全操作
+// parity」硬门禁「Go mandatory capability set 与 Rust Feature-Complete
+// Manifest 对齐，不存在"Rust only" mandatory 行为」; plan §2.5 G4.4):
 // the Go mandatory capability set equals the Rust Feature-Complete
 // Manifest capability set — docs/fc-manifest-0.13.0.json digests.
 // capability_set: "8 families / 16 profiles / 21 query domains / 16

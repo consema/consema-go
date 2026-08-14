@@ -12,7 +12,7 @@ param(
 # https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 # §4.4 and §2.6; roadmap §16.2（跨语言 normalized-result 差分 harness）、
 # §16.6（bidirectional）与 §11.2（差分设计）——G050，对抗审计 2026-08-14：
-# 改引节锚，行号删除; G114 line re-verification 2026-08-13).
+# 改引节锚，行号删除).
 #
 # Bidirectional pipeline (Go never imports or calls Rust, RFC 0016 §1.1):
 #   1. builds the minimal Rust evidence example
@@ -44,7 +44,8 @@ param(
 # cross-language reproducer -> classify as implementation/test/spec gap),
 # never a silent Rust-side "fix".
 #
-# --- Differential corpus append discipline (roadmap §17.4 line 1615;
+# --- Differential corpus append discipline (roadmap §17.4「测试来源」
+# 「Rust/Go differential corpus」;
 # https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4) ---
 # Any differential case found by a pilot or audit joins the input set:
 #   1. triage the finding per roadmap §11.3 and reduce it to a minimal
