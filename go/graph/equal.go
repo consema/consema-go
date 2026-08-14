@@ -36,7 +36,7 @@ func canonicalOrder(nodes []node, roots []NodeID, maxDepth int) ([]int, []int, e
 	visited := make([]bool, len(nodes))
 	stack := make([]struct{ index, depth int }, 0, len(nodes))
 	// Push in reverse so the first root pops first (the Rust
-	// canonical_order, consema-rs/consema-graph/src/lib.rs:542-578).
+	// canonical_order, consema-rs/consema-graph/src/lib.rs).
 	for i := len(roots) - 1; i >= 0; i-- {
 		stack = append(stack, struct{ index, depth int }{roots[i].index, 0})
 	}
@@ -64,7 +64,7 @@ func canonicalOrder(nodes []node, roots []NodeID, maxDepth int) ([]int, []int, e
 		switch n.kind {
 		case KindSequence:
 			// Push reversed so items pop in stored order (the Rust
-			// outgoing_reverse, lib.rs:145-156).
+			// outgoing_reverse, lib.rs).
 			for i := len(n.items) - 1; i >= 0; i-- {
 				stack = append(stack, struct{ index, depth int }{n.items[i].index, childDepth})
 			}
@@ -118,7 +118,7 @@ func Equal(a, b *Graph) bool {
 }
 
 // canonicalNodeEqual compares two nodes under their canonical ID mappings
-// (the Rust canonical_node_eq, consema-rs/consema-graph/src/lib.rs:634-661).
+// (the Rust canonical_node_eq, consema-rs/consema-graph/src/lib.rs).
 func canonicalNodeEqual(left *node, leftIDs []int, right *node, rightIDs []int) bool {
 	if left.kind != right.kind || left.tag != right.tag {
 		return false

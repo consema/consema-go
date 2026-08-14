@@ -6,7 +6,7 @@ import (
 )
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (document.StructuralPieceKind; consema-document lib.rs:415-422).
+// (document.StructuralPieceKind; consema-document lib.rs).
 type StructuralPieceKind = document.StructuralPieceKind
 
 // The three frozen piece classes.
@@ -20,24 +20,24 @@ const (
 )
 
 // StructuralPiece is one source byte interval and its lossless class
-// (document.StructuralPiece; consema-document lib.rs:425-447).
+// (document.StructuralPiece; consema-document lib.rs).
 type StructuralPiece = document.StructuralPiece
 
 // LosslessStructuralIndex is the exhaustive ordered token/trivia coverage
 // of one source (document.LosslessStructuralIndex; consema-document
-// lib.rs:449-492). The index validates exact byte coverage and snapshot
+// lib.rs). The index validates exact byte coverage and snapshot
 // binding at construction.
 type LosslessStructuralIndex = document.LosslessStructuralIndex
 
 // NewLosslessStructuralIndex validates exact raw-byte coverage of the
-// source and snapshot binding (consema-document lib.rs:449-492).
+// source and snapshot binding (consema-document lib.rs).
 func NewLosslessStructuralIndex(identity document.SnapshotIdentity, sourceLen int,
 	pieces []StructuralPiece) (*LosslessStructuralIndex, error) {
 	return document.NewLosslessStructuralIndex(identity, sourceLen, pieces)
 }
 
 // IniPhysicalLine is one exact physical source line (consema-ini
-// lib.rs:231-263).
+// lib.rs).
 type IniPhysicalLine struct {
 	node          document.NodeRef
 	span          document.Span
@@ -58,7 +58,7 @@ func (l IniPhysicalLine) ContentSpan() document.Span { return l.contentSpan }
 func (l IniPhysicalLine) LineBreakSpan() *document.Span { return l.lineBreakSpan }
 
 // IniLogicalLine is one logical record and its ordered physical
-// constituents (consema-ini lib.rs:266-291).
+// constituents (consema-ini lib.rs).
 type IniLogicalLine struct {
 	node          document.NodeRef
 	kind          IniLogicalLineKind
@@ -78,7 +78,7 @@ func (l IniLogicalLine) PhysicalLines() []document.NodeRef {
 }
 
 // IniSection is one distinct section-header occurrence (consema-ini
-// lib.rs:294-355).
+// lib.rs).
 type IniSection struct {
 	node           document.NodeRef
 	logicalLine    document.NodeRef
@@ -115,7 +115,7 @@ func (s IniSection) IsDefault() bool { return s.isDefault }
 // group identity, when present.
 func (s IniSection) DuplicateGroup() *uint32 { return s.duplicateGroup }
 
-// IniEntry is one distinct key/value occurrence (consema-ini lib.rs:358-445).
+// IniEntry is one distinct key/value occurrence (consema-ini lib.rs).
 type IniEntry struct {
 	node           document.NodeRef
 	logicalLine    document.NodeRef
@@ -170,7 +170,7 @@ func (e IniEntry) QuoteStyle() IniQuoteStyle { return e.quoteStyle }
 func (e IniEntry) DuplicateGroup() *uint32 { return e.duplicateGroup }
 
 // IniErrorLine is one recovered physical error record (consema-ini
-// lib.rs:449-487).
+// lib.rs).
 type IniErrorLine struct {
 	node         document.NodeRef
 	logicalLine  document.NodeRef

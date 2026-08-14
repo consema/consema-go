@@ -62,7 +62,7 @@ type OperationDescriptor struct {
 }
 
 // FormatOperationRegistry is the validated operation registry for one
-// exact YAML profile (consema-yaml operation_registry.rs:9-14).
+// exact YAML profile (consema-yaml operation_registry.rs).
 type FormatOperationRegistry struct {
 	profile    document.ProfileId
 	operations []OperationDescriptor
@@ -77,7 +77,7 @@ func (r FormatOperationRegistry) Operations() []OperationDescriptor {
 }
 
 // NewFormatOperationRegistry returns the validated operation registry for
-// one exact YAML profile (consema-yaml operation_registry.rs:9-14). The
+// one exact YAML profile (consema-yaml operation_registry.rs). The
 // frozen surface has eight operations: the six mandatory structural
 // operations (insert-alias, insert-mapping-entry, insert-sequence-element,
 // remove-mapping-entry, remove-sequence-element, rename-anchor) and the

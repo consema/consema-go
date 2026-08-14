@@ -17,7 +17,7 @@ import (
 // never invents application semantics.
 
 // GraphProjectionLimits are the resource bounds of one graph projection
-// (projection.rs:18-33).
+// (projection.rs).
 type GraphProjectionLimits struct {
 	// Graph are the PortableGraph construction and traversal limits.
 	Graph graph.Limits
@@ -35,7 +35,7 @@ func DefaultGraphProjectionLimits() GraphProjectionLimits {
 }
 
 // GraphProjectionRequest is the immutable `yaml.projection.best-exact-graph@1`
-// request (projection.rs:36-62).
+// request (projection.rs).
 type GraphProjectionRequest struct {
 	limits GraphProjectionLimits
 }
@@ -56,7 +56,7 @@ func (r GraphProjectionRequest) WithLimits(limits GraphProjectionLimits) GraphPr
 func (r GraphProjectionRequest) Limits() GraphProjectionLimits { return r.limits }
 
 // GraphProjectedLocation is one projected graph location
-// (projection.rs:65-92).
+// (projection.rs).
 type GraphProjectedLocation struct {
 	// Kind is "Root", "Node", "SequenceElement", "MappingKey", or
 	// "MappingValue".
@@ -101,7 +101,7 @@ func (r ProvenanceRelation) String() string {
 }
 
 // SourceOrigin is one exact source origin of a projected location
-// (projection.rs:108-118).
+// (projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source snapshot identity.
 	Snapshot document.SnapshotIdentity
@@ -114,7 +114,7 @@ type SourceOrigin struct {
 }
 
 // GraphProvenanceEntry is one projected location with its origins
-// (projection.rs:121-141).
+// (projection.rs).
 type GraphProvenanceEntry struct {
 	// Projected is the graph location.
 	Projected GraphProjectedLocation
@@ -134,7 +134,7 @@ func (m GraphProvenanceMap) Entries() []GraphProvenanceEntry {
 }
 
 // CompleteGraphProjection is the complete graph projection result
-// (projection.rs:144-150).
+// (projection.rs).
 type CompleteGraphProjection struct {
 	// Graph is the exact PortableGraph.
 	Graph *graph.Graph
@@ -158,7 +158,7 @@ const (
 )
 
 // GraphProjectionFailure is the typed graph projection failure
-// (projection.rs:153-161). It implements error and the Code() contract.
+// (projection.rs). It implements error and the Code() contract.
 type GraphProjectionFailure struct {
 	// Kind identifies the failure.
 	Kind GraphProjectionFailureKind
@@ -199,7 +199,7 @@ func (f *GraphProjectionFailure) Code() string {
 }
 
 // ProjectGraph projects all document roots to one exact PortableGraph
-// (consema-yaml lib.rs:433-448). Unknown/custom tags fail instead of being
+// (consema-yaml lib.rs). Unknown/custom tags fail instead of being
 // treated as application constructors or untyped strings; frozen standard
 // repository tags remain exact tagged graph nodes. Aliases compose to
 // shared graph identity and are never expanded.
@@ -222,7 +222,7 @@ func (d *Document) ProjectGraphBounded(limits graph.Limits) (*graph.Graph, error
 }
 
 // ProjectGraphWithProvenance projects all document roots and their
-// complete provenance (projection.rs:531-554).
+// complete provenance (projection.rs).
 func (d *Document) ProjectGraphWithProvenance(
 	request GraphProjectionRequest) (*CompleteGraphProjection, *GraphProjectionFailure) {
 	builder := graph.NewBuilder(request.limits.Graph)
@@ -277,7 +277,7 @@ func (d *Document) ProjectGraphWithProvenance(
 }
 
 // buildGraphProvenance emits the deterministic root/node/association
-// provenance entries (projection.rs:617-706).
+// provenance entries (projection.rs).
 func (d *Document) buildGraphProvenance(graphValue *graph.Graph, ids []graph.NodeID,
 	maxEntries int) (GraphProvenanceMap, *GraphProjectionFailure) {
 	var entries []GraphProvenanceEntry
@@ -401,7 +401,7 @@ func asGraphError(err error) *graph.GraphError {
 }
 
 // SharingPolicy is the explicit sharing policy of one value projection
-// (projection.rs:205-211).
+// (projection.rs).
 type SharingPolicy uint8
 
 // The two frozen sharing policies.
@@ -415,7 +415,7 @@ const (
 )
 
 // TagPolicy is the explicit tag policy of one value projection
-// (projection.rs:214-220).
+// (projection.rs).
 type TagPolicy uint8
 
 // The two frozen tag policies.
@@ -429,7 +429,7 @@ const (
 )
 
 // MappingPolicy is the explicit mapping policy of one value projection
-// (projection.rs:223-231).
+// (projection.rs).
 type MappingPolicy uint8
 
 // The three frozen mapping policies.
@@ -446,7 +446,7 @@ const (
 )
 
 // ValueProjectionLimits are the resource bounds of one value projection
-// (projection.rs:234-258).
+// (projection.rs).
 type ValueProjectionLimits struct {
 	// MaxValueNodes is the maximum projected native/value node visits.
 	MaxValueNodes int
@@ -475,7 +475,7 @@ func DefaultValueProjectionLimits() ValueProjectionLimits {
 }
 
 // ValueProjectionRequest is the immutable `yaml.projection.best-exact-value@1`
-// request (projection.rs:261-332).
+// request (projection.rs).
 type ValueProjectionRequest struct {
 	sharing SharingPolicy
 	tags    TagPolicy
@@ -584,7 +584,7 @@ func (k ProjectionEventKind) String() string {
 }
 
 // ProjectionEvent is one reported projection transformation
-// (projection.rs:387-405).
+// (projection.rs).
 type ProjectionEvent struct {
 	// Kind is the event category.
 	Kind ProjectionEventKind
@@ -606,7 +606,7 @@ type ProjectionEvent struct {
 }
 
 // ProjectionReport is the ordered projection transformation report
-// (projection.rs:408-419).
+// (projection.rs).
 type ProjectionReport struct {
 	events []ProjectionEvent
 }
@@ -617,7 +617,7 @@ func (r ProjectionReport) Events() []ProjectionEvent {
 }
 
 // ProjectedLocation is one projected value or association location
-// (projection.rs:346-352).
+// (projection.rs).
 type ProjectedLocation struct {
 	// Kind is "Value" or "Association".
 	Kind string
@@ -628,7 +628,7 @@ type ProjectedLocation struct {
 }
 
 // ProvenanceEntry is one projected location with its origins
-// (projection.rs:355-375).
+// (projection.rs).
 type ProvenanceEntry struct {
 	// Projected is the projected location.
 	Projected ProjectedLocation
@@ -647,7 +647,7 @@ func (m ProvenanceMap) Entries() []ProvenanceEntry {
 }
 
 // CompleteValueProjection is the complete value projection result
-// (projection.rs:422-432).
+// (projection.rs).
 type CompleteValueProjection struct {
 	// Value is the complete immutable tree value.
 	Value core.Value
@@ -660,7 +660,7 @@ type CompleteValueProjection struct {
 }
 
 // ValueProjectionFailureKind classifies one value projection failure
-// (projection.rs:435-476).
+// (projection.rs).
 type ValueProjectionFailureKind uint8
 
 // The stable value projection failure classes.
@@ -689,7 +689,7 @@ const (
 )
 
 // ValueProjectionFailure is the typed value projection failure
-// (projection.rs:435-476). It implements error and the Code() contract.
+// (projection.rs). It implements error and the Code() contract.
 // A failed attempt never contains a partial value, report, or provenance.
 type ValueProjectionFailure struct {
 	// Kind identifies the failure.
@@ -749,7 +749,7 @@ func (f *ValueProjectionFailure) Code() string {
 }
 
 // ValueProjectionResult is the value projection completion algebra
-// (projection.rs:523-529). Exactly one outcome is non-nil.
+// (projection.rs). Exactly one outcome is non-nil.
 type ValueProjectionResult struct {
 	// Complete is the complete success outcome.
 	Complete *CompleteValueProjection
@@ -758,7 +758,7 @@ type ValueProjectionResult struct {
 }
 
 // ProjectValue projects the single document root to one exact
-// PortableValue (projection.rs:557-602). The default request requires
+// PortableValue (projection.rs). The default request requires
 // exactly one document, rejects sharing and cycles, requires known tags,
 // and selects Object only for unique string keys.
 func (d *Document) ProjectValue(request ValueProjectionRequest) ValueProjectionResult {
@@ -906,7 +906,7 @@ func (c *valueProjectionContext) addOrigin(location ProjectedLocation,
 }
 
 // projectNode projects one native node into a PortableValue
-// (projection.rs:772-875).
+// (projection.rs).
 func (c *valueProjectionContext) projectNode(index int, path protocol.ValuePath,
 	depth int, incomingAlias *int) (core.Value, *ValueProjectionFailure) {
 	if depth > c.request.limits.MaxDepth {
@@ -996,7 +996,7 @@ func (c *valueProjectionContext) projectNode(index int, path protocol.ValuePath,
 }
 
 // isPortableTag reports whether the node's tag has a frozen exact
-// PortableValue lowering for its content kind (projection.rs:1172-1181).
+// PortableValue lowering for its content kind (projection.rs).
 func (c *valueProjectionContext) isPortableTag(node *nativeNode) bool {
 	switch node.content.kind {
 	case contentScalar:
@@ -1023,7 +1023,7 @@ func (c *valueProjectionContext) nodeKindName(node *nativeNode) string {
 	}
 }
 
-// projectScalar lowers one scalar node (projection.rs:972-1021).
+// projectScalar lowers one scalar node (projection.rs).
 func (c *valueProjectionContext) projectScalar(scalar *nativeScalar, supported bool,
 	nodeRef document.NodeRef) (core.Value, *ValueProjectionFailure) {
 	if !supported {
@@ -1082,7 +1082,7 @@ func (c *valueProjectionContext) projectScalar(scalar *nativeScalar, supported b
 	}
 }
 
-// projectTimestamp lowers one canonical timestamp (projection.rs:1230-1269).
+// projectTimestamp lowers one canonical timestamp (projection.rs).
 func projectTimestamp(canonical string) (core.Value, bool) {
 	year, ok := new(big.Int).SetString(canonical[:4], 10)
 	if !ok {
@@ -1171,7 +1171,7 @@ func parseI32(value string) (int32, bool) {
 	return int32(result), true
 }
 
-// projectSequence projects one sequence node (projection.rs:829-849).
+// projectSequence projects one sequence node (projection.rs).
 func (c *valueProjectionContext) projectSequence(index int, node *nativeNode,
 	path protocol.ValuePath, depth int) (core.Value, *ValueProjectionFailure) {
 	items := make([]core.Value, 0, len(node.content.items))
@@ -1192,7 +1192,7 @@ func (c *valueProjectionContext) projectSequence(index int, node *nativeNode,
 	return core.NewArray(items...), nil
 }
 
-// projectMapping projects one mapping node (projection.rs:877-937).
+// projectMapping projects one mapping node (projection.rs).
 func (c *valueProjectionContext) projectMapping(index int, node *nativeNode,
 	path protocol.ValuePath, depth int) (core.Value, *ValueProjectionFailure) {
 	names := c.objectNames(node)
@@ -1215,7 +1215,7 @@ func (c *valueProjectionContext) projectMapping(index int, node *nativeNode,
 }
 
 // projectObject projects one unique-string-key mapping as an Object
-// (projection.rs:895-914).
+// (projection.rs).
 func (c *valueProjectionContext) projectObject(node *nativeNode, path protocol.ValuePath,
 	depth int, names []string) (core.Value, *ValueProjectionFailure) {
 	entries := node.content.entries
@@ -1276,7 +1276,7 @@ func entriesWithNames(names []string, values []core.Value) []core.Entry {
 }
 
 // visitObjectKey charges one object key visit with the sharing rules
-// (projection.rs:939-970).
+// (projection.rs).
 func (c *valueProjectionContext) visitObjectKey(key int, keyAlias *int,
 	path protocol.ValuePath) *ValueProjectionFailure {
 	keyRef := c.document.nodeRef(key)
@@ -1310,7 +1310,7 @@ func (c *valueProjectionContext) visitObjectKey(key int, keyAlias *int,
 }
 
 // projectEntryMapping projects one mapping as an ordered EntryMapping
-// (projection.rs:915-936).
+// (projection.rs).
 func (c *valueProjectionContext) projectEntryMapping(node *nativeNode, path protocol.ValuePath,
 	depth int) (core.Value, *ValueProjectionFailure) {
 	entries := node.content.entries
@@ -1344,7 +1344,7 @@ func (c *valueProjectionContext) projectEntryMapping(node *nativeNode, path prot
 }
 
 // objectNames returns the ordered unique string keys when every mapping
-// key is a distinct `!!str` scalar (projection.rs:1149-1170).
+// key is a distinct `!!str` scalar (projection.rs).
 func (c *valueProjectionContext) objectNames(node *nativeNode) []string {
 	names := make([]string, 0, len(node.content.entries))
 	seen := make(map[string]bool, len(node.content.entries))

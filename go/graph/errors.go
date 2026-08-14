@@ -6,7 +6,7 @@ import (
 )
 
 // GraphErrorKind enumerates the stable graph construction failures (the Rust
-// GraphBuildError, consema-rs/consema-graph/src/lib.rs:192-218). Every kind maps
+// GraphBuildError, consema-rs/consema-graph/src/lib.rs). Every kind maps
 // to one frozen registered code (see Code); the error text itself is human
 // presentation only (RFC 0016 §6, roadmap §16.1: "Go error text 不参与规范比
 // 较").
@@ -43,14 +43,14 @@ const (
 	ErrGraphInvalidTag
 	// ErrGraphInvalidUTF8: a tag or a scalar's canonical content was not
 	// valid UTF-8. The Rust side cannot construct such graphs at all (its
-	// Arc<str> invariant, consema-rs/consema-graph/src/lib.rs:94-157); Go must
+	// Arc<str> invariant, consema-rs/consema-graph/src/lib.rs); Go must
 	// validate explicitly at the builder boundary, and the PGCE decoder
 	// maps this kind back to the codec's ErrInvalidUTF8.
 	ErrGraphInvalidUTF8
 )
 
 // The frozen registered codes, transcribed from the Rust StableFailure
-// mapping in consema-rs/consema-graph/src/lib.rs:228-242
+// mapping in consema-rs/consema-graph/src/lib.rs
 // (graph_build_error_code).
 const (
 	codeGraphResourceLimit = "core.graph.resource-limit@1"
@@ -101,7 +101,7 @@ func (e *GraphError) Error() string {
 }
 
 // Code returns the frozen registered code for the failure (RFC 0016 §6;
-// consema-rs/consema-graph/src/lib.rs:228-242).
+// consema-rs/consema-graph/src/lib.rs).
 func (e *GraphError) Code() string {
 	switch e.Kind {
 	case ErrGraphResourceLimit, ErrGraphSizeOverflow:
@@ -124,7 +124,7 @@ func IsGraphError(err error, kind GraphErrorKind) bool {
 
 // PGCEErrorKind enumerates the strict PGCE/1 failures of the encoder and
 // decoder (the Rust PgceEncodeError and PgceDecodeError,
-// consema-rs/consema-graph/src/pgce.rs:70-152). Every kind maps to one frozen
+// consema-rs/consema-graph/src/pgce.rs). Every kind maps to one frozen
 // registered code (see Code); the error text itself is human presentation
 // only (RFC 0016 §6).
 type PGCEErrorKind uint8
@@ -173,7 +173,7 @@ const (
 )
 
 // The frozen registered codes, transcribed from the Rust StableFailure
-// mapping in consema-rs/consema-graph/src/pgce.rs:162-216
+// mapping in consema-rs/consema-graph/src/pgce.rs
 // (pgce_decode_error_code / pgce_encode_error_code).
 const (
 	codePGCEInvalid            = "core.pgce.invalid@1"
@@ -237,7 +237,7 @@ func (e *PGCEError) Error() string {
 }
 
 // Code returns the frozen registered code for the failure (RFC 0016 §6;
-// consema-rs/consema-graph/src/pgce.rs:162-216).
+// consema-rs/consema-graph/src/pgce.rs).
 func (e *PGCEError) Code() string {
 	switch e.Kind {
 	case ErrResourceLimit:

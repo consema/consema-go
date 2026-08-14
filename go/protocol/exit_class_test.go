@@ -160,7 +160,7 @@ func TestUnlistedFormatCodesPassThroughAsData(t *testing.T) {
 
 func TestEveryRegisteredCLICodeClassifiesPerRFCTable(t *testing.T) {
 	// Every cli.* code registered in v7 maps per the RFC 0015 §5.2 family
-	// table (exit_class.rs:183-288).
+	// table (exit_class.rs).
 	registry := NewErrorCodeRegistry(ErrorRegistryV7)
 	for _, descriptor := range registry.Codes() {
 		code := descriptor.Code

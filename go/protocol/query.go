@@ -13,7 +13,7 @@ import (
 
 // MatchRole is one typed match role of the query model. The roles use the
 // language-neutral spelling of the Rust MatchRole enum
-// (consema-core/src/query.rs:169-316); they type operator composition during
+// (consema-core/src/query.rs); they type operator composition during
 // validation and name the output matches of query results.
 type MatchRole string
 
@@ -92,7 +92,7 @@ const (
 	RoleHclSyntaxPiece           MatchRole = "HclSyntaxPiece"
 )
 
-// QueryDomain is a versioned query domain (consema-core/src/query.rs:12-166).
+// QueryDomain is a versioned query domain (consema-core/src/query.rs).
 type QueryDomain struct {
 	id      string
 	version uint32
@@ -103,7 +103,7 @@ func NewQueryDomain(id string, version uint32) *QueryDomain {
 	return &QueryDomain{id: id, version: version}
 }
 
-// The frozen domain constructors (query.rs:30-153).
+// The frozen domain constructors (query.rs).
 func DomainPortableValueV1() *QueryDomain { return NewQueryDomain("core.portable-value-query", 1) }
 func DomainPortableGraphV1() *QueryDomain { return NewQueryDomain("core.portable-graph-query", 1) }
 func DomainJSONNativeV1() *QueryDomain    { return NewQueryDomain("json.native-semantic-query", 1) }
@@ -156,7 +156,7 @@ func (d *QueryDomain) Equal(other *QueryDomain) bool {
 }
 
 // OperatorCall is one versioned operator call with deterministic arguments
-// (query.rs:318-361).
+// (query.rs).
 type OperatorCall struct {
 	id        string
 	version   uint32
@@ -189,7 +189,7 @@ func (o *OperatorCall) Arguments() map[string]core.Value {
 	return output
 }
 
-// QueryExpression is the declarative operator tree (query.rs:363-390).
+// QueryExpression is the declarative operator tree (query.rs).
 type QueryExpression struct {
 	// Kind is the closed expression kind.
 	Kind ExpressionKind
@@ -222,7 +222,7 @@ func (e *QueryExpression) Then(operator *OperatorCall) *QueryExpression {
 }
 
 // QuerySelection is the cardinality selection applied to the complete
-// standard result sequence (query.rs:434-447).
+// standard result sequence (query.rs).
 type QuerySelection string
 
 // The five frozen selections.
@@ -235,7 +235,7 @@ const (
 )
 
 // QueryDefinition is a transferable, not-yet-validated query definition
-// (query.rs:449-598).
+// (query.rs).
 type QueryDefinition struct {
 	domain     *QueryDomain
 	expression *QueryExpression
@@ -273,7 +273,7 @@ func (d *QueryDefinition) Expression() *QueryExpression { return d.expression }
 func (d *QueryDefinition) Selection() QuerySelection { return d.selection }
 
 // Validate validates the domain, argument schemas, composition, and role
-// typing (query.rs:500-530). The required capability set of a validated
+// typing (query.rs). The required capability set of a validated
 // query is always [core.query.ordered-results@1].
 func (d *QueryDefinition) Validate() (*ValidatedQuery, *QueryFailure) {
 	inputRole, ok := domainInputRole(d.domain.id, d.domain.version)
@@ -292,7 +292,7 @@ func (d *QueryDefinition) Validate() (*ValidatedQuery, *QueryFailure) {
 	}, nil
 }
 
-// domainInputRole maps a domain to its root match role (query.rs:502-523).
+// domainInputRole maps a domain to its root match role (query.rs).
 func domainInputRole(id string, version uint32) (MatchRole, bool) {
 	switch {
 	case id == "core.portable-value-query" && version == 1:
@@ -338,7 +338,7 @@ func domainInputRole(id string, version uint32) (MatchRole, bool) {
 }
 
 // validateExpression checks the whole operator tree and returns its output
-// role (query.rs:867-897).
+// role (query.rs).
 func validateExpression(domain *QueryDomain, expression *QueryExpression, inputRole MatchRole) (MatchRole, *QueryFailure) {
 	switch expression.Kind {
 	case ExpressionInput:
@@ -379,7 +379,7 @@ func validateExpression(domain *QueryDomain, expression *QueryExpression, inputR
 }
 
 // ValidatedQuery is a definition proven structurally valid for its domain
-// (query.rs:768-798).
+// (query.rs).
 type ValidatedQuery struct {
 	definition           *QueryDefinition
 	outputRole           MatchRole
@@ -398,7 +398,7 @@ func (v *ValidatedQuery) RequiredCapabilities() []*CapabilityId {
 func (v *ValidatedQuery) Definition() *QueryDefinition { return v.definition }
 
 // Bind binds the validated definition to implementation capabilities
-// (query.rs:789-798).
+// (query.rs).
 func (v *ValidatedQuery) Bind(capabilities *CapabilitySet) (*ExecutableQuery, *QueryFailure) {
 	for _, capability := range v.requiredCapabilities {
 		if !capabilities.Contains(capability) {
@@ -409,7 +409,7 @@ func (v *ValidatedQuery) Bind(capabilities *CapabilitySet) (*ExecutableQuery, *Q
 }
 
 // ExecutableQuery is a fully validated and capability-bound query
-// (query.rs:800-865). Execution against PortableValue values is provided by
+// (query.rs). Execution against PortableValue values is provided by
 // the family packages; this milestone pins the definition surface.
 type ExecutableQuery struct {
 	validated *ValidatedQuery
@@ -422,7 +422,7 @@ func (e *ExecutableQuery) Definition() *QueryDefinition { return e.validated.def
 func (e *ExecutableQuery) OutputRole() MatchRole { return e.validated.outputRole }
 
 // ToProtocolValue encodes `core.query-definition@1` through the fixed-field
-// PortableValue schema (query.rs:532-559).
+// PortableValue schema (query.rs).
 func (d *QueryDefinition) ToProtocolValue() (core.Value, *QueryFailure) {
 	expression, failure := encodeExpression(d.expression, 0)
 	if failure != nil {
@@ -442,7 +442,7 @@ func (d *QueryDefinition) ToProtocolValue() (core.Value, *QueryFailure) {
 }
 
 // FromProtocolValue strictly decodes `core.query-definition@1`
-// (query.rs:561-598). Unknown, reordered, or missing fields are rejected;
+// (query.rs). Unknown, reordered, or missing fields are rejected;
 // structural/operator validation remains the explicit next lifecycle step.
 func (d *QueryDefinition) FromProtocolValue(value core.Value) (*QueryDefinition, *QueryFailure) {
 	fields, failure := exactObjectFields(value, []string{"schema", "domain_id",
@@ -488,7 +488,7 @@ func (d *QueryDefinition) FromProtocolValue(value core.Value) (*QueryDefinition,
 		WithExpression(expression).WithSelection(selection), nil
 }
 
-// encodeExpression encodes one expression node (query.rs:610-656).
+// encodeExpression encodes one expression node (query.rs).
 func encodeExpression(expression *QueryExpression, depth int) (core.Value, *QueryFailure) {
 	if depth > 256 {
 		return nil, &QueryFailure{Kind: FailureResourceLimit}
@@ -543,7 +543,7 @@ func encodeExpression(expression *QueryExpression, depth int) (core.Value, *Quer
 	return nil, queryProtocolError("expression.kind")
 }
 
-// encodeOperator encodes one operator call (query.rs:658-679).
+// encodeOperator encodes one operator call (query.rs).
 func encodeOperator(operator *OperatorCall) (core.Value, *QueryFailure) {
 	arguments := make([]core.Entry, 0, len(operator.arguments))
 	for _, name := range sortedMapKeys(operator.arguments) {
@@ -599,7 +599,7 @@ func queryUnsigned32(value core.Value, name string) (uint32, *QueryFailure) {
 }
 
 // exactObjectFields strictly validates a fixed-field object
-// (query.rs:736-751).
+// (query.rs).
 func exactObjectFields(value core.Value, names []string, context string) ([]core.Value, *QueryFailure) {
 	object, ok := value.(*core.Object)
 	if !ok {
@@ -619,7 +619,7 @@ func exactObjectFields(value core.Value, names []string, context string) ([]core
 	return values, nil
 }
 
-// decodeExpression strictly decodes one expression node (query.rs:681-718).
+// decodeExpression strictly decodes one expression node (query.rs).
 func decodeExpression(value core.Value, depth int) (*QueryExpression, *QueryFailure) {
 	if depth > 256 {
 		return nil, &QueryFailure{Kind: FailureResourceLimit}
@@ -681,7 +681,7 @@ func decodeExpression(value core.Value, depth int) (*QueryExpression, *QueryFail
 	return nil, queryProtocolError("expression.kind")
 }
 
-// decodeOperator strictly decodes one operator call (query.rs:720-734).
+// decodeOperator strictly decodes one operator call (query.rs).
 func decodeOperator(value core.Value) (*OperatorCall, *QueryFailure) {
 	fields, failure := exactObjectFields(value, []string{"id", "version", "arguments"}, "operator")
 	if failure != nil {

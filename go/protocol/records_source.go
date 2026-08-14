@@ -18,7 +18,7 @@ import (
 )
 
 // SourceLimits are the resource bounds of source snapshots
-// (document source.rs:383-...).
+// (document source.rs...).
 type SourceLimits struct {
 	// MaxRawBytes is the maximum retained raw bytes.
 	MaxRawBytes int
@@ -29,7 +29,7 @@ type SourceLimits struct {
 }
 
 // DefaultSourceLimits returns the frozen defaults (64 MiB raw, 128 MiB
-// decoded, 64 MiB scalars; document source.rs:411-419).
+// decoded, 64 MiB scalars; document source.rs).
 func DefaultSourceLimits() SourceLimits {
 	return SourceLimits{
 		MaxRawBytes:         64 << 20,
@@ -39,7 +39,7 @@ func DefaultSourceLimits() SourceLimits {
 }
 
 // BomPolicy selects whether leading marker-shaped bytes are BOM evidence or
-// content (document source.rs:159-166).
+// content (document source.rs).
 type BomPolicy string
 
 // The two frozen policies.
@@ -54,7 +54,7 @@ const (
 const malformedByteSentinel = 0xFFFF
 
 // BomKind is one recognized Unicode byte-order mark
-// (document source.rs:168-181).
+// (document source.rs).
 type BomKind string
 
 // The three recognized BOMs.
@@ -65,7 +65,7 @@ const (
 )
 
 // EncodingRequest carries the caller inputs to deterministic encoding
-// resolution (document source.rs:191-260).
+// resolution (document source.rs).
 type EncodingRequest struct {
 	profileDefault *SourceEncoding
 	bomPolicy      BomPolicy
@@ -74,7 +74,7 @@ type EncodingRequest struct {
 }
 
 // NewEncodingRequest starts with the required profile default and no
-// higher-priority facts (document source.rs:200-208).
+// higher-priority facts (document source.rs).
 func NewEncodingRequest(profileDefault *SourceEncoding) EncodingRequest {
 	return EncodingRequest{
 		profileDefault: profileDefault,
@@ -107,7 +107,7 @@ func (r EncodingRequest) WithBomPolicy(policy BomPolicy) EncodingRequest {
 }
 
 // SourceEncodingFacts is the complete, auditable result of encoding
-// resolution (document source.rs:262-...).
+// resolution (document source.rs...).
 type SourceEncodingFacts struct {
 	profileDefault *SourceEncoding
 	bomPolicy      BomPolicy
@@ -239,7 +239,7 @@ func mapSourceError(path string, err error) error {
 }
 
 // WindowsCodePageFromNumber resolves one numeric code page only when source
-// contract v2 publishes it (document source.rs:58-76).
+// contract v2 publishes it (document source.rs).
 func WindowsCodePageFromNumber(number uint32) (*SourceEncoding, bool) {
 	switch number {
 	case 874, 932, 936, 949, 950, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258, 65001:
@@ -255,7 +255,7 @@ func encodingIsText(encoding *SourceEncoding) bool {
 }
 
 // resolveEncoding resolves the deterministic encoding facts for raw bytes
-// (document source.rs:727-738).
+// (document source.rs).
 func resolveEncoding(bytes []byte, request EncodingRequest) (SourceEncodingFacts, error) {
 	hasExplicitText := (request.declaration != nil && encodingIsText(request.declaration)) ||
 		(request.callerOverride != nil && encodingIsText(request.callerOverride))
@@ -273,7 +273,7 @@ func resolveEncoding(bytes []byte, request EncodingRequest) (SourceEncodingFacts
 }
 
 // resolveAssertions applies the frozen encoding priority rule
-// (document source.rs:740-782).
+// (document source.rs).
 func resolveAssertions(request EncodingRequest, bom *BomKind) (SourceEncodingFacts, error) {
 	if request.profileDefault != nil && request.profileDefault.Kind == "Binary" &&
 		((request.declaration != nil && encodingIsText(request.declaration)) ||
@@ -337,7 +337,7 @@ func bomEncodingOf(bom BomKind) SourceEncoding {
 }
 
 // detectBOM recognizes the frozen BOM set and rejects UTF-32 markers
-// (document source.rs:784-...).
+// (document source.rs...).
 func detectBOM(bytes []byte) (*BomKind, error) {
 	if len(bytes) >= 4 && bytes[0] == 0xff && bytes[1] == 0xfe && bytes[2] == 0x00 && bytes[3] == 0x00 {
 		return nil, &SourceError{Kind: SourceErrorUnsupportedBom}
@@ -367,7 +367,7 @@ type rawBoundaryStep struct {
 }
 
 // SourceSnapshot is an immutable verified raw source with resolved encoding
-// facts (document source.rs:474-...; the 0.14.0 wire-facing subset).
+// facts (document source.rs...; the 0.14.0 wire-facing subset).
 type SourceSnapshot struct {
 	bytes    []byte
 	digest   [32]byte
@@ -378,7 +378,7 @@ type SourceSnapshot struct {
 }
 
 // NewSourceSnapshotFromRaw constructs a source from raw bytes using
-// explicit resolution inputs and limits (document source.rs:488-...).
+// explicit resolution inputs and limits (document source.rs...).
 func NewSourceSnapshotFromRaw(bytes []byte, request EncodingRequest, limits SourceLimits) (*SourceSnapshot, error) {
 	if len(bytes) > limits.MaxRawBytes {
 		return nil, &SourceError{Kind: SourceErrorResourceLimit, Limit: "raw-bytes"}
@@ -451,7 +451,7 @@ func NewSourceSnapshotFromRaw(bytes []byte, request EncodingRequest, limits Sour
 }
 
 // NewSourceSnapshotFromUTF8 is the compatibility constructor for exact
-// UTF-8 sources (document source.rs:553-...).
+// UTF-8 sources (document source.rs...).
 func NewSourceSnapshotFromUTF8(bytes []byte) (*SourceSnapshot, error) {
 	override := &SourceEncoding{Kind: "Utf8"}
 	return NewSourceSnapshotFromRaw(bytes,
@@ -589,7 +589,7 @@ func decodeLatin1(bytes []byte, limits SourceLimits) (string, error) {
 }
 
 // decodeWindowsCodePage decodes one Windows code page with per-scalar raw
-// steps (document source.rs:896-...).
+// steps (document source.rs...).
 func decodeWindowsCodePage(bytes []byte, encoding *SourceEncoding, limits SourceLimits) (string, []rawBoundaryStep, error) {
 	if encoding.WindowsCodePage == nil {
 		return "", nil, &SourceError{Kind: SourceErrorInvalidSequence}
@@ -722,7 +722,7 @@ func (s *SourceSnapshot) EncodingFacts() SourceEncodingFacts { return s.encoding
 func (s *SourceSnapshot) DecodedText() (string, bool) { return s.text, s.hasText }
 
 // DecodedPosition resolves one raw byte offset only when it is a decoded
-// scalar boundary (document source.rs:623-...).
+// scalar boundary (document source.rs...).
 func (s *SourceSnapshot) DecodedPosition(rawByte int) (int, bool) {
 	if rawByte > len(s.bytes) {
 		return 0, false
@@ -739,7 +739,7 @@ func (s *SourceSnapshot) DecodedPosition(rawByte int) (int, bool) {
 }
 
 // RawByteAt resolves one decoded scalar offset back to its raw-byte
-// boundary (document source.rs:644-...).
+// boundary (document source.rs...).
 func (s *SourceSnapshot) RawByteAt(scalar int) (int, bool) {
 	if scalar == len(s.steps) {
 		return len(s.bytes), true
@@ -755,13 +755,13 @@ func (s *SourceSnapshot) RawByteAt(scalar int) (int, bool) {
 // ---------------------------------------------------------------------------
 
 // SourceSnapshotMessageV1 is the transferable `core.source-snapshot@1`
-// content fact (protocol source.rs:48-96).
+// content fact (protocol source.rs).
 type SourceSnapshotMessageV1 struct {
 	snapshot *SourceSnapshot
 }
 
 // NewSourceSnapshotMessageV1FromSnapshot copies one immutable snapshot into
-// a transferable content message (protocol source.rs:56-63).
+// a transferable content message (protocol source.rs).
 func NewSourceSnapshotMessageV1FromSnapshot(snapshot *SourceSnapshot) (*SourceSnapshotMessageV1, error) {
 	if err := ensureV1EncodingFacts(snapshot.encoding, "$.encoding"); err != nil {
 		return nil, err
@@ -773,7 +773,7 @@ func NewSourceSnapshotMessageV1FromSnapshot(snapshot *SourceSnapshot) (*SourceSn
 func (m *SourceSnapshotMessageV1) Snapshot() *SourceSnapshot { return m.snapshot }
 
 // ToValue encodes the fixed-field PortableValue schema
-// (protocol source.rs:77-85).
+// (protocol source.rs).
 func (m *SourceSnapshotMessageV1) ToValue() (core.Value, error) {
 	encoding, err := encodingValueV1(m.snapshot.encoding)
 	if err != nil {
@@ -783,7 +783,7 @@ func (m *SourceSnapshotMessageV1) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes and re-verifies raw bytes, digest, encoding,
-// and decoded status (protocol source.rs:86-95).
+// and decoded status (protocol source.rs).
 func (m *SourceSnapshotMessageV1) FromValue(value core.Value, limits SourceLimits) (*SourceSnapshotMessageV1, error) {
 	snapshot, err := sourceSnapshotFromValue(value, "core.source-snapshot@1",
 		encodingFromValueV1, factsToRequestV1, limits)
@@ -794,13 +794,13 @@ func (m *SourceSnapshotMessageV1) FromValue(value core.Value, limits SourceLimit
 }
 
 // SourceSnapshotMessageV2 is the transferable `core.source-snapshot@2`
-// content fact (protocol source.rs:98-146).
+// content fact (protocol source.rs).
 type SourceSnapshotMessageV2 struct {
 	snapshot *SourceSnapshot
 }
 
 // NewSourceSnapshotMessageV2FromSnapshot copies one immutable snapshot into
-// a source-v2 message (protocol source.rs:107-113).
+// a source-v2 message (protocol source.rs).
 func NewSourceSnapshotMessageV2FromSnapshot(snapshot *SourceSnapshot) *SourceSnapshotMessageV2 {
 	return &SourceSnapshotMessageV2{snapshot: snapshot}
 }
@@ -809,7 +809,7 @@ func NewSourceSnapshotMessageV2FromSnapshot(snapshot *SourceSnapshot) *SourceSna
 func (m *SourceSnapshotMessageV2) Snapshot() *SourceSnapshot { return m.snapshot }
 
 // ToValue encodes the exact source-snapshot v2 schema
-// (protocol source.rs:126-134).
+// (protocol source.rs).
 func (m *SourceSnapshotMessageV2) ToValue() (core.Value, error) {
 	encoding, err := encodingFactsValue(&EncodingFacts{
 		ProfileDefault: m.snapshot.encoding.profileDefault,
@@ -826,7 +826,7 @@ func (m *SourceSnapshotMessageV2) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes and re-verifies every source-v2 fact
-// (protocol source.rs:136-145).
+// (protocol source.rs).
 func (m *SourceSnapshotMessageV2) FromValue(value core.Value, limits SourceLimits) (*SourceSnapshotMessageV2, error) {
 	snapshot, err := sourceSnapshotFromValue(value, "core.source-snapshot@2",
 		encodingFromValueV2, factsToRequestV2, limits)
@@ -845,7 +845,7 @@ func bomKindString(bom *BomKind) *string {
 }
 
 // sourceSnapshotValue encodes the shared snapshot record
-// (protocol source.rs:242-257).
+// (protocol source.rs).
 func sourceSnapshotValue(schema string, snapshot *SourceSnapshot, encoding core.Value) (core.Value, error) {
 	status := "NotText"
 	if _, ok := snapshot.DecodedText(); ok {
@@ -861,7 +861,7 @@ func sourceSnapshotValue(schema string, snapshot *SourceSnapshot, encoding core.
 }
 
 // sourceSnapshotFromValue strictly decodes and re-verifies one snapshot
-// record (protocol source.rs:258-321).
+// record (protocol source.rs).
 func sourceSnapshotFromValue(value core.Value, schema string,
 	parseEncoding func(core.Value, string) (SourceEncodingFacts, error),
 	requestFromFacts func(SourceEncodingFacts) EncodingRequest,
@@ -911,7 +911,7 @@ func sourceSnapshotFromValue(value core.Value, schema string,
 }
 
 // ensureV1EncodingFacts rejects Windows code pages and non-DetectUnicode
-// policies under source contract v1 (protocol source.rs:660-690).
+// policies under source contract v1 (protocol source.rs).
 func ensureV1EncodingFacts(facts SourceEncodingFacts, path string) error {
 	if facts.bomPolicy != BomPolicyDetectUnicode {
 		return invalid(path, "core source v1 requires DetectUnicode BOM policy")
@@ -927,7 +927,7 @@ func ensureV1EncodingFacts(facts SourceEncodingFacts, path string) error {
 }
 
 // encodingValueV1 encodes the v1 encoding facts record
-// (protocol source.rs:622-659).
+// (protocol source.rs).
 func encodingValueV1(facts SourceEncodingFacts) (core.Value, error) {
 	return core.NewObject(
 		core.Entry{Key: "profile_default", Value: core.String(encodingNameV1(facts.profileDefault))},
@@ -960,7 +960,7 @@ func bomNameValue(bom *BomKind) core.Value {
 }
 
 // encodingFromValueV1 strictly decodes the v1 encoding facts record
-// (protocol source.rs:691-712).
+// (protocol source.rs).
 func encodingFromValueV1(value core.Value, path string) (SourceEncodingFacts, error) {
 	fields, err := exactFields(value,
 		[]string{"profile_default", "bom", "declaration", "caller_override", "selected"}, path)
@@ -995,7 +995,7 @@ func encodingFromValueV1(value core.Value, path string) (SourceEncodingFacts, er
 }
 
 // encodingFromValueV2 strictly decodes the v2 encoding facts record
-// (protocol source.rs:714-...).
+// (protocol source.rs...).
 func encodingFromValueV2(value core.Value, path string) (SourceEncodingFacts, error) {
 	fields, err := exactFields(value, []string{"profile_default", "bom_policy", "bom",
 		"declaration", "caller_override", "selected"}, path)
@@ -1041,7 +1041,7 @@ func encodingFromValueV2(value core.Value, path string) (SourceEncodingFacts, er
 }
 
 // factsFromClaim validates a structurally complete encoding-facts claim
-// (document source.rs:296-...).
+// (document source.rs...).
 func factsFromClaim(profileDefault *SourceEncoding, policy BomPolicy, bom *BomKind,
 	declaration, callerOverride, selected *SourceEncoding) (SourceEncodingFacts, error) {
 	if policy == BomPolicyTreatAsContent && bom != nil {
@@ -1121,7 +1121,7 @@ func optionalBom(value core.Value, path string) (*BomKind, error) {
 }
 
 // SourceEncodingMessage is the transferable `core.source-encoding@1` value
-// (protocol source.rs:17-46).
+// (protocol source.rs).
 type SourceEncodingMessage struct {
 	encoding *SourceEncoding
 }
@@ -1153,7 +1153,7 @@ func (m *SourceEncodingMessage) FromValue(value core.Value) (*SourceEncodingMess
 // ---------------------------------------------------------------------------
 
 // SourcePatchLimits are the resource bounds of source patches
-// (document source_patch.rs:10-...).
+// (document source_patch.rs...).
 type SourcePatchLimits struct {
 	// Source are the limits for the resulting source snapshot.
 	Source SourceLimits
@@ -1164,7 +1164,7 @@ type SourcePatchLimits struct {
 }
 
 // DefaultSourcePatchLimits returns the frozen defaults
-// (document source_patch.rs:23-32).
+// (document source_patch.rs).
 func DefaultSourcePatchLimits() SourcePatchLimits {
 	return SourcePatchLimits{
 		Source:          DefaultSourceLimits(),
@@ -1174,7 +1174,7 @@ func DefaultSourcePatchLimits() SourcePatchLimits {
 }
 
 // SourcePatchApplyError is a typed source-patch application failure with
-// the frozen registered code (source_patch.rs:387-467). Every branch's code
+// the frozen registered code (source_patch.rs). Every branch's code
 // is registered in the semantic-model v7 registry, mirroring the Rust
 // SourcePatchError::code mapping.
 type SourcePatchApplyError struct {
@@ -1194,7 +1194,7 @@ func (e *SourcePatchApplyError) Code() string { return e.code }
 
 // sourcePatchSourceCode maps a source construction failure to the registered
 // code of its wrapped SourceError, exactly as the Rust document layer does
-// (source_patch.rs:442-452).
+// (source_patch.rs).
 func sourcePatchSourceCode(err error) string {
 	sourceError, ok := err.(*SourceError)
 	if !ok {
@@ -1204,7 +1204,7 @@ func sourcePatchSourceCode(err error) string {
 }
 
 // NewSourcePatch validates replacements against one base snapshot and
-// computes the target facts (document source_patch.rs:227-...).
+// computes the target facts (document source_patch.rs...).
 func NewSourcePatch(base *SourceSnapshot, replacements []SourceReplacement,
 	metadata map[string]string, limits SourcePatchLimits) (*SourcePatch, error) {
 	if err := validatePatchReplacements(replacements, limits); err != nil {
@@ -1238,7 +1238,7 @@ func NewSourcePatch(base *SourceSnapshot, replacements []SourceReplacement,
 }
 
 // ApplySourcePatch applies all facts atomically and returns the exact
-// target bytes only on complete success (document source_patch.rs:254-...).
+// target bytes only on complete success (document source_patch.rs...).
 func ApplySourcePatch(patch *SourcePatch, base *SourceSnapshot, limits SourcePatchLimits) ([]byte, error) {
 	if err := validatePatchReplacements(patch.Replacements, limits); err != nil {
 		return nil, err
@@ -1289,7 +1289,7 @@ func factsFromWire(facts EncodingFacts) (SourceEncodingFacts, error) {
 }
 
 // validatePatchReplacements enforces the replacement ordering, range, and
-// budget rules (document source_patch.rs:469-...).
+// budget rules (document source_patch.rs...).
 func validatePatchReplacements(replacements []SourceReplacement, limits SourcePatchLimits) error {
 	if len(replacements) > limits.MaxReplacements {
 		return &SourcePatchApplyError{code: "core.source.resource-limit@1", Limit: "patch-replacements"}
@@ -1331,7 +1331,7 @@ func applyPatchReplacements(base []byte, replacements []SourceReplacement) ([]by
 		if replacement.OldStart > uint64(len(base)) || replacement.OldEnd > uint64(len(base)) {
 			// An out-of-range old span is an original-byte precondition
 			// failure, exactly as the Rust document layer maps it
-			// (source_patch.rs:521-525).
+			// (source_patch.rs).
 			return nil, &SourcePatchApplyError{code: "core.source.patch-original-mismatch@1", Index: index}
 		}
 		start, end := int(replacement.OldStart), int(replacement.OldEnd)
@@ -1350,13 +1350,13 @@ func applyPatchReplacements(base []byte, replacements []SourceReplacement) ([]by
 }
 
 // SourcePatchMessageV1 is the transferable `core.source-patch@1`
-// verification facts (protocol source.rs:148-193).
+// verification facts (protocol source.rs).
 type SourcePatchMessageV1 struct {
 	patch *SourcePatch
 }
 
 // NewSourcePatchMessageV1FromPatch copies one validated source patch into a
-// transferable message (protocol source.rs:155-161).
+// transferable message (protocol source.rs).
 func NewSourcePatchMessageV1FromPatch(patch *SourcePatch) (*SourcePatchMessageV1, error) {
 	facts, err := factsFromWire(patch.Encoding)
 	if err != nil {
@@ -1372,7 +1372,7 @@ func NewSourcePatchMessageV1FromPatch(patch *SourcePatch) (*SourcePatchMessageV1
 func (m *SourcePatchMessageV1) Patch() *SourcePatch { return m.patch }
 
 // ToValue encodes the fixed-field PortableValue schema
-// (protocol source.rs:175-183).
+// (protocol source.rs).
 func (m *SourcePatchMessageV1) ToValue() (core.Value, error) {
 	facts, err := factsFromWire(m.patch.Encoding)
 	if err != nil {
@@ -1386,7 +1386,7 @@ func (m *SourcePatchMessageV1) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes structural patch facts without applying them
-// to a base snapshot (protocol source.rs:185-192).
+// to a base snapshot (protocol source.rs).
 func (m *SourcePatchMessageV1) FromValue(value core.Value, limits SourcePatchLimits) (*SourcePatchMessageV1, error) {
 	patch, err := sourcePatchFromValue(value, "core.source-patch@1", encodingFromValueV1, limits)
 	if err != nil {
@@ -1396,13 +1396,13 @@ func (m *SourcePatchMessageV1) FromValue(value core.Value, limits SourcePatchLim
 }
 
 // SourcePatchMessageV2 is the transferable `core.source-patch@2`
-// verification facts (protocol source.rs:195-239).
+// verification facts (protocol source.rs).
 type SourcePatchMessageV2 struct {
 	patch *SourcePatch
 }
 
 // NewSourcePatchMessageV2FromPatch copies one validated source patch into a
-// source-v2 message (protocol source.rs:202-208).
+// source-v2 message (protocol source.rs).
 func NewSourcePatchMessageV2FromPatch(patch *SourcePatch) *SourcePatchMessageV2 {
 	return &SourcePatchMessageV2{patch: patch}
 }
@@ -1411,7 +1411,7 @@ func NewSourcePatchMessageV2FromPatch(patch *SourcePatch) *SourcePatchMessageV2 
 func (m *SourcePatchMessageV2) Patch() *SourcePatch { return m.patch }
 
 // ToValue encodes the exact source-patch v2 schema
-// (protocol source.rs:222-229).
+// (protocol source.rs).
 func (m *SourcePatchMessageV2) ToValue() (core.Value, error) {
 	encoding, err := encodingFactsValue(&m.patch.Encoding)
 	if err != nil {
@@ -1421,7 +1421,7 @@ func (m *SourcePatchMessageV2) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes structural source-patch v2 facts
-// (protocol source.rs:231-238).
+// (protocol source.rs).
 func (m *SourcePatchMessageV2) FromValue(value core.Value, limits SourcePatchLimits) (*SourcePatchMessageV2, error) {
 	patch, err := sourcePatchFromValue(value, "core.source-patch@2", encodingFromValueV2, limits)
 	if err != nil {
@@ -1431,7 +1431,7 @@ func (m *SourcePatchMessageV2) FromValue(value core.Value, limits SourcePatchLim
 }
 
 // sourcePatchRecordValue encodes the shared standalone patch record
-// (protocol source.rs:325-371).
+// (protocol source.rs).
 func sourcePatchRecordValue(schema string, patch *SourcePatch, encoding core.Value) (core.Value, error) {
 	replacements := make([]core.Value, 0, len(patch.Replacements))
 	for _, replacement := range patch.Replacements {
@@ -1463,7 +1463,7 @@ func sourcePatchRecordValue(schema string, patch *SourcePatch, encoding core.Val
 }
 
 // sourcePatchFromValue strictly decodes one patch record
-// (protocol source.rs:373-...).
+// (protocol source.rs...).
 func sourcePatchFromValue(value core.Value, schema string,
 	parseEncoding func(core.Value, string) (SourceEncodingFacts, error),
 	limits SourcePatchLimits) (*SourcePatch, error) {

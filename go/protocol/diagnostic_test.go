@@ -30,7 +30,7 @@ func sampleDiagnostic(t *testing.T, registry ErrorCodeRegistry) *Diagnostic {
 
 func TestDiagnosticConstructionValidation(t *testing.T) {
 	registry := v7ErrorRegistry()
-	// Unknown code is a protocol error (RFC 0011; diagnostic.rs:336-351).
+	// Unknown code is a protocol error (RFC 0011; diagnostic.rs).
 	_, err := NewDiagnostic("example.unknown@1", CategorySyntax, SeverityError,
 		nil, nil, nil, nil, nil, 0, registry)
 	protocolErr, _ := err.(*ProtocolError)
@@ -150,7 +150,7 @@ func TestDiagnosticWireSchemaIsStrict(t *testing.T) {
 		t.Errorf("reordered fields: got %v", err)
 	}
 	// A diagnostic carrying a fix is fully expressible: the wire replacement
-	// field is a Bytes leaf carried with byte fidelity (diagnostic.rs:222-223
+	// field is a Bytes leaf carried with byte fidelity (diagnostic.rs
 	// and 424-429). The encoder and decoder agree.
 	withFix, err := NewDiagnostic("ini.parse.malformed-line@1", CategorySyntax, SeverityError,
 		nil, nil, nil, nil, []FixProposal{
@@ -172,7 +172,7 @@ func TestDiagnosticWireSchemaIsStrict(t *testing.T) {
 		t.Fatalf("fix round-trip changed the proposal: %+v", decoded.Fixes)
 	}
 	// Null replacement is a wrong-type error, mirroring the Rust as_bytes
-	// rejection (diagnostic.rs:424-429).
+	// rejection (diagnostic.rs).
 	tampered = append([]core.Entry(nil), encoded.(*core.Object).Entries()...)
 	fixArray, ok := tampered[8].Value.(*core.Array)
 	if !ok || len(fixArray.Items()) != 1 {

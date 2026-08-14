@@ -10,7 +10,7 @@ import (
 
 // LosslessStructuralIndex is the exhaustive token/trivia/error-region
 // byte coverage of one JSON-family document (document.LosslessStructuralIndex;
-// consema-json lib.rs:229-239). Every source byte belongs to exactly one
+// consema-json lib.rs). Every source byte belongs to exactly one
 // piece, in source order.
 type LosslessStructuralIndex = document.LosslessStructuralIndex
 
@@ -19,7 +19,7 @@ type LosslessStructuralIndex = document.LosslessStructuralIndex
 type StructuralPiece = document.StructuralPiece
 
 // Document is an opaque immutable JSON-family document snapshot
-// (consema-json lib.rs:170-183). Completed documents are logically
+// (consema-json lib.rs). Completed documents are logically
 // immutable and safe for concurrent reads.
 type Document struct {
 	authority       document.DocumentAuthority
@@ -79,7 +79,7 @@ func (d *Document) Root() JsonValue {
 }
 
 // entity is one structural association: a value, an object member, or an
-// array element (consema-json lib.rs:623-674).
+// array element (consema-json lib.rs).
 type entity struct {
 	value   *valueEntity
 	member  *memberEntity
@@ -139,7 +139,7 @@ type elementEntity struct {
 }
 
 // JsonValue is a borrowed typed native semantic value bound to one
-// Document snapshot (consema-json lib.rs:342-493).
+// Document snapshot (consema-json lib.rs).
 type JsonValue struct {
 	document *Document
 	index    int
@@ -284,7 +284,7 @@ func (v JsonValue) ObjectMembers() SemanticAvailability[[]JsonObjectMember] {
 }
 
 // JsonObjectMember is a borrowed JSON object member association
-// (consema-json lib.rs:495-561).
+// (consema-json lib.rs).
 type JsonObjectMember struct {
 	document *Document
 	index    int
@@ -329,7 +329,7 @@ func (m JsonObjectMember) Value() JsonValue {
 }
 
 // JsonArrayElement is a borrowed JSON array element association
-// (consema-json lib.rs:563-610).
+// (consema-json lib.rs).
 type JsonArrayElement struct {
 	document *Document
 	index    int

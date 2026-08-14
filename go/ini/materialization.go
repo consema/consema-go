@@ -218,7 +218,7 @@ type MaterializationResult struct {
 
 // Materialize materializes one nested String mapping into a new canonical
 // INI document under an exact profile, style, encoding, and newline
-// contract (materialization.rs:27-41).
+// contract (materialization.rs).
 func Materialize(value core.Value,
 	request document.MaterializationRequest) MaterializationResult {
 	analyzed := make([]protocol.ValuePath, 0, 16)
@@ -296,7 +296,7 @@ func requestedProfile(request document.MaterializationRequest) (IniProfile, *Mat
 }
 
 // validateRequest enforces the exact style/newline/encoding contract
-// (materialization.rs:91-127).
+// (materialization.rs).
 func validateRequest(request document.MaterializationRequest,
 	profile IniProfile) *MaterializationFailure {
 	styleMatches := false
@@ -338,7 +338,7 @@ func validateRequest(request document.MaterializationRequest,
 }
 
 // parseEncodingSelection maps one output encoding onto the parse
-// selection (materialization.rs:129-135).
+// selection (materialization.rs).
 func parseEncodingSelection(profile IniProfile,
 	encoding document.SourceEncoding) IniEncodingSelection {
 	if (profile.isPortable() || profile.isPython()) &&
@@ -352,7 +352,7 @@ func parseEncodingSelection(profile IniProfile,
 }
 
 // parseLimits maps the materialization limits onto the parse limits
-// (materialization.rs:137-160).
+// (materialization.rs).
 func parseLimits(limits document.MaterializationLimits) IniParseLimits {
 	return IniParseLimits{
 		Common: document.ParseLimits{
@@ -706,7 +706,7 @@ func (w *materializationWriter) newline() *MaterializationFailure {
 }
 
 // validatePythonValueLine rejects per-line edge whitespace that the frozen
-// parser would normalize away (materialization.rs:463-471).
+// parser would normalize away (materialization.rs).
 func validatePythonValueLine(line string) *MaterializationFailure {
 	if trimHorizontal(line) == line {
 		return nil
@@ -716,7 +716,7 @@ func validatePythonValueLine(line string) *MaterializationFailure {
 }
 
 // rejectCaseEquivalentObjectNames rejects Object input that would fabricate
-// Windows case-equivalent collisions (materialization.rs:473-487).
+// Windows case-equivalent collisions (materialization.rs).
 func rejectCaseEquivalentObjectNames(items []mappingItem) *MaterializationFailure {
 	seen := map[string]bool{}
 	for _, item := range items {
@@ -732,7 +732,7 @@ func rejectCaseEquivalentObjectNames(items []mappingItem) *MaterializationFailur
 
 // verifyClosure reprojects the materialized document under the request's
 // policy and requires exact equality with the input
-// (materialization.rs:489-535).
+// (materialization.rs).
 func verifyClosure(input core.Value, request document.MaterializationRequest,
 	document *Document) *MaterializationFailure {
 	projectionLimits := ProjectionLimits{
@@ -774,7 +774,7 @@ func verifyClosure(input core.Value, request document.MaterializationRequest,
 }
 
 // buildProvenance maps every input location to its materialized outputs
-// (materialization.rs:537-627).
+// (materialization.rs).
 func buildProvenance(input core.Value, sections []inputSection, document *Document,
 	limits document.MaterializationLimits) (MaterializationProvenanceMap, *MaterializationFailure) {
 	var entries []MaterializationProvenanceEntry
@@ -844,7 +844,7 @@ func buildProvenance(input core.Value, sections []inputSection, document *Docume
 }
 
 // appendContinuationOutputs adds the continuation-line value origins
-// (materialization.rs:629-659).
+// (materialization.rs).
 func appendContinuationOutputs(document *Document, entry IniEntry,
 	outputs *[]MaterializedOrigin) {
 	logical, ok := document.LogicalLine(entry.logicalLine)
@@ -917,7 +917,7 @@ func (b *boundedText) pushByte(value byte) *MaterializationFailure {
 func (b *boundedText) finish() string { return b.text }
 
 // textBudget projects the raw output budget onto the decoded-text budget
-// (materialization.rs:724-738).
+// (materialization.rs).
 func textBudget(encoding document.SourceEncoding,
 	maxOutputBytes int) (int, *MaterializationFailure) {
 	switch encoding.Kind() {
@@ -936,7 +936,7 @@ func textBudget(encoding document.SourceEncoding,
 }
 
 // encodeText encodes one text with the exact output encoding and BOM
-// policy (materialization.rs:740-768).
+// policy (materialization.rs).
 func encodeText(text string, encoding document.SourceEncoding,
 	maxOutputBytes int) ([]byte, *MaterializationFailure) {
 	bomBytes := 0
@@ -965,7 +965,7 @@ func encodeText(text string, encoding document.SourceEncoding,
 }
 
 // encodeFragment encodes one text fragment strictly
-// (materialization.rs:770-829). UTF-16 output never gains a marker here;
+// (materialization.rs). UTF-16 output never gains a marker here;
 // Windows code pages encode exactly through the frozen tables (the
 // two-byte 936/949/950 pages are not admitted on the encode side, matching
 // go/document's decode posture).
@@ -1035,7 +1035,7 @@ func appendUTF16(output []byte, unit uint16, littleEndian bool) []byte {
 }
 
 // windowsValueNeedsQuotes reports whether one Windows canonical value must
-// be quoted to preserve its semantic content (materialization.rs:874-888).
+// be quoted to preserve its semantic content (materialization.rs).
 func windowsValueNeedsQuotes(value string) bool {
 	if len(value) > 0 {
 		first := value[0]

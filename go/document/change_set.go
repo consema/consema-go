@@ -3,7 +3,7 @@ package document
 import "consema.dev/consema/protocol"
 
 // SourceEdit is one exact source edit between the old and new snapshots
-// (consema-document lib.rs:800-809 SourceEdit).
+// (consema-document lib.rs SourceEdit).
 type SourceEdit struct {
 	// OldSpan is the exact old-source range.
 	OldSpan Span
@@ -14,7 +14,7 @@ type SourceEdit struct {
 }
 
 // NodeMapping is one explicit old-to-new node mapping fact
-// (consema-document lib.rs:828-839 NodeMapping).
+// (consema-document lib.rs NodeMapping).
 type NodeMapping struct {
 	// Old is the old node identity.
 	Old NodeRef
@@ -29,7 +29,7 @@ type NodeMapping struct {
 }
 
 // ChangeSet is the complete old-to-new change facts of one edit commit
-// (consema-document lib.rs:841-900 ChangeSet; RFC 0016 §5.3).
+// (consema-document lib.rs ChangeSet; RFC 0016 §5.3).
 type ChangeSet struct {
 	base        SnapshotIdentity
 	target      SnapshotIdentity

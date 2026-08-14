@@ -3,7 +3,7 @@ package json
 import "consema.dev/consema/document"
 
 // JsonProfile is a frozen JSON-family language profile (consema-json
-// lib.rs:36-45).
+// lib.rs).
 type JsonProfile uint8
 
 // The three frozen JSON-family profiles.
@@ -33,19 +33,19 @@ func (p JsonProfile) ID() document.ProfileId {
 }
 
 // permitsJSONCExtensions reports whether bounded comments and trailing
-// commas are accepted (consema-json lib.rs:148-153).
+// commas are accepted (consema-json lib.rs).
 func (p JsonProfile) permitsJSONCExtensions() bool {
 	return p == JsonProfileJsoncBoundedV1 || p == JsonProfileJson5StandardV1
 }
 
 // isJSON5 reports whether the Standard JSON5 lexical surface is accepted
-// (consema-json lib.rs:154-159).
+// (consema-json lib.rs).
 func (p JsonProfile) isJSON5() bool {
 	return p == JsonProfileJson5StandardV1
 }
 
 // JsonSyntaxKind is the closed JSON/JSONC v1 lossless syntax-piece
-// classification (consema-json lib.rs:47-84).
+// classification (consema-json lib.rs).
 type JsonSyntaxKind uint8
 
 // The closed syntax-piece kinds in source order.
@@ -132,7 +132,7 @@ func (k JsonSyntaxKind) AsStr() string {
 func (k JsonSyntaxKind) String() string { return k.AsStr() }
 
 // JsonSyntaxKindFromName resolves one exact stable kind name
-// (consema-json lib.rs:111-135).
+// (consema-json lib.rs).
 func JsonSyntaxKindFromName(name string) (JsonSyntaxKind, bool) {
 	switch name {
 	case "Bom":

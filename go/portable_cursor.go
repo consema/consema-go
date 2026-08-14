@@ -411,7 +411,7 @@ func buildCursorProducer(expression *protocol.QueryExpression,
 }
 
 // cursorMatchIdentity is the distinct-by-identity key of one portable
-// match (the Rust PortableIdentity::Value(path); query.rs:2248-2262).
+// match (the Rust PortableIdentity::Value(path); query.rs).
 func cursorMatchIdentity(match protocol.PortableMatch) string {
 	var key strings.Builder
 	for _, segment := range match.Path.Segments() {

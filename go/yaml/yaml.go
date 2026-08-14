@@ -37,7 +37,7 @@ func (p YamlProfile) acceptedVersion() string {
 }
 
 // YamlSyntaxKind is the closed YAML lossless presentation-piece
-// classification (consema-yaml lib.rs:63-116). The stable query and
+// classification (consema-yaml lib.rs). The stable query and
 // protocol spellings are the exact `as_str` names.
 type YamlSyntaxKind string
 
@@ -171,7 +171,7 @@ func (k YamlSyntaxKind) IsTrivia() bool {
 }
 
 // YamlNodeKind is the YAML native representation node kind (consema-yaml
-// lib.rs:118-127).
+// lib.rs).
 type YamlNodeKind string
 
 // The three frozen native node kinds.
@@ -188,7 +188,7 @@ const (
 func (k YamlNodeKind) String() string { return string(k) }
 
 // YamlScalarStyle is the exact scalar presentation style (consema-yaml
-// lib.rs:129-142).
+// lib.rs).
 type YamlScalarStyle uint8
 
 // The five frozen scalar styles.
@@ -223,7 +223,7 @@ func (s YamlScalarStyle) String() string {
 }
 
 // YamlScalarKind is the resolved native scalar semantic category
-// (consema-yaml lib.rs:144-165).
+// (consema-yaml lib.rs).
 type YamlScalarKind uint8
 
 // The nine frozen scalar categories.
@@ -276,7 +276,7 @@ func (k YamlScalarKind) String() string {
 }
 
 // FormationFailure is the fatal formation failure before any complete
-// Document exists (consema-document lib.rs:643-652). It implements error
+// Document exists (consema-document lib.rs). It implements error
 // and the RFC 0016 §6 Code() contract with the first diagnostic's
 // registered code.
 type FormationFailure struct {
@@ -336,7 +336,7 @@ func newNativeFailure(code string) *FormationFailure {
 }
 
 // resourceLimitFailure builds the frozen core.parse.resource-limit@1
-// diagnostic (consema-document lib.rs:770-789).
+// diagnostic (consema-document lib.rs).
 func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 	return newFormationFailure("core.parse.resource-limit@1", protocol.CategoryResource,
 		-1, -1, map[string]string{
@@ -347,7 +347,7 @@ func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 }
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (consema-document lib.rs:415-422).
+// (consema-document lib.rs).
 type StructuralPieceKind = document.StructuralPieceKind
 
 // The three frozen piece classes.
@@ -361,24 +361,24 @@ const (
 )
 
 // StructuralPiece is one source byte interval and its lossless class
-// (document.StructuralPiece; consema-document lib.rs:425-447).
+// (document.StructuralPiece; consema-document lib.rs).
 type StructuralPiece = document.StructuralPiece
 
 // LosslessStructuralIndex is the exhaustive ordered token/trivia coverage
 // of one source (document.LosslessStructuralIndex; consema-document
-// lib.rs:449-492). The index validates exact byte coverage and snapshot
+// lib.rs). The index validates exact byte coverage and snapshot
 // binding at construction.
 type LosslessStructuralIndex = document.LosslessStructuralIndex
 
 // NewLosslessStructuralIndex validates exact raw-byte coverage of the
-// source and snapshot binding (consema-document lib.rs:449-492).
+// source and snapshot binding (consema-document lib.rs).
 func NewLosslessStructuralIndex(identity document.SnapshotIdentity, sourceLen int,
 	pieces []StructuralPiece) (*LosslessStructuralIndex, error) {
 	return document.NewLosslessStructuralIndex(identity, sourceLen, pieces)
 }
 
 // Document is the immutable exact-source YAML stream snapshot (consema-yaml
-// lib.rs:322-461). Completed documents are logically immutable; concurrent
+// lib.rs). Completed documents are logically immutable; concurrent
 // reads are safe.
 type Document struct {
 	authority document.DocumentAuthority
@@ -485,7 +485,7 @@ func (d *Document) nodeRef(index int) document.NodeRef {
 }
 
 // YamlDocument is one independent document in a YAML stream (consema-yaml
-// lib.rs:463-501).
+// lib.rs).
 type YamlDocument struct {
 	owner    *Document
 	ordinal  int
@@ -510,7 +510,7 @@ func (d YamlDocument) Root() YamlNode {
 }
 
 // YamlNode is the snapshot-bound YAML representation node (consema-yaml
-// lib.rs:503-615).
+// lib.rs).
 type YamlNode struct {
 	owner *Document
 	index int
@@ -617,7 +617,7 @@ func (n YamlNode) MappingEntry(ordinal int) (YamlMappingEntry, bool) {
 }
 
 // YamlScalar carries the native scalar facts with exact decoded and
-// canonical content (consema-yaml lib.rs:617-647).
+// canonical content (consema-yaml lib.rs).
 type YamlScalar struct {
 	scalar *nativeScalar
 }
@@ -636,7 +636,7 @@ func (s YamlScalar) Kind() YamlScalarKind { return s.scalar.kind }
 func (s YamlScalar) Style() YamlScalarStyle { return s.scalar.style }
 
 // YamlSequenceItem is one ordered sequence association (consema-yaml
-// lib.rs:649-689).
+// lib.rs).
 type YamlSequenceItem struct {
 	owner *Document
 	item  *nativeSequenceItem
@@ -666,7 +666,7 @@ func (i YamlSequenceItem) Alias() (YamlAlias, bool) {
 }
 
 // YamlMappingEntry is one ordered YAML mapping association with an
-// arbitrary key node (consema-yaml lib.rs:691-749).
+// arbitrary key node (consema-yaml lib.rs).
 type YamlMappingEntry struct {
 	owner *Document
 	entry *nativeMappingEntry
@@ -710,7 +710,7 @@ func (e YamlMappingEntry) ValueAlias() (YamlAlias, bool) {
 }
 
 // YamlAlias is one alias serialization occurrence pointing at an existing
-// representation node (consema-yaml lib.rs:751-787).
+// representation node (consema-yaml lib.rs).
 type YamlAlias struct {
 	owner *Document
 	alias *nativeAlias

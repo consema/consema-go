@@ -29,7 +29,7 @@ const (
 )
 
 // JsonMatch is one snapshot-bound JSON native semantic query match
-// (consema-json query.rs:12-53).
+// (consema-json query.rs).
 type JsonMatch struct {
 	// Kind is the closed match category.
 	Kind JsonMatchKind
@@ -50,11 +50,11 @@ type JsonMatch struct {
 	Value document.NodeRef
 }
 
-// Identity returns the exact match identity (consema-json query.rs:45-53).
+// Identity returns the exact match identity (consema-json query.rs).
 func (m JsonMatch) Identity() document.NodeRef { return m.Node }
 
 // JsonSyntaxMatch is one snapshot-bound JSON lossless syntax query match
-// (consema-json query.rs:56-88).
+// (consema-json query.rs).
 type JsonSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -75,7 +75,7 @@ func (m JsonSyntaxMatch) Kind() JsonSyntaxKind { return m.kind }
 func (m JsonSyntaxMatch) Ordinal() int { return m.ordinal }
 
 // ExecuteJSONQuery executes a validated JSON native semantic query against
-// one immutable snapshot (consema-json query.rs:91-125). The executable
+// one immutable snapshot (consema-json query.rs). The executable
 // must have been validated and bound against the capabilities; the
 // domain/profile version contract is rechecked here (JSON5 documents
 // require the v2 domain). ctx carries cancellation only.
@@ -88,7 +88,7 @@ func ExecuteJSONQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	}
 	context := &queryContext{document: doc, limits: limits}
 	// The root is the first standard result; it must not bypass result
-	// limits (query.rs:113-114).
+	// limits (query.rs).
 	if failure := context.step(ctx, 1); failure != nil {
 		return nil, failure
 	}
@@ -145,7 +145,7 @@ func (c *JsonQueryCursor) NextMatch() (JsonMatch, *protocol.QueryFailure) {
 }
 
 // ExecuteJSONSyntaxQuery executes a validated JSON lossless syntax query
-// against every source piece in raw order (consema-json query.rs:142-183).
+// against every source piece in raw order (consema-json query.rs).
 func ExecuteJSONSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]JsonSyntaxMatch, *protocol.QueryFailure) {
 	domain := executable.Definition().Domain()
@@ -204,7 +204,7 @@ func (c *JsonSyntaxQueryCursor) NextMatch() (JsonSyntaxMatch, *protocol.QueryFai
 	return match, nil
 }
 
-// queryContext is the execution state of one query (query.rs:195-228).
+// queryContext is the execution state of one query (query.rs).
 type queryContext struct {
 	document *Document
 	limits   protocol.QueryLimits
@@ -212,7 +212,7 @@ type queryContext struct {
 }
 
 // step applies the step and result budgets and the cancellation check
-// (query.rs:204-213).
+// (query.rs).
 func (c *queryContext) step(ctx context.Context, results int) *protocol.QueryFailure {
 	if ctx != nil && ctx.Err() != nil {
 		return &protocol.QueryFailure{Kind: protocol.FailureCancelled}
@@ -224,7 +224,7 @@ func (c *queryContext) step(ctx context.Context, results int) *protocol.QueryFai
 	return nil
 }
 
-// executeExpression evaluates one native expression (query.rs:230-271).
+// executeExpression evaluates one native expression (query.rs).
 func executeExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []JsonMatch, context *queryContext) ([]JsonMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -277,7 +277,7 @@ func executeExpression(ctx context.Context, expression *protocol.QueryExpression
 	return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
 }
 
-// executeSyntaxExpression evaluates one syntax expression (query.rs:273-305).
+// executeSyntaxExpression evaluates one syntax expression (query.rs).
 func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []JsonSyntaxMatch, context *queryContext) ([]JsonSyntaxMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -320,7 +320,7 @@ func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpr
 	return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
 }
 
-// applyOperator applies one native operator (query.rs:358-477).
+// applyOperator applies one native operator (query.rs).
 func applyOperator(ctx context.Context, operator *protocol.OperatorCall, input []JsonMatch,
 	context *queryContext) ([]JsonMatch, *protocol.QueryFailure) {
 	var output []JsonMatch
@@ -414,7 +414,7 @@ func applyOperator(ctx context.Context, operator *protocol.OperatorCall, input [
 	return output, nil
 }
 
-// applySyntaxOperator applies one syntax operator (query.rs:307-356).
+// applySyntaxOperator applies one syntax operator (query.rs).
 func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall, input []JsonSyntaxMatch,
 	context *queryContext) ([]JsonSyntaxMatch, *protocol.QueryFailure) {
 	var output []JsonSyntaxMatch
@@ -504,7 +504,7 @@ func takeCount(operator *protocol.OperatorCall) int {
 }
 
 // applySelection applies the native cardinality selection
-// (query.rs:479-496).
+// (query.rs).
 func applySelection(values []JsonMatch, selection protocol.QuerySelection) ([]JsonMatch, *protocol.QueryFailure) {
 	switch selection {
 	case protocol.SelectionAll, "":

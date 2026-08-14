@@ -9,7 +9,7 @@ package plist
 // the production defaults, limit failures are passes, and property
 // assertions detect closure violations.
 //
-// The binary face is the plist-specific high-value surface (SECURITY.md:34;
+// The binary face is the plist-specific high-value surface (SECURITY.md;
 // RFC 0013 §5): object tables, offset tables, and trailers are adversarial
 // inputs, and the out-of-bounds/cycle/overflow recovery must never panic,
 // never fabricate, and never fake a Complete document. A successful parse

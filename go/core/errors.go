@@ -74,12 +74,12 @@ const (
 	// ErrInvalidTemporal: date, time, or offset fields were outside the
 	// supported ranges (the Rust DecodeError::InvalidTemporal and the
 	// ValueBuildError::InvalidDate/InvalidTime/InvalidOffset construction
-	// failures, consema-rs/consema-pvce/src/lib.rs:971-979).
+	// failures, consema-rs/consema-pvce/src/lib.rs).
 	ErrInvalidTemporal
 )
 
 // The frozen registered codes, transcribed from the Rust StableFailure
-// mapping in consema-rs/consema-pvce/src/lib.rs:1062-1087.
+// mapping in consema-rs/consema-pvce/src/lib.rs.
 const (
 	codeInvalidMagic        = "core.pvce.invalid-magic@1"
 	codeUnsupportedVersion  = "core.pvce.unsupported-version@1"
@@ -165,7 +165,7 @@ func (e *PVCEError) Error() string {
 }
 
 // Code returns the frozen registered code for the failure (RFC 0016 §6;
-// consema-rs/consema-pvce/src/lib.rs:1062-1087).
+// consema-rs/consema-pvce/src/lib.rs).
 func (e *PVCEError) Code() string {
 	switch e.Kind {
 	case ErrInvalidMagic:

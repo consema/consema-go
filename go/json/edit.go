@@ -20,7 +20,7 @@ import (
 // modifies the base document.
 
 // RepresentationPolicy is the explicit semantic scalar representation
-// policy (edit.rs:17-28).
+// policy (edit.rs).
 type RepresentationPolicy uint8
 
 // The four frozen policies.
@@ -53,7 +53,7 @@ const (
 )
 
 // ScalarReplacement is one scalar operation bound to the transaction's
-// base snapshot (edit.rs:30-57).
+// base snapshot (edit.rs).
 type ScalarReplacement struct {
 	// Kind is the closed replacement category.
 	Kind ScalarReplacementKind
@@ -68,7 +68,7 @@ type ScalarReplacement struct {
 }
 
 // EditOperationKind is the closed JSON edit operation category
-// (edit.rs:59-108).
+// (edit.rs).
 type EditOperationKind uint8
 
 // The seven frozen operation categories.
@@ -96,7 +96,7 @@ const (
 )
 
 // EditOperation is one typed JSON edit operation bound to an immutable
-// base snapshot (edit.rs:59-108). Only the fields of the declared Kind
+// base snapshot (edit.rs). Only the fields of the declared Kind
 // are meaningful.
 type EditOperation struct {
 	// Kind is the closed operation category.
@@ -121,7 +121,7 @@ type EditOperation struct {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (edit.rs:110-129).
+// against one base snapshot (edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -137,7 +137,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder is a builder that is not a committed edit
-// (edit.rs:131-243).
+// (edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -225,7 +225,7 @@ func (b *EditTransactionBuilder) RemoveArrayElement(target document.NodeRef) *Ed
 }
 
 // Build completes the immutable request; target validation happens
-// atomically at commit (edit.rs:236-242).
+// atomically at commit (edit.rs).
 func (b *EditTransactionBuilder) Build() *EditTransaction {
 	return &EditTransaction{
 		base:       b.base,
@@ -233,7 +233,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	}
 }
 
-// EditCommit is the atomic edit success (edit.rs:245-256).
+// EditCommit is the atomic edit success (edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -247,7 +247,7 @@ type EditCommit struct {
 }
 
 // EditFailureKind is the stable edit validation or commit failure
-// category (edit.rs:258-299).
+// category (edit.rs).
 type EditFailureKind uint8
 
 // The closed edit failure categories.
@@ -313,7 +313,7 @@ const (
 
 // EditFailure is the typed edit failure. It implements error and the
 // RFC 0016 §6 Code() contract with the frozen registered codes
-// (edit.rs:1269-1324).
+// (edit.rs).
 type EditFailure struct {
 	// Kind identifies the failure.
 	Kind EditFailureKind
@@ -416,7 +416,7 @@ func (e *EditFailure) Name() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (edit.rs:1299-1323).
+// (edit.rs).
 func (e *EditFailure) Code() string {
 	switch e.Kind {
 	case EditFailureRecoveredDocument, EditFailureIncompleteTarget:
@@ -450,7 +450,7 @@ func (e *EditFailure) Code() string {
 }
 
 // Commit atomically commits scalar and structural operations. On failure
-// the base document remains unchanged (edit.rs:301-451).
+// the base document remains unchanged (edit.rs).
 func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	if d.formationStatus != document.FormationStatusComplete {
 		return nil, &EditFailure{Kind: EditFailureRecoveredDocument}
@@ -589,7 +589,7 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 }
 
 // DryRun fully validates and plans an edit without returning a new
-// Document (edit.rs:453-469).
+// Document (edit.rs).
 func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *EditFailure) {
 	commit, failure := d.Commit(tx)
 	if failure != nil {
@@ -632,7 +632,7 @@ const (
 )
 
 // prepareOperation prepares one operation into owned edits
-// (edit.rs:471-503).
+// (edit.rs).
 func (d *Document) prepareOperation(operation *EditOperation,
 	diagnostics *[]*protocol.Diagnostic) ([]preparedEdit, *EditFailure) {
 	switch operation.Kind {
@@ -670,7 +670,7 @@ func (d *Document) prepareOperation(operation *EditOperation,
 	return nil, &EditFailure{Kind: EditFailureWrongRole}
 }
 
-// prepareScalar prepares one scalar replacement (edit.rs:505-556).
+// prepareScalar prepares one scalar replacement (edit.rs).
 func (d *Document) prepareScalar(operation *ScalarReplacement,
 	diagnostics *[]*protocol.Diagnostic) (*preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(operation.Target, []document.NodeRole{
@@ -725,7 +725,7 @@ func (d *Document) prepareScalar(operation *ScalarReplacement,
 	}, nil
 }
 
-// prepareInsertMember prepares one member insertion (edit.rs:558-595).
+// prepareInsertMember prepares one member insertion (edit.rs).
 func (d *Document) prepareInsertMember(object document.NodeRef, name string, value core.Value,
 	placement AssociationPlacement) ([]preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(object, []document.NodeRole{document.RoleValue})
@@ -763,7 +763,7 @@ func (d *Document) prepareInsertMember(object document.NodeRef, name string, val
 }
 
 // prepareInsertArrayElement prepares one array element insertion
-// (edit.rs:597-623).
+// (edit.rs).
 func (d *Document) prepareInsertArrayElement(array document.NodeRef, value core.Value,
 	placement AssociationPlacement) ([]preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(array, []document.NodeRole{document.RoleValue})
@@ -800,7 +800,7 @@ type insertionSyntax struct {
 }
 
 // prepareInsertion computes one zero-width insertion edit
-// (edit.rs:625-695).
+// (edit.rs).
 func (d *Document) prepareInsertion(container document.NodeRef, containerSpan document.Span,
 	associations []int, syntax insertionSyntax, placement AssociationPlacement,
 	fragment []byte) (*preparedEdit, *EditFailure) {
@@ -871,7 +871,7 @@ func (d *Document) prepareInsertion(container document.NodeRef, containerSpan do
 	}, nil
 }
 
-// prepareRemoveMember prepares one member removal (edit.rs:697-709).
+// prepareRemoveMember prepares one member removal (edit.rs).
 func (d *Document) prepareRemoveMember(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(target, []document.NodeRole{document.RoleObjectMember})
 	if failure != nil {
@@ -885,7 +885,7 @@ func (d *Document) prepareRemoveMember(target document.NodeRef) ([]preparedEdit,
 }
 
 // prepareMoveMember prepares one same-Object member move
-// (edit.rs:711-782).
+// (edit.rs).
 func (d *Document) prepareMoveMember(target document.NodeRef,
 	placement AssociationPlacement) ([]preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(target, []document.NodeRole{document.RoleObjectMember})
@@ -958,7 +958,7 @@ func (d *Document) prepareMoveMember(target document.NodeRef,
 }
 
 // prepareRemoveArrayElement prepares one array element removal
-// (edit.rs:784-799).
+// (edit.rs).
 func (d *Document) prepareRemoveArrayElement(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(target, []document.NodeRole{document.RoleArrayElement})
 	if failure != nil {
@@ -972,7 +972,7 @@ func (d *Document) prepareRemoveArrayElement(target document.NodeRef) ([]prepare
 }
 
 // prepareRemoval prepares one association removal with its comma
-// ownership (edit.rs:801-849).
+// ownership (edit.rs).
 func (d *Document) prepareRemoval(target document.NodeRef, index int, associations []int,
 	ordinal int, containerEnd int) ([]preparedEdit, *EditFailure) {
 	targetSpan := d.span(index)
@@ -1010,7 +1010,7 @@ func (d *Document) prepareRemoval(target document.NodeRef, index int, associatio
 	return edits, nil
 }
 
-// prepareRenameMember prepares one member key rename (edit.rs:851-872).
+// prepareRenameMember prepares one member key rename (edit.rs).
 func (d *Document) prepareRenameMember(target document.NodeRef, name string) (*preparedEdit, *EditFailure) {
 	index, failure := d.resolveTarget(target, []document.NodeRole{document.RoleObjectMember})
 	if failure != nil {
@@ -1042,7 +1042,7 @@ func (d *Document) prepareRenameMember(target document.NodeRef, name string) (*p
 }
 
 // resolveTarget resolves one target handle against its roles
-// (edit.rs:874-887).
+// (edit.rs).
 func (d *Document) resolveTarget(target document.NodeRef, roles []document.NodeRole) (int, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() {
 		return 0, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1072,7 +1072,7 @@ func (d *Document) resolveTarget(target document.NodeRef, roles []document.NodeR
 }
 
 // resolveAnchor resolves one placement anchor inside its container
-// (edit.rs:889-900).
+// (edit.rs).
 func (d *Document) resolveAnchor(anchor document.NodeRef, role document.NodeRole,
 	associations []int) (int, *EditFailure) {
 	index, failure := d.resolveTarget(anchor, []document.NodeRole{role})
@@ -1088,7 +1088,7 @@ func (d *Document) resolveAnchor(anchor document.NodeRef, role document.NodeRole
 }
 
 // fragment renders one value as a canonical profile fragment
-// (edit.rs:902-923).
+// (edit.rs).
 func (d *Document) fragment(value core.Value) ([]byte, *EditFailure) {
 	bytes, failure := canonicalFragment(value, d.profile, document.MaterializationLimits{
 		MaxInputNodes:        d.parseLimits.MaxNodeCount,
@@ -1112,7 +1112,7 @@ func (d *Document) fragment(value core.Value) ([]byte, *EditFailure) {
 }
 
 // parentObject locates the object container of one member
-// (edit.rs:925-939).
+// (edit.rs).
 func (d *Document) parentObject(member int) (int, []int, int, *EditFailure) {
 	for index := range d.entities {
 		item := &d.entities[index]
@@ -1128,7 +1128,7 @@ func (d *Document) parentObject(member int) (int, []int, int, *EditFailure) {
 }
 
 // parentArray locates the array container of one element
-// (edit.rs:941-955).
+// (edit.rs).
 func (d *Document) parentArray(element int) (int, []int, int, *EditFailure) {
 	for index := range d.entities {
 		item := &d.entities[index]
@@ -1144,7 +1144,7 @@ func (d *Document) parentArray(element int) (int, []int, int, *EditFailure) {
 }
 
 // removalComma finds the comma owned by one removal
-// (edit.rs:957-987).
+// (edit.rs).
 func (d *Document) removalComma(associations []int, ordinal int,
 	containerEnd int) (document.Span, bool, *EditFailure) {
 	current := d.span(associations[ordinal])
@@ -1167,7 +1167,7 @@ func (d *Document) removalComma(associations []int, ordinal int,
 }
 
 // delimiter finds the open or close delimiter of one container
-// (edit.rs:989-997).
+// (edit.rs).
 func (d *Document) delimiter(kind JsonSyntaxKind, container document.Span,
 	last bool) (document.Span, *EditFailure) {
 	span, ok := d.syntaxBetween(kind, container.StartByte(), container.EndByte(), last)
@@ -1178,7 +1178,7 @@ func (d *Document) delimiter(kind JsonSyntaxKind, container document.Span,
 }
 
 // syntaxBetween finds the first or last piece of one syntax kind within a
-// range (edit.rs:999-1022).
+// range (edit.rs).
 func (d *Document) syntaxBetween(kind JsonSyntaxKind, start, end int, last bool) (document.Span, bool) {
 	matches := make([]document.Span, 0, 4)
 	for index, piece := range d.structuralIndex.Pieces() {
@@ -1197,7 +1197,7 @@ func (d *Document) syntaxBetween(kind JsonSyntaxKind, start, end int, last bool)
 }
 
 // validateDependencies rejects conflicting operation graphs before any
-// preparation (edit.rs:1025-1078).
+// preparation (edit.rs).
 func validateDependencies(tx *EditTransaction) *EditFailure {
 	destructive := make(map[document.NodeRef]bool)
 	removed := make(map[document.NodeRef]bool)
@@ -1257,7 +1257,7 @@ func validateDependencies(tx *EditTransaction) *EditFailure {
 }
 
 // appendFragment appends one fragment under the byte budget
-// (edit.rs:1080-1093).
+// (edit.rs).
 func appendFragment(output *[]byte, fragment []byte, max int) *EditFailure {
 	if len(*output)+len(fragment) > max {
 		return &EditFailure{Kind: EditFailureResourceLimit, LimitName: "insert-fragment"}
@@ -1267,7 +1267,7 @@ func appendFragment(output *[]byte, fragment []byte, max int) *EditFailure {
 }
 
 // sourcePatchLimits derives the patch budgets from the parse limits
-// (edit.rs:1095-1108).
+// (edit.rs).
 func sourcePatchLimits(parseLimits document.ParseLimits, operationCount int) document.SourcePatchLimits {
 	return document.SourcePatchLimits{
 		Source: document.SourceLimits{
@@ -1281,7 +1281,7 @@ func sourcePatchLimits(parseLimits document.ParseLimits, operationCount int) doc
 }
 
 // operationMetadata builds the deterministic patch metadata
-// (edit.rs:1110-1133).
+// (edit.rs).
 func operationMetadata(tx *EditTransaction) map[string]string {
 	metadata := make(map[string]string, len(tx.operations))
 	for index, operation := range tx.operations {
@@ -1315,7 +1315,7 @@ func operationID(operation *EditOperation) string {
 }
 
 // operationSummaries builds the safe content-free summaries
-// (edit.rs:1135-1229).
+// (edit.rs).
 func operationSummaries(tx *EditTransaction) ([]*protocol.EditOperationSummary, *EditFailure) {
 	summaries := make([]*protocol.EditOperationSummary, 0, len(tx.operations))
 	for _, operation := range tx.operations {
@@ -1370,7 +1370,7 @@ func operationSummaries(tx *EditTransaction) ([]*protocol.EditOperationSummary, 
 	return summaries, nil
 }
 
-// placementName renders one placement's stable name (edit.rs:1231-1238).
+// placementName renders one placement's stable name (edit.rs).
 func placementName(placement AssociationPlacement) string {
 	switch placement.Kind() {
 	case PlacementStart:
@@ -1385,7 +1385,7 @@ func placementName(placement AssociationPlacement) string {
 	return "start"
 }
 
-// jsonPolicyName renders one policy's stable name (edit.rs:1240-1247).
+// jsonPolicyName renders one policy's stable name (edit.rs).
 func jsonPolicyName(policy RepresentationPolicy) string {
 	switch policy {
 	case RepresentationPolicyExactLiteral:
@@ -1401,13 +1401,13 @@ func jsonPolicyName(policy RepresentationPolicy) string {
 }
 
 // valueKindName renders one PortableValue kind's stable name
-// (edit.rs:1249-1267).
+// (edit.rs).
 func valueKindName(kind core.Kind) string {
 	return kind.String()
 }
 
 // semanticLiteral resolves one semantic replacement under its policy
-// (edit.rs:1346-1386).
+// (edit.rs).
 func semanticLiteral(value core.Value, old *internalValueKind, oldLiteral string,
 	profile JsonProfile, policy RepresentationPolicy, authority document.DocumentAuthority,
 	targetSpan document.Span, diagnostics *[]*protocol.Diagnostic) ([]byte, *EditFailure) {
@@ -1447,11 +1447,11 @@ func semanticLiteral(value core.Value, old *internalValueKind, oldLiteral string
 }
 
 // maxPreservedFractionDigits bounds a preserved fixed-fraction rendering
-// (edit.rs:1388-1389).
+// (edit.rs).
 const maxPreservedFractionDigits = 1_000_000
 
 // jsonScalarLexicalStyle is the bounded lexical style retained by
-// PreserveCompatible edits (edit.rs:1391-1440).
+// PreserveCompatible edits (edit.rs).
 type jsonScalarLexicalStyle struct {
 	kind           jsonScalarStyleKind
 	radix          integerRadix
@@ -1488,7 +1488,7 @@ const (
 )
 
 // analyzeLexicalStyle recovers one literal's lexical style
-// (edit.rs:1442-1504).
+// (edit.rs).
 func analyzeLexicalStyle(literal string, old *internalValueKind) *jsonScalarLexicalStyle {
 	text := literal
 	switch old.tag {
@@ -1554,7 +1554,7 @@ func stripSign(text string) string {
 }
 
 // analyzeStringStyle recovers one string literal's quote and escape style
-// (edit.rs:1506-1579).
+// (edit.rs).
 func analyzeStringStyle(literal string) *jsonScalarLexicalStyle {
 	text := literal
 	if len(text) < 2 {
@@ -1692,7 +1692,7 @@ func hexQuadFromRunes(chars []rune) (uint16, bool) {
 }
 
 // renderPreservingStyle renders one value under the recovered style
-// (edit.rs:1581-1613).
+// (edit.rs).
 func renderPreservingStyle(value core.Value, style *jsonScalarLexicalStyle) []byte {
 	switch style.kind {
 	case styleNull:
@@ -1727,7 +1727,7 @@ func renderPreservingStyle(value core.Value, style *jsonScalarLexicalStyle) []by
 }
 
 // renderIntegerStyle renders one integer under the recovered style
-// (edit.rs:1615-1651).
+// (edit.rs).
 func renderIntegerStyle(value *big.Int, style *jsonScalarLexicalStyle) []byte {
 	var output strings.Builder
 	if value.Sign() < 0 {
@@ -1778,7 +1778,7 @@ func strconvFormat(octet byte, base int, width int) string {
 }
 
 // renderDecimalStyle renders one decimal or integer under the recovered
-// style (edit.rs:1653-1702).
+// style (edit.rs).
 func renderDecimalStyle(value core.Value, style *jsonScalarLexicalStyle) []byte {
 	var coefficient *big.Int
 	var exponent *big.Int
@@ -1870,7 +1870,7 @@ func pow10(power int) *big.Int {
 }
 
 // removeLeadingZero removes the leading zero of a fixed decimal
-// (edit.rs:1704-1709).
+// (edit.rs).
 func removeLeadingZero(text string) (string, bool) {
 	zero := 0
 	if strings.HasPrefix(text, "-0.") {
@@ -1883,7 +1883,7 @@ func removeLeadingZero(text string) (string, bool) {
 }
 
 // renderNonFiniteStyle renders one frozen non-finite literal under the
-// recovered style (edit.rs:1711-1725).
+// recovered style (edit.rs).
 func renderNonFiniteStyle(value core.BinaryFloat64, style *jsonScalarLexicalStyle) []byte {
 	switch value.Bits() {
 	case 0x7ff0_0000_0000_0000:
@@ -1905,7 +1905,7 @@ func renderNonFiniteStyle(value core.BinaryFloat64, style *jsonScalarLexicalStyl
 }
 
 // decimalFixedText renders one coefficient at a fixed scale
-// (edit.rs:1727-1739).
+// (edit.rs).
 func decimalFixedText(mantissa *big.Int, scale int) string {
 	text := mantissa.String()
 	sign := ""
@@ -1922,7 +1922,7 @@ func decimalFixedText(mantissa *big.Int, scale int) string {
 }
 
 // renderStringStyle renders one string under the recovered quote and
-// escape style (edit.rs:1741-1753).
+// escape style (edit.rs).
 func renderStringStyle(value string, style *jsonScalarLexicalStyle) string {
 	var output strings.Builder
 	output.WriteRune(style.quote)
@@ -1938,7 +1938,7 @@ func renderStringStyle(value string, style *jsonScalarLexicalStyle) string {
 }
 
 // portableJSONKind resolves one value's representable JSON category
-// (edit.rs:1755-1767).
+// (edit.rs).
 func portableJSONKind(value core.Value, profile JsonProfile) *JsonValueKind {
 	switch value.Kind() {
 	case core.KindNull:
@@ -1966,7 +1966,7 @@ func portableJSONKind(value core.Value, profile JsonProfile) *JsonValueKind {
 }
 
 // canonicalLiteral renders one value in deterministic profile-canonical
-// syntax (edit.rs:1769-1795).
+// syntax (edit.rs).
 func canonicalLiteral(value core.Value, profile JsonProfile) ([]byte, *EditFailure) {
 	var text string
 	switch value.Kind() {
@@ -2005,7 +2005,7 @@ func canonicalLiteral(value core.Value, profile JsonProfile) ([]byte, *EditFailu
 }
 
 // encodeJSONString renders one string in canonical double-quoted syntax
-// (edit.rs:1797-1805).
+// (edit.rs).
 func encodeJSONString(value string, json5 bool) string {
 	var output strings.Builder
 	output.WriteByte('"')
@@ -2017,7 +2017,7 @@ func encodeJSONString(value string, json5 bool) string {
 }
 
 // pushJSONStringChar writes one escaped string character
-// (edit.rs:1807-1829).
+// (edit.rs).
 func pushJSONStringChar(output *strings.Builder, character rune, quote rune, canonicalJSON5 bool) {
 	switch {
 	case character == quote:
@@ -2055,7 +2055,7 @@ func escapeUpperHex(character rune) string {
 }
 
 // validateLiteral verifies one exact literal candidate
-// (edit.rs:1831-1862).
+// (edit.rs).
 func validateLiteral(literal []byte, profile JsonProfile,
 	limits document.ParseLimits) (JsonValueKind, *EditFailure) {
 	if len(literal) == 0 || !utf8Valid(literal) {
@@ -2089,7 +2089,7 @@ func utf8Valid(bytes []byte) bool {
 }
 
 // findValueByLiteralSpan locates the unique value whose literal span
-// matches the new range (edit.rs:1864-1882).
+// matches the new range (edit.rs).
 func findValueByLiteralSpan(document *Document, start, end int) int {
 	found := -1
 	for index := range document.entities {

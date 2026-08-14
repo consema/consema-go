@@ -84,7 +84,7 @@ func (e *MaterializationFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (consema-document materialization.rs:379-388).
+// (consema-document materialization.rs).
 func (e *MaterializationFailure) Code() string {
 	switch e.Kind {
 	case MaterializationFailureInvalidRequest:
@@ -232,7 +232,7 @@ type MaterializationResult struct {
 }
 
 // Materialize materializes one complete PortableValue into a new immutable
-// JSON or JSONC document (materialization.rs:17-32).
+// JSON or JSONC document (materialization.rs).
 func Materialize(value core.Value, request document.MaterializationRequest) MaterializationResult {
 	analyzed := make([]protocol.ValuePath, 0, 16)
 	complete, failure := materializeComplete(value, request, &analyzed)
@@ -247,7 +247,7 @@ func Materialize(value core.Value, request document.MaterializationRequest) Mate
 }
 
 // canonicalFragment renders one value as a canonical profile fragment; it
-// is the exact writer used by structural edits (materialization.rs:34-52).
+// is the exact writer used by structural edits (materialization.rs).
 func canonicalFragment(value core.Value, profile JsonProfile,
 	limits document.MaterializationLimits) ([]byte, *MaterializationFailure) {
 	analyzed := make([]protocol.ValuePath, 0, 16)
@@ -263,7 +263,7 @@ func canonicalFragment(value core.Value, profile JsonProfile,
 }
 
 // materializeComplete runs the two-phase materialization
-// (materialization.rs:54-93).
+// (materialization.rs).
 func materializeComplete(value core.Value, request document.MaterializationRequest,
 	analyzed *[]protocol.ValuePath) (*CompleteMaterialization, *MaterializationFailure) {
 	profile, failure := requestedProfile(request)
@@ -328,7 +328,7 @@ func (s jsonStyle) isJSON5() bool {
 	return s == jsonStyleJson5Compact || s == jsonStyleJson5Pretty
 }
 
-// requestedProfile resolves the target profile (materialization.rs:113-125).
+// requestedProfile resolves the target profile (materialization.rs).
 func requestedProfile(request document.MaterializationRequest) (JsonProfile, *MaterializationFailure) {
 	profile := request.TargetProfile()
 	switch {
@@ -342,7 +342,7 @@ func requestedProfile(request document.MaterializationRequest) (JsonProfile, *Ma
 	return JsonProfileStrictV1, &MaterializationFailure{Kind: MaterializationFailureUnsupportedProfile}
 }
 
-// requestedStyle resolves the output style (materialization.rs:127-142).
+// requestedStyle resolves the output style (materialization.rs).
 func requestedStyle(request document.MaterializationRequest, profile JsonProfile) (jsonStyle, *MaterializationFailure) {
 	style := request.Style()
 	switch {
@@ -363,7 +363,7 @@ func requestedStyle(request document.MaterializationRequest, profile JsonProfile
 }
 
 // parseLimitsFor derives the reparse limits from the materialization
-// budgets (materialization.rs:144-152).
+// budgets (materialization.rs).
 func parseLimitsFor(limits document.MaterializationLimits) document.ParseLimits {
 	return document.ParseLimits{
 		MaxSourceBytes:  limits.MaxOutputBytes,
@@ -395,7 +395,7 @@ func newJSONWriter(style jsonStyle, newline document.NewlinePolicy,
 	}
 }
 
-// value writes one value (materialization.rs:180-248).
+// value writes one value (materialization.rs).
 func (w *jsonWriter) value(value core.Value, path protocol.ValuePath,
 	depth int) *MaterializationFailure {
 	if failure := w.analyze(path, depth); failure != nil {
@@ -433,7 +433,7 @@ func (w *jsonWriter) value(value core.Value, path protocol.ValuePath,
 		Path: path, ValueKind: value.Kind()}
 }
 
-// writeString writes one escaped string (materialization.rs:270-297).
+// writeString writes one escaped string (materialization.rs).
 func (w *jsonWriter) writeString(value string, path protocol.ValuePath) *MaterializationFailure {
 	if failure := w.output.pushByte('"'); failure != nil {
 		return failure
@@ -498,7 +498,7 @@ func escapeLowerHex(character rune) string {
 }
 
 // writeBinaryFloat64 writes one frozen JSON5 non-finite literal
-// (materialization.rs:299-317).
+// (materialization.rs).
 func (w *jsonWriter) writeBinaryFloat64(value core.BinaryFloat64, path protocol.ValuePath) *MaterializationFailure {
 	var spelling []byte
 	switch value.Bits() {
@@ -517,7 +517,7 @@ func (w *jsonWriter) writeBinaryFloat64(value core.BinaryFloat64, path protocol.
 	return w.output.pushBytes(spelling)
 }
 
-// writeSequence writes one array (materialization.rs:319-348).
+// writeSequence writes one array (materialization.rs).
 func (w *jsonWriter) writeSequence(values []core.Value, path protocol.ValuePath,
 	depth int) *MaterializationFailure {
 	if failure := w.output.pushByte('['); failure != nil {
@@ -553,7 +553,7 @@ func (w *jsonWriter) writeSequence(values []core.Value, path protocol.ValuePath,
 	return w.output.pushByte(']')
 }
 
-// writeObject writes one unique-key object (materialization.rs:350-377).
+// writeObject writes one unique-key object (materialization.rs).
 func (w *jsonWriter) writeObject(entries []core.Entry, path protocol.ValuePath,
 	depth int) *MaterializationFailure {
 	if failure := w.output.pushByte('{'); failure != nil {
@@ -593,7 +593,7 @@ func (w *jsonWriter) writeObject(entries []core.Entry, path protocol.ValuePath,
 	return w.output.pushByte('}')
 }
 
-// writeEntryMapping writes one ordered mapping (materialization.rs:379-416).
+// writeEntryMapping writes one ordered mapping (materialization.rs).
 func (w *jsonWriter) writeEntryMapping(entries []core.EntryMappingEntry, path protocol.ValuePath,
 	depth int) *MaterializationFailure {
 	if failure := w.output.pushByte('{'); failure != nil {
@@ -643,7 +643,7 @@ func (w *jsonWriter) writeEntryMapping(entries []core.EntryMappingEntry, path pr
 }
 
 // analyze applies the input node and depth budgets
-// (materialization.rs:418-431).
+// (materialization.rs).
 func (w *jsonWriter) analyze(path protocol.ValuePath, depth int) *MaterializationFailure {
 	if depth > w.limits.MaxDepth {
 		return &MaterializationFailure{Kind: MaterializationFailureResourceLimit,
@@ -673,7 +673,7 @@ func (w *jsonWriter) memberSeparator(index, depth int) *MaterializationFailure {
 }
 
 // layoutNewline writes the newline and indentation
-// (materialization.rs:447-453).
+// (materialization.rs).
 func (w *jsonWriter) layoutNewline(depth int) *MaterializationFailure {
 	if failure := w.output.pushBytes(w.newline.Bytes()); failure != nil {
 		return failure
@@ -687,7 +687,7 @@ func (w *jsonWriter) layoutNewline(depth int) *MaterializationFailure {
 }
 
 // boundedOutput is the byte-budgeted output buffer
-// (materialization.rs:456-498).
+// (materialization.rs).
 type boundedOutput struct {
 	bytes []byte
 	max   int
@@ -740,7 +740,7 @@ func runeWidth(character rune, buffer []byte) int {
 }
 
 // provenanceBuilder collects the input-to-output provenance facts
-// (materialization.rs:500-747).
+// (materialization.rs).
 type provenanceBuilder struct {
 	document *Document
 	limits   document.MaterializationLimits
@@ -908,7 +908,7 @@ func (b *provenanceBuilder) origin(node document.NodeRef, span document.Span,
 }
 
 // pushOrigin records one new input-to-output mapping; every origin costs
-// two provenance units (materialization.rs:698-721).
+// two provenance units (materialization.rs).
 func (b *provenanceBuilder) pushOrigin(input MaterializationInputLocation,
 	output MaterializedOrigin) *MaterializationFailure {
 	b.units += 2
@@ -924,7 +924,7 @@ func (b *provenanceBuilder) pushOrigin(input MaterializationInputLocation,
 }
 
 // addOutput appends one output origin to an existing mapping
-// (materialization.rs:723-746).
+// (materialization.rs).
 func (b *provenanceBuilder) addOutput(input *MaterializationInputLocation,
 	output MaterializedOrigin) *MaterializationFailure {
 	b.units++

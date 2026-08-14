@@ -2,7 +2,7 @@ package xml
 
 import "consema.dev/consema/document"
 
-// XmlProfile is a frozen XML formation profile (consema-xml lib.rs:54-67).
+// XmlProfile is a frozen XML formation profile (consema-xml lib.rs).
 type XmlProfile uint8
 
 // The one frozen XML profile.
@@ -18,7 +18,7 @@ func (p XmlProfile) ID() document.ProfileId {
 }
 
 // XmlEncodingSelectionKind is the closed document-entity encoding
-// selection mode (consema-xml lib.rs:69-79).
+// selection mode (consema-xml lib.rs).
 type XmlEncodingSelectionKind uint8
 
 // The two frozen selection modes.
@@ -32,7 +32,7 @@ const (
 )
 
 // XmlEncodingSelection is an explicit document-entity encoding selection
-// (consema-xml lib.rs:69-79). No-BOM source defaults to UTF-8. An explicit
+// (consema-xml lib.rs). No-BOM source defaults to UTF-8. An explicit
 // caller choice is evidence, not permission to contradict a BOM or a
 // declaration.
 type XmlEncodingSelection struct {
@@ -60,7 +60,7 @@ func (s XmlEncodingSelection) Kind() XmlEncodingSelectionKind { return s.kind }
 func (s XmlEncodingSelection) Encoding() document.SourceEncoding { return s.encoding }
 
 // XmlParseLimits are the XML-specific formation, entity, and recovery
-// limits (RFC 0012 §12; consema-xml lib.rs:81-128).
+// limits (RFC 0012 §12; consema-xml lib.rs).
 type XmlParseLimits struct {
 	// Common is the common source, node, piece, nesting, and diagnostic
 	// limits.
@@ -117,7 +117,7 @@ type XmlParseLimits struct {
 }
 
 // DefaultXmlParseLimits returns the frozen defaults (consema-xml
-// lib.rs:130-157).
+// lib.rs).
 func DefaultXmlParseLimits() XmlParseLimits {
 	return XmlParseLimits{
 		Common:                       document.DefaultParseLimits(),
@@ -146,7 +146,7 @@ func DefaultXmlParseLimits() XmlParseLimits {
 }
 
 // EntityLimits derives the entity expansion limits from these parse limits
-// (consema-xml lib.rs:159-172).
+// (consema-xml lib.rs).
 func (l XmlParseLimits) EntityLimits() EntityExpansionLimits {
 	return EntityExpansionLimits{
 		MaxDeclarations:       l.MaxEntityDeclarations,
@@ -159,7 +159,7 @@ func (l XmlParseLimits) EntityLimits() EntityExpansionLimits {
 }
 
 // XmlSyntaxKind is the closed XML lossless syntax-piece classification
-// (RFC 0012 §7; consema-xml document.rs:17-94). Format kinds align
+// (RFC 0012 §7; consema-xml document.rs). Format kinds align
 // one-to-one with the common document.LosslessStructuralIndex pieces.
 type XmlSyntaxKind uint8
 
@@ -245,7 +245,7 @@ const (
 )
 
 // AsStr returns the stable kind name used by the lossless syntax query
-// protocol (consema-xml document.rs:801-844).
+// protocol (consema-xml document.rs).
 func (k XmlSyntaxKind) AsStr() string {
 	switch k {
 	case XmlSyntaxKindBom:
@@ -327,7 +327,7 @@ func (k XmlSyntaxKind) AsStr() string {
 }
 
 // XmlSyntaxKindFromName resolves one exact stable kind name
-// (consema-xml document.rs:846-889).
+// (consema-xml document.rs).
 func XmlSyntaxKindFromName(name string) (XmlSyntaxKind, bool) {
 	switch name {
 	case "bom":

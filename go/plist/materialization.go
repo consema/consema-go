@@ -292,7 +292,7 @@ func Materialize(value core.Value, request document.MaterializationRequest) Mate
 }
 
 // materializeComplete runs the two-phase materialization
-// (materialization.rs:193-233).
+// (materialization.rs).
 func materializeComplete(value core.Value, request document.MaterializationRequest,
 	analyzed *[]protocol.ValuePath) (*CompleteMaterialization, *MaterializationFailure) {
 	style, failure := validateRequest(request)
@@ -351,7 +351,7 @@ func materializeComplete(value core.Value, request document.MaterializationReque
 }
 
 // provenanceItem is one input value location paired with its exact target
-// ordinal (materialization.rs:915-922): the binary object-table index or the
+// ordinal (materialization.rs): the binary object-table index or the
 // XML arena ordinal assigned in close-tag order.
 type provenanceItem struct {
 	path   protocol.ValuePath
@@ -360,14 +360,14 @@ type provenanceItem struct {
 
 // buildProvenance pairs every recorded input item with its exact output
 // origin in the reparsed document and builds the provenance map
-// (materialization.rs:1623-1680). For binary the target ordinal is the
+// (materialization.rs). For binary the target ordinal is the
 // object-table index and the origin span is the object's
 // marker-through-payload range; for XML the target ordinal is the arena
 // ordinal (close-tag order) and the origin span is the value element's
 // open-tag-through-close-tag range, reconstructed from the lossless syntax
 // pieces. Every input value node maps to exactly one Direct origin bound to
 // the target snapshot, and the whole map costs two provenance units per
-// entry (materialization.rs:1671-1679).
+// entry (materialization.rs).
 func buildProvenance(items []provenanceItem, target *Document, style materializationStyle,
 	limits document.MaterializationLimits) (*MaterializationProvenanceMap, *MaterializationFailure) {
 	identity := target.SnapshotIdentity()
@@ -419,7 +419,7 @@ func buildProvenance(items []provenanceItem, target *Document, style materializa
 }
 
 // xmlValueSpans reconstructs the value element spans of one reparsed XML
-// document, in arena (close-tag) order (materialization.rs:1688-1760). The
+// document, in arena (close-tag) order (materialization.rs). The
 // walk tracks open value elements on a stack, completes each element at its
 // close tag (the parser assigns arena ordinals in the same order), and
 // treats `<true/>`/`<false/>` as self-closing by inspecting the raw bytes.
@@ -544,7 +544,7 @@ func validateRequest(request document.MaterializationRequest) (materializationSt
 }
 
 // parseLimitsFor derives the closure reparse limits from the request so a
-// bounded input cannot fail its own closure (materialization.rs:274-304).
+// bounded input cannot fail its own closure (materialization.rs).
 func parseLimitsFor(limits document.MaterializationLimits) PlistParseLimits {
 	base := DefaultPlistParseLimits()
 	base.Common = document.ParseLimits{
@@ -631,7 +631,7 @@ type materializationRecord struct {
 
 // validateRecord validates the record shape, the truncation policy, the
 // value tree, the input node budget, and the container depth budget
-// (materialization.rs:389-436).
+// (materialization.rs).
 func validateRecord(value core.Value, request document.MaterializationRequest,
 	analyzed *[]protocol.ValuePath) (*materializationRecord, *MaterializationFailure) {
 	*analyzed = append(*analyzed, protocol.RootValuePath())
@@ -691,7 +691,7 @@ func (v *materializationValidator) step() *MaterializationFailure {
 }
 
 // validateValue validates one value of the `plist.value-tree@1` record and
-// its descendants (RFC 0013 §9; materialization.rs:438-655).
+// its descendants (RFC 0013 §9; materialization.rs).
 func validateValue(value core.Value, path protocol.ValuePath,
 	validator *materializationValidator, analyzed *[]protocol.ValuePath,
 	depth int) (materializationValueNode, *MaterializationFailure) {
@@ -1131,7 +1131,7 @@ func fractionalDateEvent(path *protocol.ValuePath, seconds float64, occurrence u
 }
 
 // renderPath is the stable path rendering for diagnostic arguments
-// (materialization.rs:887-913).
+// (materialization.rs).
 func renderPath(path *protocol.ValuePath) string {
 	var out strings.Builder
 	for _, segment := range path.Segments() {
@@ -1168,7 +1168,7 @@ func formatFloat(value float64) string {
 // shortest-round-trip reals, whole-second dates, and base64 wrapped at
 // `76 - 8 * depth` characters per line. Every emitted value node is paired
 // with its post-order rank, mirroring the arena ordinals the parser assigns
-// in close-tag order (materialization.rs:1094-1114).
+// in close-tag order (materialization.rs).
 func serializeXMLRecord(record *materializationRecord,
 	limits document.MaterializationLimits) ([]byte, []provenanceItem, *MaterializationFailure) {
 	var out strings.Builder
@@ -1187,7 +1187,7 @@ func serializeXMLRecord(record *materializationRecord,
 
 // emitValue emits one value element at the given depth; the node's target
 // ordinal is its post-order rank, mirroring the arena ordinals the parser
-// assigns in close-tag order (materialization.rs:1116-1205).
+// assigns in close-tag order (materialization.rs).
 func emitValue(out *strings.Builder, node *materializationValueNode, depth int,
 	items *[]provenanceItem, rank *int,
 	limits document.MaterializationLimits) *MaterializationFailure {
@@ -1355,7 +1355,7 @@ type plannedObject struct {
 // share one object at first occurrence, UIDs use the minimal width, and the
 // offset/ref sizes are the minimal widths satisfying the trailer
 // sufficiency checks. Every planned value node is paired with its
-// object-table index (materialization.rs:990-1092).
+// object-table index (materialization.rs).
 func serializeBinaryRecord(record *materializationRecord,
 	limits document.MaterializationLimits) ([]byte, []provenanceItem, *MaterializationFailure) {
 	objects, items := planBinary(&record.root)
@@ -1387,12 +1387,12 @@ func serializeBinaryRecord(record *materializationRecord,
 }
 
 // planBinary plans the document-ordered binary object table (RFC 0013
-// §10.2; materialization.rs:1007-1092). The order is a pre-order of the
+// §10.2; materialization.rs). The order is a pre-order of the
 // value tree where a dictionary is written first, then its key objects,
 // then its values recursively; identical deduplicable scalars share one
 // object at first occurrence, and containers are always written fresh.
 // Every value node is paired with its target object index, deduplicated
-// scalars included (materialization.rs:1020-1082).
+// scalars included (materialization.rs).
 func planBinary(root *materializationValueNode) ([]plannedObject, []provenanceItem) {
 	var objects []plannedObject
 	var items []provenanceItem

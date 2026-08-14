@@ -58,7 +58,7 @@ func invertSingleByte(table [128]uint16) map[rune]byte {
 }
 
 // encodeCodePage encodes one text fragment under one frozen Windows code
-// page, strictly and bounded (materialization.rs:815-829).
+// page, strictly and bounded (materialization.rs).
 func encodeCodePage(text string, page document.WindowsCodePage,
 	maxOutputBytes int) ([]byte, *MaterializationFailure) {
 	var output []byte

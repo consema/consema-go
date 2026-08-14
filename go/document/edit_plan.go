@@ -10,13 +10,13 @@ import (
 )
 
 // EditPlanSourceId is the caller-stable source identity of a transferable
-// edit plan (consema-document edit_plan.rs:12-31).
+// edit plan (consema-document edit_plan.rs).
 type EditPlanSourceId struct {
 	value string
 }
 
 // NewEditPlanSourceId validates one non-empty bounded external source
-// identity (consema-document edit_plan.rs:16-24).
+// identity (consema-document edit_plan.rs).
 func NewEditPlanSourceId(value string) (*EditPlanSourceId, error) {
 	if value == "" || len(value) > 1024 {
 		return nil, &EditPlanError{Kind: EditPlanErrorInvalidSourceId}
@@ -28,7 +28,7 @@ func NewEditPlanSourceId(value string) (*EditPlanSourceId, error) {
 func (s *EditPlanSourceId) String() string { return s.value }
 
 // EditPlanErrorKind classifies an edit-plan construction failure
-// (consema-document edit_plan.rs:199-211 EditPlanError).
+// (consema-document edit_plan.rs EditPlanError).
 type EditPlanErrorKind uint8
 
 // The closed plan-construction failure classes.
@@ -67,7 +67,7 @@ func (e *EditPlanError) Error() string {
 func (e *EditPlanError) Code() string { return "core.protocol.invalid-value@1" }
 
 // EditPlan is the fully validated dry-run plan; possessing it does not
-// authorize a write (consema-document edit_plan.rs:72-197; RFC 0015 §8.1
+// authorize a write (consema-document edit_plan.rs; RFC 0015 §8.1
 // read-only precedent; RFC 0016 §5.3).
 type EditPlan struct {
 	sourceID   string
@@ -78,7 +78,7 @@ type EditPlan struct {
 }
 
 // NewEditPlan closes a plan only when its ordered operation metadata
-// matches its exact patch (consema-document edit_plan.rs:83-121).
+// matches its exact patch (consema-document edit_plan.rs).
 func NewEditPlan(sourceID string, profile ProfileId,
 	operations []*protocol.EditOperationSummary, patch *SourcePatch,
 	report []*protocol.Diagnostic) (*EditPlan, error) {

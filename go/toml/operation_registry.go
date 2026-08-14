@@ -59,7 +59,7 @@ type OperationDescriptor struct {
 }
 
 // FormatOperationRegistry is the validated operation registry for one
-// exact TOML profile (consema-toml operation_registry.rs:11-14).
+// exact TOML profile (consema-toml operation_registry.rs).
 type FormatOperationRegistry struct {
 	profile    document.ProfileId
 	operations []OperationDescriptor
@@ -74,7 +74,7 @@ func (r FormatOperationRegistry) Operations() []OperationDescriptor {
 }
 
 // NewFormatOperationRegistry returns the validated operation registry for
-// one exact TOML profile (consema-toml operation_registry.rs:9-14). The
+// one exact TOML profile (consema-toml operation_registry.rs). The
 // frozen surface has seven operations: five mandatory structural
 // operations (insert-entry, remove-entry, rename-entry,
 // insert-array-element, remove-array-element) and the two existing typed

@@ -212,7 +212,7 @@ type MaterializationResult struct {
 }
 
 // Materialize materializes one flat String mapping into a new canonical
-// Properties document (materialization.rs:24-39). The input must be an
+// Properties document (materialization.rs). The input must be an
 // Object under a unique-key request or an ordered EntryMapping of String
 // keys to String values; duplicate associations are preserved in input
 // order.
@@ -324,7 +324,7 @@ func validateRequest(request document.MaterializationRequest,
 }
 
 // parseLimitsFor maps the materialization limits onto the re-parse limits
-// (materialization.rs:124-150).
+// (materialization.rs).
 func parseLimitsFor(limits document.MaterializationLimits) PropertiesParseLimits {
 	return PropertiesParseLimits{
 		Common: document.ParseLimits{
@@ -397,7 +397,7 @@ func (b *boundedText) pushChar(ch rune) *MaterializationFailure {
 }
 
 // document emits every association of one flat mapping
-// (materialization.rs:176-211).
+// (materialization.rs).
 func (w *materializationWriter) document(value core.Value, path protocol.ValuePath,
 	depth int) ([]inputEntry, *MaterializationFailure) {
 	items, failure := w.mappingItems(value, path, depth)
@@ -437,7 +437,7 @@ func (w *materializationWriter) document(value core.Value, path protocol.ValuePa
 }
 
 // mappingItems validates one Object or EntryMapping and prepares its
-// associations (materialization.rs:213-288).
+// associations (materialization.rs).
 func (w *materializationWriter) mappingItems(value core.Value, path protocol.ValuePath,
 	depth int) ([]mappingItem, *MaterializationFailure) {
 	if failure := w.analyze(&path, depth); failure != nil {
@@ -581,7 +581,7 @@ func (w *materializationWriter) writeString(value string, isKey bool) *Materiali
 }
 
 // writeUnicodeScalar emits the canonical uppercase `\uXXXX` escape for
-// every UTF-16 code unit of one scalar (materialization.rs:338-346).
+// every UTF-16 code unit of one scalar (materialization.rs).
 func (w *materializationWriter) writeUnicodeScalar(value rune) *MaterializationFailure {
 	if value > 0xFFFF {
 		first := value - 0x10000
@@ -601,7 +601,7 @@ func (w *materializationWriter) pushHexEscape(unit uint16) *MaterializationFailu
 }
 
 // verifyClosure reparses and reprojects the output under the request's
-// policy (materialization.rs:348-395).
+// policy (materialization.rs).
 func verifyClosure(input core.Value, request document.MaterializationRequest,
 	document *Document) *MaterializationFailure {
 	projectionLimits := ProjectionLimits{
@@ -643,7 +643,7 @@ func verifyClosure(input core.Value, request document.MaterializationRequest,
 }
 
 // buildProvenance maps every input location to its materialized outputs
-// (materialization.rs:397-468).
+// (materialization.rs).
 func buildProvenance(inputEntries []inputEntry, formed *Document,
 	limits document.MaterializationLimits) (MaterializationProvenanceMap, *MaterializationFailure) {
 	if len(inputEntries) != len(formed.properties) {
@@ -711,7 +711,7 @@ func buildProvenance(inputEntries []inputEntry, formed *Document,
 }
 
 // textBudget projects the raw byte budget onto the text budget
-// (materialization.rs:520-534).
+// (materialization.rs).
 func textBudget(encoding document.SourceEncoding, maxOutputBytes int) (int, *MaterializationFailure) {
 	switch encoding.Kind() {
 	case document.EncodingUtf16Le, document.EncodingUtf16Be, document.EncodingLatin1:
@@ -728,7 +728,7 @@ func textBudget(encoding document.SourceEncoding, maxOutputBytes int) (int, *Mat
 }
 
 // encodeText encodes the assembled text into the target encoding with the
-// matching BOM (materialization.rs:536-564).
+// matching BOM (materialization.rs).
 func encodeText(text string, encoding document.SourceEncoding,
 	maxOutputBytes int) ([]byte, *MaterializationFailure) {
 	bomBytes := 0
@@ -757,7 +757,7 @@ func encodeText(text string, encoding document.SourceEncoding,
 }
 
 // encodeFragment encodes one text fragment under one exact encoding
-// (materialization.rs:566-631).
+// (materialization.rs).
 func encodeFragment(text string, encoding document.SourceEncoding,
 	maxOutputBytes int) ([]byte, *MaterializationFailure) {
 	var output []byte

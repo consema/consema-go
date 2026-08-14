@@ -16,7 +16,7 @@ import (
 // expanded names.
 
 // QNameFacts is one lexical QName with its source-derived facts
-// (document.rs:96-110).
+// (document.rs).
 type QNameFacts struct {
 	// Prefix is the original prefix spelling, when present.
 	Prefix *string
@@ -55,7 +55,7 @@ const (
 )
 
 // ReferenceFragment is one ordered text or attribute-value fragment
-// (document.rs:135-172).
+// (document.rs).
 type ReferenceFragment struct {
 	// Kind is the closed fragment category.
 	Kind ReferenceFragmentKind
@@ -78,7 +78,7 @@ type ReferenceFragment struct {
 }
 
 // XmlNamespaceBindingData is one XML namespace declaration association
-// (document.rs:174-187).
+// (document.rs).
 type XmlNamespaceBindingData struct {
 	// Ordinal is the document-wide binding ordinal for stable identity.
 	Ordinal uint64
@@ -92,7 +92,7 @@ type XmlNamespaceBindingData struct {
 	URI string
 }
 
-// XmlAttributeData is one XML attribute association (document.rs:189-211).
+// XmlAttributeData is one XML attribute association (document.rs).
 type XmlAttributeData struct {
 	// Ordinal is the document-wide attribute ordinal for stable identity.
 	Ordinal uint64
@@ -118,7 +118,7 @@ type XmlAttributeData struct {
 }
 
 // XmlTextData is one text occurrence with ordered fragments
-// (document.rs:213-222).
+// (document.rs).
 type XmlTextData struct {
 	// Ordinal is the document-wide text ordinal for stable identity.
 	Ordinal uint64
@@ -129,7 +129,7 @@ type XmlTextData struct {
 	Fragments []ReferenceFragment
 }
 
-// XmlCdataData is one CDATA occurrence (document.rs:224-235).
+// XmlCdataData is one CDATA occurrence (document.rs).
 type XmlCdataData struct {
 	// Ordinal is the document-wide ordinal for stable identity.
 	Ordinal uint64
@@ -141,7 +141,7 @@ type XmlCdataData struct {
 	Text string
 }
 
-// XmlCommentData is one comment occurrence (document.rs:237-248).
+// XmlCommentData is one comment occurrence (document.rs).
 type XmlCommentData struct {
 	// Ordinal is the document-wide ordinal for stable identity.
 	Ordinal uint64
@@ -153,7 +153,7 @@ type XmlCommentData struct {
 	Text string
 }
 
-// XmlPiData is one processing instruction (document.rs:250-263).
+// XmlPiData is one processing instruction (document.rs).
 type XmlPiData struct {
 	// Ordinal is the document-wide ordinal for stable identity.
 	Ordinal uint64
@@ -177,7 +177,7 @@ type XmlPiContent struct {
 	Text string
 }
 
-// XmlErrorRegionData is one recovered error region (document.rs:265-272).
+// XmlErrorRegionData is one recovered error region (document.rs).
 type XmlErrorRegionData struct {
 	// Ordinal is the document-wide ordinal for stable identity.
 	Ordinal uint64
@@ -185,7 +185,7 @@ type XmlErrorRegionData struct {
 	Span document.Span
 }
 
-// XmlElementData is one element occurrence (document.rs:274-296).
+// XmlElementData is one element occurrence (document.rs).
 type XmlElementData struct {
 	// Index is the arena index for stable identity.
 	Index int
@@ -211,7 +211,7 @@ type XmlElementData struct {
 	Children []int
 }
 
-// XmlContentKind is the closed child content category (document.rs:299-313).
+// XmlContentKind is the closed child content category (document.rs).
 type XmlContentKind uint8
 
 // The six frozen content categories.
@@ -230,7 +230,7 @@ const (
 	XmlContentErrorRegion
 )
 
-// XmlContent is one child content occurrence (document.rs:299-313).
+// XmlContent is one child content occurrence (document.rs).
 type XmlContent struct {
 	// Kind is the closed content category.
 	Kind XmlContentKind
@@ -268,7 +268,7 @@ func (c *XmlContent) Span() document.Span {
 }
 
 // XmlPrologItemKind is the closed prolog or epilog occurrence category
-// (document.rs:330-345).
+// (document.rs).
 type XmlPrologItemKind uint8
 
 // The six frozen prolog categories.
@@ -287,7 +287,7 @@ const (
 	XmlPrologItemWhitespace
 )
 
-// XmlPrologItem is one prolog or epilog occurrence (document.rs:330-345).
+// XmlPrologItem is one prolog or epilog occurrence (document.rs).
 type XmlPrologItem struct {
 	// Kind is the closed prolog category.
 	Kind XmlPrologItemKind
@@ -303,7 +303,7 @@ type XmlPrologItem struct {
 	Span document.Span
 }
 
-// XmlDeclarationData is the XML declaration facts (document.rs:347-360).
+// XmlDeclarationData is the XML declaration facts (document.rs).
 type XmlDeclarationData struct {
 	// Span is the `<?xml …?>` span.
 	Span document.Span
@@ -334,7 +334,7 @@ type XmlStandaloneFact struct {
 }
 
 // EntityDeclarationData is one admitted internal general entity
-// declaration (document.rs:362-374).
+// declaration (document.rs).
 type EntityDeclarationData struct {
 	// Span is the `<!ENTITY …>` span.
 	Span document.Span
@@ -346,7 +346,7 @@ type EntityDeclarationData struct {
 	Replacement string
 }
 
-// XmlDoctypeData is the DOCTYPE facts (document.rs:376-386).
+// XmlDoctypeData is the DOCTYPE facts (document.rs).
 type XmlDoctypeData struct {
 	// Span is the `<!DOCTYPE …>` span.
 	Span document.Span
@@ -361,7 +361,7 @@ type XmlDoctypeData struct {
 }
 
 // Document is an opaque immutable `xml.1.0-safe@1` document snapshot
-// (consema-xml document.rs:388-406). Completed documents are logically
+// (consema-xml document.rs). Completed documents are logically
 // immutable and safe for concurrent reads.
 type Document struct {
 	authority   document.DocumentAuthority
@@ -483,7 +483,7 @@ func (d *Document) nodeRef(index int, role document.NodeRole) document.NodeRef {
 }
 
 // XmlDocument is a snapshot-bound view of the whole document
-// (document.rs:571-609).
+// (document.rs).
 type XmlDocument struct {
 	owner *Document
 }
@@ -511,7 +511,7 @@ func (x XmlDocument) Root() *XmlElement { return x.owner.Root() }
 // Status returns the formation status.
 func (x XmlDocument) Status() document.FormationStatus { return x.owner.status }
 
-// XmlElement is a snapshot-bound element handle (document.rs:612-679).
+// XmlElement is a snapshot-bound element handle (document.rs).
 type XmlElement struct {
 	owner *Document
 	index int
@@ -567,7 +567,7 @@ func (e *XmlElement) data() *XmlElementData {
 }
 
 // XmlContentItem is one borrowed child content occurrence
-// (document.rs:681-763).
+// (document.rs).
 type XmlContentItem struct {
 	owner *Document
 	index int
@@ -618,7 +618,7 @@ func (c *XmlContentItem) ProcessingInstruction() *XmlPiData {
 }
 
 // TextSemantic is the semantic concatenation of one text occurrence after
-// XML line-end normalization to LF (RFC 0012 §6; document.rs:766-799).
+// XML line-end normalization to LF (RFC 0012 §6; document.rs).
 func TextSemantic(text *XmlTextData) string {
 	var builder strings.Builder
 	for _, fragment := range text.Fragments {

@@ -57,7 +57,7 @@ type OperationDescriptor struct {
 }
 
 // FormatOperationRegistry is the validated operation registry for one
-// exact Java Properties profile (operation_registry.rs:9-14).
+// exact Java Properties profile (operation_registry.rs).
 type FormatOperationRegistry struct {
 	profile    document.ProfileId
 	operations []OperationDescriptor

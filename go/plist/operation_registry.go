@@ -52,7 +52,7 @@ func (r *FormatOperationRegistry) Operations() []FormatOperationDescriptor {
 }
 
 // operationDescriptors builds the frozen six-operation surface
-// (operation_registry.rs:20-83).
+// (operation_registry.rs).
 func operationDescriptors() []FormatOperationDescriptor {
 	stringArgument := func(name string) OperationArgumentDescriptor {
 		return OperationArgumentDescriptor{Name: name, Kind: "String", Required: true}

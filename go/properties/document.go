@@ -6,12 +6,12 @@ import (
 )
 
 // This file defines the immutable Java Properties document and its
-// snapshot-bound record handles (consema-properties lib.rs:309-775; RFC
+// snapshot-bound record handles (consema-properties lib.rs; RFC
 // 0010 §9). The Document ends at the native layer: duplicate keys and
 // source order are preserved and last-wins is exposed only through the
 // explicit projection policy.
 
-// PropertiesNaturalLine is one exact natural source line (lib.rs:309-342).
+// PropertiesNaturalLine is one exact natural source line (lib.rs).
 type PropertiesNaturalLine struct {
 	node          document.NodeRef
 	span          document.Span
@@ -32,7 +32,7 @@ func (l PropertiesNaturalLine) ContentSpan() document.Span { return l.contentSpa
 func (l PropertiesNaturalLine) LineBreakSpan() *document.Span { return l.lineBreakSpan }
 
 // PropertiesLogicalLine is one property/error logical line and its
-// natural-line constituents (lib.rs:344-370).
+// natural-line constituents (lib.rs).
 type PropertiesLogicalLine struct {
 	node         document.NodeRef
 	kind         PropertiesLogicalLineKind
@@ -51,7 +51,7 @@ func (l PropertiesLogicalLine) NaturalLines() []document.NodeRef {
 	return append([]document.NodeRef(nil), l.naturalLines...)
 }
 
-// PropertiesComment is one comment natural line (lib.rs:372-405).
+// PropertiesComment is one comment natural line (lib.rs).
 type PropertiesComment struct {
 	node        document.NodeRef
 	naturalLine document.NodeRef
@@ -73,7 +73,7 @@ func (c PropertiesComment) Span() document.Span { return c.span }
 func (c PropertiesComment) Marker() rune { return c.marker }
 
 // PropertiesEscape is one source escape and its exact Java-string output
-// range (lib.rs:407-455).
+// range (lib.rs).
 type PropertiesEscape struct {
 	node        document.NodeRef
 	property    document.NodeRef
@@ -106,7 +106,7 @@ func (e PropertiesEscape) OutputStart() int { return e.outputStart }
 func (e PropertiesEscape) OutputEnd() int { return e.outputEnd }
 
 // Property is one distinct source-ordered property association
-// (lib.rs:457-546; RFC 0010 §2).
+// (lib.rs; RFC 0010 §2).
 type Property struct {
 	node           document.NodeRef
 	logicalLine    document.NodeRef
@@ -172,7 +172,7 @@ func (p Property) Escapes() []document.NodeRef {
 func (p Property) DuplicateGroup() *uint32 { return p.duplicateGroup }
 
 // PropertiesErrorLine is one recovered malformed logical line
-// (lib.rs:548-588).
+// (lib.rs).
 type PropertiesErrorLine struct {
 	node         document.NodeRef
 	logicalLine  document.NodeRef
@@ -200,7 +200,7 @@ func (l PropertiesErrorLine) Span() document.Span { return l.span }
 func (l PropertiesErrorLine) Code() string { return l.code }
 
 // Document is the immutable, duplicate-preserving Java Properties
-// document (lib.rs:590-775; RFC 0010 §9). Completed documents are
+// document (lib.rs; RFC 0010 §9). Completed documents are
 // logically immutable; concurrent reads are safe.
 type Document struct {
 	authority       document.DocumentAuthority
@@ -372,7 +372,7 @@ func (d *Document) Escape(node document.NodeRef) (PropertiesEscape, error) {
 }
 
 // Parse forms one immutable Properties snapshot under one exact
-// profile/source contract (parser.rs:17-36; RFC 0010 §3, §8). The
+// profile/source contract (parser.rs; RFC 0010 §3, §8). The
 // profile and encoding are selected explicitly by the caller and never
 // guessed from the extension, locale, or platform.
 func Parse(source []byte, profile PropertiesProfile,
@@ -407,20 +407,20 @@ func parse(source []byte, profile PropertiesProfile,
 }
 
 // ParseReader parses Reader input using one explicit published text
-// encoding (lib.rs:787-799).
+// encoding (lib.rs).
 func ParseReader(source []byte, encoding document.SourceEncoding,
 	limits PropertiesParseLimits) (*Document, *FormationFailure) {
 	return parse(source, PropertiesReaderV1, ReaderEncodingSelection(encoding), limits)
 }
 
 // ParseLatin1 parses InputStream-compatible Latin-1 bytes with marker
-// bytes as content (lib.rs:801-812).
+// bytes as content (lib.rs).
 func ParseLatin1(source []byte, limits PropertiesParseLimits) (*Document, *FormationFailure) {
 	return parse(source, PropertiesLatin1V1, Latin1EncodingSelection(), limits)
 }
 
 // encodingRequest builds the source encoding request of one exact
-// profile/selection pair (parser.rs:38-55).
+// profile/selection pair (parser.rs).
 func encodingRequest(profile PropertiesProfile,
 	selection PropertiesEncodingSelection) (document.EncodingRequest, *FormationFailure) {
 	switch {
@@ -439,7 +439,7 @@ func encodingRequest(profile PropertiesProfile,
 }
 
 // validateProfileEncoding rejects every profile/selection/encoding
-// contradiction (parser.rs:57-81; RFC 0010 §3).
+// contradiction (parser.rs; RFC 0010 §3).
 func validateProfileEncoding(snapshot *document.SourceSnapshot, profile PropertiesProfile,
 	selection PropertiesEncodingSelection) *FormationFailure {
 	facts := snapshot.EncodingFacts()

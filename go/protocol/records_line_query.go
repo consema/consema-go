@@ -11,7 +11,7 @@ import (
 )
 
 // YamlMatchLocator is a transferable YAML match locator
-// (yaml_query.rs:18-...).
+// (yaml_query.rs...).
 type YamlMatchLocator struct {
 	sourceID    string
 	nodeLocator string
@@ -54,7 +54,7 @@ func (l *YamlMatchLocator) Role() MatchRole { return l.role }
 func (l *YamlMatchLocator) Ordinal() uint64 { return l.ordinal }
 
 // YamlQueryResultMessage is the complete or explicitly non-complete
-// `core.yaml-query-result@1` record (yaml_query.rs:36-...).
+// `core.yaml-query-result@1` record (yaml_query.rs...).
 type YamlQueryResultMessage struct {
 	domain      *QueryDomain
 	role        MatchRole
@@ -64,7 +64,7 @@ type YamlQueryResultMessage struct {
 }
 
 // NewYamlQueryResultMessage validates the YAML domain/role matrix,
-// ordering, and produced count (yaml_query.rs:85-120).
+// ordering, and produced count (yaml_query.rs).
 func NewYamlQueryResultMessage(domain *QueryDomain, role MatchRole, matches []*YamlMatchLocator,
 	completion *Completion, diagnostics []*Diagnostic) (*YamlQueryResultMessage, error) {
 	if !yamlDomainAcceptsRole(domain, role) {
@@ -107,7 +107,7 @@ func (m *YamlQueryResultMessage) Completion() *Completion { return m.completion 
 // Diagnostics returns the ordered diagnostics.
 func (m *YamlQueryResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.yaml-query-result@1` (yaml_query.rs:161-...).
+// ToValue encodes `core.yaml-query-result@1` (yaml_query.rs...).
 func (m *YamlQueryResultMessage) ToValue() (core.Value, error) {
 	locators := make([]externalLocator, 0, len(m.matches))
 	for _, match := range m.matches {
@@ -121,7 +121,7 @@ func (m *YamlQueryResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes terminal facts under one explicit
-// semantic-model registry (yaml_query.rs:198-...).
+// semantic-model registry (yaml_query.rs...).
 func (m *YamlQueryResultMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*YamlQueryResultMessage, error) {
 	fields, err := schemaFields(value, "core.yaml-query-result@1",
@@ -179,7 +179,7 @@ func (m *YamlQueryResultMessage) FromValue(value core.Value) (*YamlQueryResultMe
 	return m.FromValueWithRegistry(value, DefaultErrorCodeRegistry())
 }
 
-// IniMatchLocator is a transferable INI match locator (line_query.rs:12-...).
+// IniMatchLocator is a transferable INI match locator (line_query.rs...).
 type IniMatchLocator struct {
 	sourceID    string
 	nodeLocator string
@@ -203,7 +203,7 @@ func NewIniMatchLocator(sourceID, nodeLocator string, role MatchRole,
 }
 
 // IniMatchLocatorFromProcessLocal explicitly refuses a raw process-local
-// INI node handle (line_query.rs:29-35).
+// INI node handle (line_query.rs).
 func IniMatchLocatorFromProcessLocal() error {
 	return protocolError(KindProcessLocalHandle, "$.ini_match.node",
 		"NodeRef requires a stable caller locator")
@@ -222,7 +222,7 @@ func (l *IniMatchLocator) Role() MatchRole { return l.role }
 func (l *IniMatchLocator) Ordinal() uint64 { return l.ordinal }
 
 // IniQueryResultMessage is the complete or explicitly non-complete
-// `core.ini-query-result@1` record (line_query.rs:37-...).
+// `core.ini-query-result@1` record (line_query.rs...).
 type IniQueryResultMessage struct {
 	domain      *QueryDomain
 	role        MatchRole
@@ -232,7 +232,7 @@ type IniQueryResultMessage struct {
 }
 
 // NewIniQueryResultMessage validates the exact INI domain/role matrix,
-// ordering, and produced count (line_query.rs:54-72).
+// ordering, and produced count (line_query.rs).
 func NewIniQueryResultMessage(domain *QueryDomain, role MatchRole, matches []*IniMatchLocator,
 	completion *Completion, diagnostics []*Diagnostic) (*IniQueryResultMessage, error) {
 	if err := validateLineResult(domain, role, completion, len(matches), iniDomainAcceptsRole); err != nil {
@@ -270,7 +270,7 @@ func (m *IniQueryResultMessage) Completion() *Completion { return m.completion }
 // Diagnostics returns the ordered diagnostics.
 func (m *IniQueryResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.ini-query-result@1` (line_query.rs:128-...).
+// ToValue encodes `core.ini-query-result@1` (line_query.rs...).
 func (m *IniQueryResultMessage) ToValue() (core.Value, error) {
 	locators := make([]externalLocator, 0, len(m.matches))
 	for _, match := range m.matches {
@@ -284,7 +284,7 @@ func (m *IniQueryResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes terminal facts under one explicit
-// semantic-model registry (line_query.rs:149-...).
+// semantic-model registry (line_query.rs...).
 func (m *IniQueryResultMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*IniQueryResultMessage, error) {
 	fields, err := schemaFields(value, "core.ini-query-result@1",
@@ -343,7 +343,7 @@ func (m *IniQueryResultMessage) FromValue(value core.Value) (*IniQueryResultMess
 }
 
 // JavaPropertiesMatchLocator is a transferable Java Properties match
-// locator (line_query.rs:170-...).
+// locator (line_query.rs...).
 type JavaPropertiesMatchLocator struct {
 	sourceID    string
 	nodeLocator string
@@ -380,7 +380,7 @@ func (l *JavaPropertiesMatchLocator) Ordinal() uint64 { return l.ordinal }
 
 // JavaPropertiesQueryResultMessage is the complete or explicitly
 // non-complete `core.java-properties-query-result@1` record
-// (line_query.rs:195-...).
+// (line_query.rs...).
 type JavaPropertiesQueryResultMessage struct {
 	domain      *QueryDomain
 	role        MatchRole
@@ -390,7 +390,7 @@ type JavaPropertiesQueryResultMessage struct {
 }
 
 // NewJavaPropertiesQueryResultMessage validates the exact Properties
-// domain/role matrix, ordering, and produced count (line_query.rs:212-230).
+// domain/role matrix, ordering, and produced count (line_query.rs).
 func NewJavaPropertiesQueryResultMessage(domain *QueryDomain, role MatchRole,
 	matches []*JavaPropertiesMatchLocator, completion *Completion,
 	diagnostics []*Diagnostic) (*JavaPropertiesQueryResultMessage, error) {
@@ -430,7 +430,7 @@ func (m *JavaPropertiesQueryResultMessage) Completion() *Completion { return m.c
 func (m *JavaPropertiesQueryResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
 // ToValue encodes `core.java-properties-query-result@1`
-// (line_query.rs:293-...).
+// (line_query.rs...).
 func (m *JavaPropertiesQueryResultMessage) ToValue() (core.Value, error) {
 	locators := make([]externalLocator, 0, len(m.matches))
 	for _, match := range m.matches {
@@ -444,7 +444,7 @@ func (m *JavaPropertiesQueryResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes terminal facts under one explicit
-// semantic-model registry (line_query.rs:314-...).
+// semantic-model registry (line_query.rs...).
 func (m *JavaPropertiesQueryResultMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*JavaPropertiesQueryResultMessage, error) {
 	fields, err := schemaFields(value, "core.java-properties-query-result@1",

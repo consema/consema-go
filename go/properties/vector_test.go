@@ -620,7 +620,7 @@ func vectorFormationReaderEncodings(t *testing.T, input, expected map[string]int
 // vectorFormationMalformedEscapeInKey drives formation.malformed-escape-
 // in-key: a malformed `\uXXXX` escape in the KEY position recovers the
 // logical line without a partial property and the error line carries the
-// family parse code (parser.rs:626-666).
+// family parse code (parser.rs).
 func vectorFormationMalformedEscapeInKey(t *testing.T, input, expected map[string]interface{}) {
 	doc := vectorParseCase(t, input)
 	requireEqual(t, doc.formationStatus.String(), vString(t, expected, "formation"))
@@ -636,7 +636,7 @@ func vectorFormationMalformedEscapeInKey(t *testing.T, input, expected map[strin
 // formation.bom-conflict: bytes that cannot be decoded under the explicit
 // Reader encoding (`core.source.invalid-sequence@1`) or a BOM that
 // contradicts it (`core.source.encoding-conflict@1`) fail the whole parse
-// fatally before any document forms (parser.rs:24-33).
+// fatally before any document forms (parser.rs).
 func vectorFormationFatalEncoding(t *testing.T, input, expected map[string]interface{}) {
 	raw := vDecodeHex(t, vString(t, input, "source_hex"))
 	_, failure := ParseReader(raw, vectorSourceEncoding(t, vString(t, input, "encoding")),

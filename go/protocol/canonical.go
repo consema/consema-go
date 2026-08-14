@@ -24,7 +24,7 @@ import (
 //
 // The tagged representation covers the closed fifteen-kind Go model (RFC
 // 0016 §4.1), byte-identical to the Rust transport for every kind
-// (value_transport.rs:175-348).
+// (value_transport.rs).
 
 // PortableValueJSONSchema is the canonical tagged JSON transport schema.
 const PortableValueJSONSchema = "core.portable-value-json@1"
@@ -66,7 +66,7 @@ type parser struct {
 }
 
 // parseJSONDocument strictly parses one complete JSON document
-// (consema-rs/consema-protocol/src/value_transport.rs:26-53, using the strict
+// (consema-rs/consema-protocol/src/value_transport.rs, using the strict
 // JSON profile of consema-json). Any syntax error, duplicate member, or
 // trailing content yields KindInvalidJson; parse-level resource bounds use
 // the generous mapped limits of the Rust path.
@@ -427,7 +427,7 @@ func (s *decodeState) container(count int, path string) error {
 
 // EncodeJSON encodes a PortableValue as canonical `core.portable-value-json@1`
 // bytes, byte-identical to the Rust encoder
-// (consema-rs/consema-protocol/src/value_transport.rs:12-23).
+// (consema-rs/consema-protocol/src/value_transport.rs).
 func EncodeJSON(value core.Value, limits ProtocolLimits) ([]byte, error) {
 	var builder strings.Builder
 	if err := encodeTransportNode(&builder, valueToNode(value), limits); err != nil {
@@ -438,9 +438,9 @@ func EncodeJSON(value core.Value, limits ProtocolLimits) ([]byte, error) {
 
 // encodeTransportNode writes the full canonical envelope around one tagged
 // value tree. The root value is counted exactly once: value itself calls
-// node, matching the Rust JsonEncoder (value_transport.rs:175-181) — there
+// node, matching the Rust JsonEncoder (value_transport.rs) — there
 // is no separate node count for the envelope (the Rust encoder
-// encode_json, value_transport.rs:12-23).
+// encode_json, value_transport.rs).
 func encodeTransportNode(builder *strings.Builder, valueNode *jsonNode, limits ProtocolLimits) error {
 	state := jsonEncoderState{limits: limits, output: builder}
 	if err := state.push(`{"schema":"` + PortableValueJSONSchema + `","value":`); err != nil {
@@ -454,7 +454,7 @@ func encodeTransportNode(builder *strings.Builder, valueNode *jsonNode, limits P
 
 // DecodeJSON strictly decodes canonical `core.portable-value-json@1` bytes
 // and returns the transported PortableValue
-// (consema-rs/consema-protocol/src/value_transport.rs:26-75). The record decode
+// (consema-rs/consema-protocol/src/value_transport.rs). The record decode
 // runs before the canonicality re-encode check, matching the Rust ordering
 // (a resource-limit or field error is reported before a non-canonical form).
 func DecodeJSON(bytes []byte, limits ProtocolLimits) (core.Value, error) {
@@ -486,7 +486,7 @@ func DecodeJSON(bytes []byte, limits ProtocolLimits) (core.Value, error) {
 
 // ensureCanonical re-encodes the parsed document's value and requires byte
 // equality with the input (the Rust re-encode canonicality check,
-// value_transport.rs:66-73). Re-encoding works on the parse tree, which
+// value_transport.rs). Re-encoding works on the parse tree, which
 // preserves field order and decoded text; any valid-but-non-canonical form
 // (whitespace, alternate escapes, reordered fields, non-minimal numbers)
 // therefore differs.
@@ -601,7 +601,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 	// form of the decoded value: integers and decimals are normalized to
 	// their canonical decimal spellings, strings re-escape from decoded
 	// text, and byte hex is lowercased (the Rust re-encode semantics,
-	// value_transport.rs:175-348).
+	// value_transport.rs).
 	if node.kind != jsonObject || len(node.fields) == 0 || node.fields[0].key != "type" {
 		return invalid(path, "unrepresentable value")
 	}
@@ -693,7 +693,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 			return err
 		}
 		// The canonical form is eight lowercase hex digits (the Rust
-		// {:08x} format, value_transport.rs:205-214); any other spelling
+		// {:08x} format, value_transport.rs); any other spelling
 		// fails the re-encode canonicality check.
 		if err := s.push(`{"type":"BinaryFloat32","bits":`); err != nil {
 			return err
@@ -708,7 +708,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 			return err
 		}
 		// The canonical form is sixteen lowercase hex digits (the Rust
-		// {:016x} format, value_transport.rs:215-224); any other spelling
+		// {:016x} format, value_transport.rs); any other spelling
 		// fails the re-encode canonicality check.
 		if err := s.push(`{"type":"BinaryFloat64","bits":`); err != nil {
 			return err
@@ -719,7 +719,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 		return s.push(`}`)
 	case "Bytes":
 		// The hex is lowercased to the canonical form (the Rust encoder
-		// re-emits from the decoded octets, value_transport.rs:229-239);
+		// re-emits from the decoded octets, value_transport.rs);
 		// any other spelling fails the re-encode canonicality check.
 		hex, err := jsonStringOf(member("hex"), path+".hex")
 		if err != nil {
@@ -761,7 +761,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 		}
 		// Month and day are normalized to their canonical decimal spellings,
 		// exactly as the Rust encoder formats from the parsed fields
-		// (value_transport.rs:240-248).
+		// (value_transport.rs).
 		if err := s.quoted(strconv.FormatUint(uint64(month), 10), path); err != nil {
 			return err
 		}
@@ -793,7 +793,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 			return err
 		}
 		// Hour, minute, and second are normalized to their canonical decimal
-		// spellings (value_transport.rs:249-263).
+		// spellings (value_transport.rs).
 		if err := s.quoted(strconv.FormatUint(uint64(hour), 10), path); err != nil {
 			return err
 		}
@@ -854,7 +854,7 @@ func (s *jsonEncoderState) value(node *jsonNode, depth int, path string) error {
 			return err
 		}
 		// The offset is normalized to its canonical decimal spelling
-		// (value_transport.rs:279-289).
+		// (value_transport.rs).
 		if err := s.quoted(strconv.FormatInt(int64(offset), 10), path); err != nil {
 			return err
 		}
@@ -1080,7 +1080,7 @@ func valueToNode(value core.Value) *jsonNode {
 
 // nodeToValue converts a tagged tree node into a core value, applying the
 // protocol limits and covering all fifteen kinds (the Rust decode_value,
-// value_transport.rs:392-617).
+// value_transport.rs).
 func nodeToValue(node *jsonNode, depth int, path string, state *decodeState) (core.Value, error) {
 	if err := state.node(depth, path); err != nil {
 		return nil, err
@@ -1351,7 +1351,7 @@ func nodeToValue(node *jsonNode, depth int, path string, state *decodeState) (co
 				return nil, err
 			}
 			// Decoded values are never nil, so Push cannot fail; duplicate
-			// keys are value semantics (value_transport.rs:591-614).
+			// keys are value semantics (value_transport.rs).
 			if err := builder.Push(key, value); err != nil {
 				return nil, err
 			}
@@ -1435,7 +1435,7 @@ func jsonBooleanOf(node *jsonNode, path string) (bool, error) {
 }
 
 // jsonParseInteger parses a decimal string into a big integer with the
-// protocol integer limits (value_transport.rs:793-807).
+// protocol integer limits (value_transport.rs).
 func jsonParseInteger(node *jsonNode, path string, limits ProtocolLimits) (*big.Int, error) {
 	if node.kind != jsonString {
 		return nil, protocolError(KindWrongType, path, "expected JSON string")
@@ -1455,7 +1455,7 @@ func jsonParseInteger(node *jsonNode, path string, limits ProtocolLimits) (*big.
 }
 
 // jsonParseHexUint32 parses exactly eight hexadecimal digits (the Rust
-// parse_hex_u32, value_transport.rs:823-828).
+// parse_hex_u32, value_transport.rs).
 func jsonParseHexUint32(node *jsonNode, path string) (uint32, error) {
 	if node.kind != jsonString {
 		return 0, protocolError(KindWrongType, path, "expected JSON string")
@@ -1475,7 +1475,7 @@ func jsonParseHexUint32(node *jsonNode, path string) (uint32, error) {
 }
 
 // jsonParseHexUint64 parses exactly sixteen hexadecimal digits (the Rust
-// parse_hex_u64, value_transport.rs:830-835).
+// parse_hex_u64, value_transport.rs).
 func jsonParseHexUint64(node *jsonNode, path string) (uint64, error) {
 	if node.kind != jsonString {
 		return 0, protocolError(KindWrongType, path, "expected JSON string")
@@ -1495,7 +1495,7 @@ func jsonParseHexUint64(node *jsonNode, path string) (uint64, error) {
 }
 
 // jsonParseU8 parses a decimal string into a uint8 (the Rust parse_u8,
-// value_transport.rs:809-814).
+// value_transport.rs).
 func jsonParseU8(node *jsonNode, path string, limits ProtocolLimits) (uint8, error) {
 	integer, err := jsonParseInteger(node, path, limits)
 	if err != nil {
@@ -1512,7 +1512,7 @@ func jsonParseU8(node *jsonNode, path string, limits ProtocolLimits) (uint8, err
 }
 
 // jsonParseI32 parses a decimal string into an int32 (the Rust parse_i32,
-// value_transport.rs:816-821).
+// value_transport.rs).
 func jsonParseI32(node *jsonNode, path string, limits ProtocolLimits) (int32, error) {
 	integer, err := jsonParseInteger(node, path, limits)
 	if err != nil {
@@ -1529,7 +1529,7 @@ func jsonParseI32(node *jsonNode, path string, limits ProtocolLimits) (int32, er
 }
 
 // EncodePVCE encodes a PortableValue as canonical PVCE/1 under protocol
-// limits (consema-rs/consema-protocol/src/value_transport.rs:78-89).
+// limits (consema-rs/consema-protocol/src/value_transport.rs).
 func EncodePVCE(value core.Value, limits ProtocolLimits) ([]byte, error) {
 	bytes, err := core.EncodePVCEBounded(value, core.EncodeLimits{
 		MaxBytes:            limits.MaxBytes,
@@ -1546,7 +1546,7 @@ func EncodePVCE(value core.Value, limits ProtocolLimits) ([]byte, error) {
 }
 
 // DecodePVCE strictly decodes canonical PVCE/1 under protocol limits
-// (consema-rs/consema-protocol/src/value_transport.rs:92-112). The Go codec
+// (consema-rs/consema-protocol/src/value_transport.rs). The Go codec
 // rejects records outside the closed fifteen-kind model (only the extended
 // 0x7f record, via core.ErrUnknownCoreTag), reported as KindInvalidPvce.
 func DecodePVCE(bytes []byte, limits ProtocolLimits) (core.Value, error) {
@@ -1565,7 +1565,7 @@ func DecodePVCE(bytes []byte, limits ProtocolLimits) (core.Value, error) {
 }
 
 // mapPVCEError converts a go/core codec error into the protocol error kind
-// registry (the Rust decode_pvce mapping, value_transport.rs:104-111).
+// registry (the Rust decode_pvce mapping, value_transport.rs).
 func mapPVCEError(err error) *ProtocolError {
 	if core.IsPVCEError(err, core.ErrResourceLimit) {
 		return resource("$", err.Error())

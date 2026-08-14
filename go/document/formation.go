@@ -1,7 +1,7 @@
 package document
 
 // FormationStatus is the closed two-value formation state of a successful
-// document formation (document lib.rs:404-411; RFC 0016 §5.1 F10). The
+// document formation (document lib.rs; RFC 0016 §5.1 F10). The
 // unexported field makes the set closed: no third value is constructible.
 type FormationStatus struct {
 	name string

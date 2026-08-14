@@ -6,7 +6,7 @@ import (
 )
 
 // UntouchedByteRegion is one maximal unchanged raw-byte interval mapped
-// across two source snapshots (untouched_proof.rs:7-59).
+// across two source snapshots (untouched_proof.rs).
 type UntouchedByteRegion struct {
 	oldStart int
 	oldEnd   int
@@ -33,7 +33,7 @@ func (r UntouchedByteRegion) NewStart() int { return r.newStart }
 func (r UntouchedByteRegion) NewEnd() int { return r.newEnd }
 
 // UntouchedByteProofErrorKind classifies a proof construction or
-// verification failure (untouched_proof.rs:134-172).
+// verification failure (untouched_proof.rs).
 type UntouchedByteProofErrorKind uint8
 
 // The closed proof failure classes.
@@ -110,7 +110,7 @@ func (e *UntouchedByteProofError) Error() string {
 func (e *UntouchedByteProofError) Code() string { return "core.protocol.invalid-value@1" }
 
 // UntouchedByteProof is the immutable evidence for every byte outside one
-// exact replacement plan (untouched_proof.rs:61-132).
+// exact replacement plan (untouched_proof.rs).
 type UntouchedByteProof struct {
 	baseDigest   ContentDigest
 	targetDigest ContentDigest
@@ -119,7 +119,7 @@ type UntouchedByteProof struct {
 
 // CreateUntouchedByteProof creates a proof only when the replacements
 // exactly produce the supplied target snapshot
-// (untouched_proof.rs:70-82).
+// (untouched_proof.rs).
 func CreateUntouchedByteProof(base, target *SourceSnapshot,
 	replacements []SourceReplacement) (UntouchedByteProof, error) {
 	regions, failure := expectedRegions(base, target, replacements)
@@ -134,7 +134,7 @@ func CreateUntouchedByteProof(base, target *SourceSnapshot,
 }
 
 // Verify rechecks digests, replacement preconditions, exact target bytes,
-// and every region fact (untouched_proof.rs:98-113).
+// and every region fact (untouched_proof.rs).
 func (p UntouchedByteProof) Verify(base, target *SourceSnapshot,
 	replacements []SourceReplacement) *UntouchedByteProofError {
 	if !base.Digest().Equal(p.baseDigest) || !target.Digest().Equal(p.targetDigest) {
@@ -174,7 +174,7 @@ func IsUntouchedProofError(err error) bool {
 }
 
 // expectedRegions derives the canonical regions and verifies the exact
-// target bytes (untouched_proof.rs:182-245). The canonical proof compares
+// target bytes (untouched_proof.rs). The canonical proof compares
 // the raw source bytes, drops zero-length intervals, and merges adjacent
 // unchanged intervals, exactly like the Rust reference.
 func expectedRegions(base, target *SourceSnapshot,
@@ -231,7 +231,7 @@ func expectedRegions(base, target *SourceSnapshot,
 }
 
 // validateProofReplacement enforces one replacement's canonical structure
-// (untouched_proof.rs:247-281).
+// (untouched_proof.rs).
 func validateProofReplacement(base []byte, previous *SourceReplacement,
 	replacement *SourceReplacement, index int) *UntouchedByteProofError {
 	if replacement.OldStart() > replacement.OldEnd() ||
@@ -258,7 +258,7 @@ func validateProofReplacement(base []byte, previous *SourceReplacement,
 }
 
 // pushProofRegion merges adjacent regions and drops empty ones
-// (untouched_proof.rs:283-295).
+// (untouched_proof.rs).
 func pushProofRegion(regions *[]UntouchedByteRegion, region UntouchedByteRegion) {
 	if region.oldStart == region.oldEnd {
 		return
@@ -275,7 +275,7 @@ func pushProofRegion(regions *[]UntouchedByteRegion, region UntouchedByteRegion)
 }
 
 // validateProofRegions enforces the canonical region structure
-// (untouched_proof.rs:297-317).
+// (untouched_proof.rs).
 func validateProofRegions(regions []UntouchedByteRegion) *UntouchedByteProofError {
 	var previous *UntouchedByteRegion
 	for index := range regions {

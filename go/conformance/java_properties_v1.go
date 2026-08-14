@@ -595,7 +595,7 @@ func runPropertiesFormationRecoveryMatrix(vector *caseData, report *SuiteReport)
 // runPropertiesMalformedEscapeInKey executes one
 // `formation.malformed-escape-in-key` case: a malformed `\uXXXX` escape in
 // the KEY position recovers the logical line without a partial property and
-// the error line carries the family parse code (parser.rs:626-666).
+// the error line carries the family parse code (parser.rs).
 func runPropertiesMalformedEscapeInKey(vector *caseData, report *SuiteReport) {
 	doc, message := propertiesParseCase(vector)
 	if message != "" {
@@ -642,7 +642,7 @@ func runPropertiesMalformedEscapeInKey(vector *caseData, report *SuiteReport) {
 // Reader profile: bytes that cannot be decoded under the explicit encoding
 // (`core.source.invalid-sequence@1`) or a BOM that contradicts it
 // (`core.source.encoding-conflict@1`) fail the whole parse before any
-// document forms (parser.rs:24-33).
+// document forms (parser.rs).
 func runPropertiesFatalEncoding(vector *caseData, report *SuiteReport) {
 	encodingName, ok := stringField(vector.Input, "encoding")
 	if !ok {

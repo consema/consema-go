@@ -7,12 +7,12 @@ import (
 )
 
 // checkpointStride is the scalar count between full position checkpoints
-// (document source.rs:13). Coordinate conversion scans at most one stride
+// (document source.rs). Coordinate conversion scans at most one stride
 // past a checkpoint instead of the whole source.
 const checkpointStride = 256
 
 // SourceLimits are the resource bounds applied while a source snapshot is
-// constructed (document source.rs:382-409).
+// constructed (document source.rs).
 type SourceLimits struct {
 	// MaxRawBytes is the maximum retained raw bytes.
 	MaxRawBytes int
@@ -43,7 +43,7 @@ func UnboundedSourceLimits() SourceLimits {
 }
 
 // SourceErrorKind classifies a stable source construction failure
-// (document source.rs:669-708).
+// (document source.rs).
 type SourceErrorKind uint8
 
 // The stable source construction failure classes.
@@ -133,7 +133,7 @@ func (e *SourceError) Code() string {
 }
 
 // DecodedPosition is one exact boundary expressed in every supported
-// coordinate system (document source.rs:411-423).
+// coordinate system (document source.rs).
 type DecodedPosition struct {
 	// RawByte is the offset in retained raw source bytes.
 	RawByte int
@@ -148,7 +148,7 @@ type DecodedPosition struct {
 }
 
 // DecodedOffsetKind identifies one decoded coordinate system (document
-// source.rs:425-434).
+// source.rs).
 type DecodedOffsetKind uint8
 
 // The three decoded coordinate systems.
@@ -192,7 +192,7 @@ func (o DecodedOffset) Kind() DecodedOffsetKind { return o.kind }
 func (o DecodedOffset) Value() int { return o.value }
 
 // SourceSnapshot is immutable ownership of exact raw bytes plus explicitly
-// derived text facts (document source.rs:476-666). The raw bytes, the
+// derived text facts (document source.rs). The raw bytes, the
 // SHA-256 content digest, the resolved encoding facts, and the decoded
 // text are fixed at construction; coordinate conversion never re-validates
 // the source.
@@ -209,7 +209,7 @@ type SourceSnapshot struct {
 }
 
 // NewSourceSnapshotFromRaw constructs a source from raw bytes using
-// explicit resolution inputs and limits (document source.rs:488-550).
+// explicit resolution inputs and limits (document source.rs).
 func NewSourceSnapshotFromRaw(bytes []byte, request EncodingRequest, limits SourceLimits) (*SourceSnapshot, error) {
 	if len(bytes) > limits.MaxRawBytes {
 		return nil, &SourceError{Kind: SourceErrorResourceLimit, Name: "raw-bytes",
@@ -271,7 +271,7 @@ func NewSourceSnapshotFromRaw(bytes []byte, request EncodingRequest, limits Sour
 }
 
 // NewSourceSnapshotFromUTF8 is the compatibility constructor for exact
-// UTF-8 sources (document source.rs:552-568).
+// UTF-8 sources (document source.rs).
 func NewSourceSnapshotFromUTF8(bytes []byte) (*SourceSnapshot, error) {
 	override := Utf8Encoding()
 	snapshot, err := NewSourceSnapshotFromRaw(bytes,
@@ -287,7 +287,7 @@ func NewSourceSnapshotFromUTF8(bytes []byte) (*SourceSnapshot, error) {
 }
 
 // NewSourceSnapshotFromBinary constructs an opaque binary source without
-// decoding or BOM interpretation (document source.rs:570-576).
+// decoding or BOM interpretation (document source.rs).
 func NewSourceSnapshotFromBinary(bytes []byte, limits SourceLimits) (*SourceSnapshot, error) {
 	return NewSourceSnapshotFromRaw(bytes, BinaryEncodingRequest(), limits)
 }
@@ -317,7 +317,7 @@ func (s *SourceSnapshot) IsEmpty() bool { return len(s.bytes) == 0 }
 func (s *SourceSnapshot) Identity() SnapshotIdentity { return s.identity }
 
 // DecodedPosition resolves one raw byte offset only when it is a decoded
-// scalar boundary (document source.rs:623-641).
+// scalar boundary (document source.rs).
 func (s *SourceSnapshot) DecodedPosition(rawByte int) (DecodedPosition, error) {
 	if rawByte < 0 || rawByte > len(s.bytes) {
 		return DecodedPosition{}, &LocationError{Kind: LocationOutOfBounds}
@@ -332,7 +332,7 @@ func (s *SourceSnapshot) DecodedPosition(rawByte int) (DecodedPosition, error) {
 }
 
 // RawByteAt resolves one decoded offset only when it denotes a scalar
-// boundary (document source.rs:644-665).
+// boundary (document source.rs).
 func (s *SourceSnapshot) RawByteAt(offset DecodedOffset) (int, error) {
 	if !s.hasText {
 		return 0, &LocationError{Kind: LocationNoDecodedText}
@@ -414,7 +414,7 @@ func (s *SourceSnapshot) scalarRawWidth(scalarOffset int, r rune) int {
 }
 
 // buildIndex computes the checkpoint table and terminal position and
-// enforces the decoded-text limits (document source.rs:1016-1067).
+// enforces the decoded-text limits (document source.rs).
 func (s *SourceSnapshot) buildIndex(limits SourceLimits) error {
 	if len(s.text) > limits.MaxDecodedUTF8Bytes {
 		return &SourceError{Kind: SourceErrorResourceLimit, Name: "decoded-utf8-bytes",
@@ -452,7 +452,7 @@ func (s *SourceSnapshot) buildIndex(limits SourceLimits) error {
 
 // lastCheckpoint returns the last checkpoint satisfying the predicate; the
 // zero checkpoint always satisfies predicates over non-negative targets
-// (document source.rs:1082-1088).
+// (document source.rs).
 func lastCheckpoint(checkpoints []DecodedPosition, predicate func(DecodedPosition) bool) DecodedPosition {
 	index := sort.Search(len(checkpoints), func(i int) bool { return !predicate(checkpoints[i]) })
 	if index == 0 {
@@ -496,7 +496,7 @@ func invalidUTF8Offset(bytes []byte) int {
 }
 
 // decodeUTF16 decodes one UTF-16 byte stream strictly
-// (document source.rs:806-869).
+// (document source.rs).
 func decodeUTF16(bytes []byte, littleEndian bool, limits SourceLimits) (string, error) {
 	if len(bytes)%2 != 0 {
 		encoding := Utf16BeEncoding()
@@ -554,7 +554,7 @@ func readU16(bytes []byte, offset int, littleEndian bool) uint16 {
 }
 
 // decodeLatin1 decodes one ISO-8859-1 byte stream
-// (document source.rs:880-894).
+// (document source.rs).
 func decodeLatin1(bytes []byte, limits SourceLimits) (string, error) {
 	var output []byte
 	scalars := 0
@@ -570,7 +570,7 @@ func decodeLatin1(bytes []byte, limits SourceLimits) (string, error) {
 
 // decodeWindowsCodePage decodes one frozen Windows code page strictly,
 // returning the decoded text and the raw byte width of every decoded
-// scalar (document source.rs:896-1014). The single-byte pages and CP932
+// scalar (document source.rs). The single-byte pages and CP932
 // use the frozen Python-stdlib data shared with go/protocol; CP936,
 // CP949, and CP950 are recognized but not decoded — a documented skip
 // (never silent: non-ASCII bytes fail loudly with
@@ -731,7 +731,7 @@ func cp932Lookup(code uint16) (rune, bool) {
 
 // checkDecodedLimits enforces the decoded scalar and UTF-8 byte budgets
 // for one more scalar whose UTF-8 representation has the given length
-// (document source.rs:857-864, 886-891: the projected byte count is
+// (document source.rs: the projected byte count is
 // checked before the scalar is appended).
 func checkDecodedLimits(output []byte, scalars, nextUTF8Len int, limits SourceLimits) error {
 	if scalars > limits.MaxDecodedScalars {

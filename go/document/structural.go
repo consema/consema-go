@@ -1,7 +1,7 @@
 package document
 
 // BinaryRegion is one format-owned region in an opaque binary source
-// (document lib.rs:492-528).
+// (document lib.rs).
 type BinaryRegion struct {
 	node NodeRef
 	span Span
@@ -24,7 +24,7 @@ func (r BinaryRegion) Span() Span { return r.span }
 func (r BinaryRegion) Kind() string { return r.kind }
 
 // BinaryStructuralIndex is the exhaustive ordered format-owned region
-// coverage for one opaque binary source (document lib.rs:530-579).
+// coverage for one opaque binary source (document lib.rs).
 type BinaryStructuralIndex struct {
 	regions []BinaryRegion
 }
@@ -68,7 +68,7 @@ func (i *BinaryStructuralIndex) Regions() []BinaryRegion {
 }
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (document lib.rs:413-422).
+// (document lib.rs).
 type StructuralPieceKind uint8
 
 // The three frozen piece classes.
@@ -82,7 +82,7 @@ const (
 )
 
 // StructuralPiece is one source byte interval and its lossless class
-// (document lib.rs:424-449).
+// (document lib.rs).
 type StructuralPiece struct {
 	span Span
 	kind StructuralPieceKind
@@ -115,7 +115,7 @@ func (p StructuralPiece) KindName() string {
 }
 
 // LosslessStructuralIndex is the exhaustive ordered token/trivia/error-
-// region coverage of one source (document lib.rs:451-490). Every source
+// region coverage of one source (document lib.rs). Every source
 // byte belongs to exactly one piece, in source order. The index validates
 // exact byte coverage and snapshot binding at construction.
 type LosslessStructuralIndex struct {
@@ -123,7 +123,7 @@ type LosslessStructuralIndex struct {
 }
 
 // NewLosslessStructuralIndex validates exact raw-byte coverage of the
-// source and snapshot binding (document lib.rs:459-483; the syntax piece
+// source and snapshot binding (document lib.rs; the syntax piece
 // identities are the source ordinals, so no duplicate-identity check
 // applies).
 func NewLosslessStructuralIndex(identity SnapshotIdentity, sourceLen int,

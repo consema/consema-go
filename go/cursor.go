@@ -38,7 +38,7 @@ const (
 )
 
 // OrderedCursor is the pull cursor over an already ordered standard result
-// (query.rs:3049-3104). `Next` yields values in order; the terminal state
+// (query.rs). `Next` yields values in order; the terminal state
 // is hidden until the stream closes: exhaustion closes with the declared
 // terminal, and a cancellation cursor closes with Cancelled as soon as the
 // context is cancelled.

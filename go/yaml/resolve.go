@@ -175,7 +175,7 @@ func resolveImplicit(decoded string, profile YamlProfile) (string, nativeScalar,
 		kind: ScalarKindString, style: ScalarStylePlain}, nil
 }
 
-// parseNull matches the four null spellings (consema-yaml native.rs:746).
+// parseNull matches the four null spellings (consema-yaml native.rs).
 func parseNull(value string) (string, bool) {
 	switch value {
 	case "", "~", "null", "Null", "NULL":
@@ -288,7 +288,7 @@ func parseFloat(value string, profile YamlProfile) (string, bool) {
 }
 
 // normalizeDecimalLexeme rewrites leading dots and trailing mantissa dots
-// into the JSON-number grammar (native.rs:831-846).
+// into the JSON-number grammar (native.rs).
 func normalizeDecimalLexeme(value string) string {
 	var builder strings.Builder
 	body := value
@@ -392,7 +392,7 @@ func decimalCanonical(coefficient, exponent *big.Int) string {
 }
 
 // parseSexagesimalInteger canonicalizes one YAML 1.1 base-60 integer
-// (native.rs:848-870).
+// (native.rs).
 func parseSexagesimalInteger(sign int8, value string) (string, bool) {
 	parts := strings.Split(value, ":")
 	first := parts[0]
@@ -419,7 +419,7 @@ func parseSexagesimalInteger(sign int8, value string) (string, bool) {
 }
 
 // parseSexagesimalFloat canonicalizes one YAML 1.1 base-60 float
-// (native.rs:872-912).
+// (native.rs).
 func parseSexagesimalFloat(value string) (string, bool) {
 	sign, unsigned := splitSign(value)
 	if !signOK(sign) {
@@ -477,7 +477,7 @@ func parseSexagesimalFloat(value string) (string, bool) {
 	return decimalCanonical(coefficient, exponent), true
 }
 
-// parseTimestamp canonicalizes one YAML 1.1 timestamp (native.rs:969-1060).
+// parseTimestamp canonicalizes one YAML 1.1 timestamp (native.rs).
 // The canonical form is `{date}T{hh}:{mm}:{ss}{.fraction}{zone}` with a
 // `Z` zone default for a missing zone.
 func parseTimestamp(value string) (string, bool) {
@@ -780,7 +780,7 @@ func isASCII(value string) bool {
 }
 
 // parseBaseMagnitude builds the big-endian base-256 magnitude of one digit
-// string in the given base (native.rs:945-954).
+// string in the given base (native.rs).
 func parseBaseMagnitude(value string, base int64) ([]uint8, bool) {
 	if value == "" {
 		return nil, false
@@ -807,7 +807,7 @@ func parseBaseMagnitude(value string, base int64) ([]uint8, bool) {
 }
 
 // multiplyAdd multiplies one big-endian base-256 magnitude and adds one
-// addend (native.rs:956-967).
+// addend (native.rs).
 func multiplyAdd(magnitude *[]uint8, multiplier, addend uint8) {
 	var carry uint16 = uint16(addend)
 	for index := len(*magnitude) - 1; index >= 0; index-- {

@@ -7,7 +7,7 @@ import (
 )
 
 func TestProfileDescriptorIsNormalizedAndStrict(t *testing.T) {
-	// registry.rs:504-521.
+	// registry.rs.
 	descriptor, err := NewProfileDescriptor(
 		"toml", 1, "toml.1-0", 1, nil,
 		[]string{"toml.datetime", "toml.array-table"},
@@ -27,7 +27,7 @@ func TestProfileDescriptorIsNormalizedAndStrict(t *testing.T) {
 	if decoded.ProfileID() != "toml.1-0" || decoded.FormatFamilyID() != "toml" {
 		t.Error("profile identity wrong")
 	}
-	// The differences are sorted (registry.rs:84-94).
+	// The differences are sorted (registry.rs).
 	if decoded.Differences()[0] != "toml.array-table" {
 		t.Error("differences not sorted")
 	}
@@ -46,7 +46,7 @@ func TestProfileDescriptorIsNormalizedAndStrict(t *testing.T) {
 }
 
 func TestCapabilityCrossFieldInvariantsAreEnforced(t *testing.T) {
-	// registry.rs:523-546.
+	// registry.rs.
 	capability := NewCapabilityId("core.query.ordered-results", 1)
 	// Conditional support requires preconditions.
 	_, err := NewCapabilityDeclaration(capability,
@@ -124,7 +124,7 @@ func stringMapObjectMust(values map[string]string) core.Value {
 }
 
 func TestRegistryManifestRoundTripsAndIsCurrent(t *testing.T) {
-	// registry_manifest.rs:324-405.
+	// registry_manifest.rs.
 	manifest, err := NewRegistryManifest(7, NewContractRegistry(RegistryV7), NewErrorCodeRegistry(ErrorRegistryV7))
 	if err != nil {
 		t.Fatal(err)

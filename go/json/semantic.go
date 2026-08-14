@@ -1,10 +1,10 @@
 package json
 
 // Regional semantic availability and the native JSON value categories
-// (consema-json lib.rs:289-340).
+// (consema-json lib.rs).
 
 // SemanticUnavailable is the stable reason that a region has no native
-// semantic value (consema-json lib.rs:309-319).
+// semantic value (consema-json lib.rs).
 type SemanticUnavailable uint8
 
 // The four frozen unavailability reasons.
@@ -39,7 +39,7 @@ func (u SemanticUnavailable) String() string {
 }
 
 // SemanticAvailability is one region's availability verdict
-// (consema-json lib.rs:289-306): either complete native meaning or a stable
+// (consema-json lib.rs): either complete native meaning or a stable
 // unavailability reason. The zero value is an unavailable region with
 // reason Missing; use Available to construct an available verdict.
 type SemanticAvailability[T any] struct {
@@ -69,7 +69,7 @@ func (a SemanticAvailability[T]) Value() T { return a.value }
 func (a SemanticAvailability[T]) Reason() SemanticUnavailable { return a.reason }
 
 // JsonValueKind is the native JSON value category, preserving
-// integer-form versus decimal-form numbers (consema-json lib.rs:321-340).
+// integer-form versus decimal-form numbers (consema-json lib.rs).
 type JsonValueKind uint8
 
 // The eight frozen native categories.
@@ -119,7 +119,7 @@ func (k JsonValueKind) String() string {
 }
 
 // JsonAccessErrorKind is a stable typed JSON access failure
-// (consema-json lib.rs:612-621).
+// (consema-json lib.rs).
 type JsonAccessErrorKind uint8
 
 // The three frozen access failures.

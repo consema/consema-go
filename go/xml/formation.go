@@ -120,7 +120,7 @@ func matchesProfile(profile XmlProfile) bool {
 }
 
 // encodingRequest resolves the source encoding request under the RFC 0012
-// §2 table (parser.rs:56-80).
+// §2 table (parser.rs).
 func encodingRequest(selection XmlEncodingSelection) (document.EncodingRequest, *FormationFailure) {
 	request := document.NewEncodingRequest(document.Utf8Encoding()).
 		WithBomPolicy(document.BomPolicyDetectUnicode)
@@ -140,7 +140,7 @@ func encodingRequest(selection XmlEncodingSelection) (document.EncodingRequest, 
 }
 
 // validateProfileEncoding verifies the resolved source facts under the
-// profile table (parser.rs:82-108).
+// profile table (parser.rs).
 func validateProfileEncoding(snapshot *document.SourceSnapshot,
 	selection XmlEncodingSelection) *FormationFailure {
 	facts := snapshot.EncodingFacts()

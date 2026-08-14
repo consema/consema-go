@@ -37,7 +37,7 @@ func latin1PatchBase(text string) *SourceSnapshot {
 // TestSourcePatchApplyErrorCodesAreRegistered pins every failure branch of
 // the SourcePatchApplyError surface: the branch must produce the registered
 // code the Rust document layer maps the same failure class to
-// (source_patch.rs:434-458, mirroring the source-v1.json patch vector
+// (source_patch.rs, mirroring the source-v1.json patch vector
 // expectations), and that code must be registered in the semantic-model v7
 // registry (RFC 0015 §4.3: envelopes only carry registered codes).
 func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
@@ -88,7 +88,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		{
 			// An old span beyond the base bytes is an original-byte
 			// precondition failure, exactly as the Rust document layer maps
-			// it (source_patch.rs:521-525).
+			// it (source_patch.rs).
 			name: "original-span-out-of-range",
 			run: func() error {
 				patch := &SourcePatch{
@@ -121,7 +121,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		{
 			// source.patch.reject-encoding-change: the result bytes resolve
 			// to different encoding facts than the base (source-v1.json
-			// vector expectation; source_patch.rs:441-444).
+			// vector expectation; source_patch.rs).
 			name: "target-encoding-drift",
 			run: func() error {
 				utf16 := []byte{0xff, 0xfe, 0x41, 0x00}
@@ -138,7 +138,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// A wire encoding-facts record that cannot be reconciled is an
-			// encoding conflict (source_patch.rs:263-265).
+			// encoding conflict (source_patch.rs).
 			name: "wire-encoding-facts-invalid",
 			run: func() error {
 				facts := utf8PatchFacts()
@@ -156,7 +156,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// NewSourcePatch rejects a result whose encoding facts drift from
-			// the base (source_patch.rs:241-243).
+			// the base (source_patch.rs).
 			name: "create-encoding-drift",
 			run: func() error {
 				utf16 := []byte{0xff, 0xfe, 0x41, 0x00}
@@ -169,7 +169,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// Result bytes that cannot form the base's encoding fail with the
-			// wrapped source error's code (source_patch.rs:272).
+			// wrapped source error's code (source_patch.rs).
 			name: "target-invalid-sequence",
 			run: func() error {
 				patch := &SourcePatch{
@@ -185,7 +185,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// A result beginning with a UTF-32 BOM fails with the wrapped
-			// unsupported-BOM source error's code (source_patch.rs:449).
+			// unsupported-BOM source error's code (source_patch.rs).
 			name: "target-unsupported-bom",
 			run: func() error {
 				utf32 := []byte{0xff, 0xfe, 0x00, 0x00}
@@ -220,7 +220,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// The summed original+replacement byte budget is exceeded
-			// (source_patch.rs:445-448).
+			// (source_patch.rs).
 			name: "patch-bytes-limit",
 			run: func() error {
 				limits := DefaultSourcePatchLimits()
@@ -239,7 +239,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		{
 			// A replacement whose start follows its end or whose original
 			// byte count disagrees with its range is structurally invalid
-			// (source_patch.rs:452-457).
+			// (source_patch.rs).
 			name: "invalid-replacement",
 			run: func() error {
 				patch := &SourcePatch{
@@ -255,7 +255,7 @@ func TestSourcePatchApplyErrorCodesAreRegistered(t *testing.T) {
 		},
 		{
 			// Two zero-width replacements at the same insertion point are
-			// structurally invalid (source_patch.rs:452-457).
+			// structurally invalid (source_patch.rs).
 			name: "duplicate-insertion",
 			run: func() error {
 				patch := &SourcePatch{

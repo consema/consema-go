@@ -5,18 +5,18 @@ import (
 )
 
 // This file implements the four temporal PortableValue kinds (配置内容统一处理
-// 标准与 Rust 参考实现.md §10.6; consema-rs/consema-core/src/value.rs:419-576):
+// 标准与 Rust 参考实现.md §10.6; consema-rs/consema-core/src/value.rs):
 // Date, Time, LocalDateTime, and OffsetDateTime. Validation mirrors the Rust
 // constructors exactly:
 //
 //   - Date uses the proleptic Gregorian calendar with astronomical year
 //     numbering; the leap rule operates on the year's absolute magnitude
-//     (value.rs:433-434);
+//     (value.rs);
 //   - Time rejects leap seconds and 24:00:00, and requires the fractional
 //     second to be an exact finite decimal in [0, 1)
-//     (value.rs:475-492, is_fraction at 337-352);
+//     (value.rs, is_fraction at 337-352);
 //   - OffsetDateTime requires |offset_seconds| < 24 * 60 * 60
-//     (value.rs:553-563).
+//     (value.rs).
 //
 // The zero value of Date (and of LocalDateTime/OffsetDateTime containing it)
 // is not a valid calendar date; constructing one and passing it to the codec
@@ -25,7 +25,7 @@ import (
 
 // Date is a proleptic Gregorian date with astronomical year numbering
 // (配置内容统一处理标准与 Rust 参考实现.md §10.6; the Rust Date,
-// consema-rs/consema-core/src/value.rs:420-464). The year is an arbitrary
+// consema-rs/consema-core/src/value.rs). The year is an arbitrary
 // precision signed integer; month is 1-12 and day is valid for the month and
 // the year's leap status.
 type Date struct {
@@ -63,7 +63,7 @@ func (Date) isValue() {}
 
 // Time is a wall-clock time without leap seconds or 24:00:00
 // (配置内容统一处理标准与 Rust 参考实现.md §10.6; the Rust Time,
-// consema-rs/consema-core/src/value.rs:467-517). The fractional second is an
+// consema-rs/consema-core/src/value.rs). The fractional second is an
 // exact finite decimal in [0, 1). The zero value is the valid time
 // 00:00:00.0.
 type Time struct {
@@ -77,7 +77,7 @@ type Time struct {
 // second 0-59, and fraction an exact finite decimal in [0, 1) (zero
 // coefficient, or coefficient × 10^exponent with coefficient >= 1 and
 // decimal digits + exponent <= 0, mirroring the Rust Time::new is_fraction
-// rule, consema-rs/consema-core/src/value.rs:337-352). An invalid time returns a
+// rule, consema-rs/consema-core/src/value.rs). An invalid time returns a
 // *PVCEError with ErrInvalidTemporal.
 func NewTime(hour, minute, second uint8, fraction Decimal) (Time, error) {
 	time := Time{hour: hour, minute: minute, second: second, fractionalSecond: fraction}
@@ -106,7 +106,7 @@ func (Time) isValue() {}
 
 // LocalDateTime is a Date plus a Time without any offset
 // (配置内容统一处理标准与 Rust 参考实现.md §10.6; the Rust LocalDateTime,
-// consema-rs/consema-core/src/value.rs:520-544). It is not a timestamp.
+// consema-rs/consema-core/src/value.rs). It is not a timestamp.
 type LocalDateTime struct {
 	date Date
 	time Time
@@ -131,7 +131,7 @@ func (LocalDateTime) isValue() {}
 
 // OffsetDateTime is a LocalDateTime plus a fixed UTC offset in whole
 // seconds (配置内容统一处理标准与 Rust 参考实现.md §10.6; the Rust
-// OffsetDateTime, consema-rs/consema-core/src/value.rs:547-576). The offset
+// OffsetDateTime, consema-rs/consema-core/src/value.rs). The offset
 // magnitude is less than 24 hours; the value locates the timeline but never
 // carries an IANA region timezone.
 type OffsetDateTime struct {
@@ -162,7 +162,7 @@ func (OffsetDateTime) isValue() {}
 
 // dateFieldsValid reports whether the fields form a valid proleptic Gregorian
 // date under astronomical year numbering (the Rust Date::new checks,
-// consema-rs/consema-core/src/value.rs:429-445). The leap rule uses the absolute
+// consema-rs/consema-core/src/value.rs). The leap rule uses the absolute
 // magnitude of the year.
 func dateFieldsValid(year *big.Int, month, day uint8) bool {
 	if month < 1 || month > 12 {
@@ -190,14 +190,14 @@ func dateFieldsValid(year *big.Int, month, day uint8) bool {
 }
 
 // timeFieldsValid reports whether the fields form a valid Time (the Rust
-// Time::new checks, consema-rs/consema-core/src/value.rs:483-485).
+// Time::new checks, consema-rs/consema-core/src/value.rs).
 func timeFieldsValid(hour, minute, second uint8, fraction Decimal) bool {
 	return hour <= 23 && minute <= 59 && second <= 59 && isFraction(fraction)
 }
 
 // isFraction reports whether the canonical decimal represents a value in
 // [0, 1) (the Rust Decimal::is_fraction,
-// consema-rs/consema-core/src/value.rs:337-352): a non-negative coefficient, and
+// consema-rs/consema-core/src/value.rs): a non-negative coefficient, and
 // either zero coefficient or an exponent small enough that the coefficient's
 // decimal digits plus the exponent is <= 0.
 func isFraction(d Decimal) bool {

@@ -20,7 +20,7 @@ import (
 // an alias requires an earlier visible anchor in the same document.
 
 // RepresentationPolicy is the explicit semantic scalar representation
-// policy (edit.rs:17-28).
+// policy (edit.rs).
 type RepresentationPolicy uint8
 
 // The four frozen policies.
@@ -53,7 +53,7 @@ const (
 )
 
 // ScalarReplacement is one scalar operation bound to the transaction's
-// base snapshot (edit.rs:30-57).
+// base snapshot (edit.rs).
 type ScalarReplacement struct {
 	// Kind is the closed replacement category.
 	Kind ScalarReplacementKind
@@ -68,7 +68,7 @@ type ScalarReplacement struct {
 }
 
 // EditOperationKind is the closed YAML edit operation category
-// (edit.rs:59-108).
+// (edit.rs).
 type EditOperationKind uint8
 
 // The eight frozen operation categories.
@@ -96,7 +96,7 @@ const (
 )
 
 // EditOperation is one typed YAML edit operation bound to an immutable
-// base snapshot (edit.rs:59-108). Only the fields of the declared Kind
+// base snapshot (edit.rs). Only the fields of the declared Kind
 // are meaningful.
 type EditOperation struct {
 	// Kind is the closed operation category.
@@ -144,7 +144,7 @@ func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (edit.rs:110-129).
+// against one base snapshot (edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -160,7 +160,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder is a builder that is not a committed edit
-// (edit.rs:131-243).
+// (edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -255,7 +255,7 @@ func (b *EditTransactionBuilder) InsertAlias(sequence, anchor document.NodeRef,
 }
 
 // Build completes the immutable request; target validation happens
-// atomically at commit (edit.rs:236-242).
+// atomically at commit (edit.rs).
 func (b *EditTransactionBuilder) Build() *EditTransaction {
 	return &EditTransaction{
 		base:       b.base,
@@ -263,7 +263,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	}
 }
 
-// EditCommit is the atomic edit success (edit.rs:245-256).
+// EditCommit is the atomic edit success (edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -303,7 +303,7 @@ const (
 type NodeMapping = document.NodeMapping
 
 // EditFailureKind is the stable edit validation or commit failure category
-// (edit.rs:258-299).
+// (edit.rs).
 type EditFailureKind uint8
 
 // The closed edit failure categories.
@@ -533,7 +533,7 @@ const (
 )
 
 // Commit atomically commits scalar, structural, and anchor operations. On
-// failure the base document remains unchanged (edit.rs:301-451).
+// failure the base document remains unchanged (edit.rs).
 func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	if tx.base != d.SnapshotIdentity() {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}

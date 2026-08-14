@@ -22,7 +22,7 @@ import (
 )
 
 // NameFacts is a validated element or attribute name for structural
-// operations (edit.rs:58-89). The prefix must already be bound to
+// operations (edit.rs). The prefix must already be bound to
 // `namespace` in the target's in-scope scope; the edit never guesses or
 // fabricates namespace declarations.
 type NameFacts struct {
@@ -49,7 +49,7 @@ func (n *NameFacts) spelling() string {
 }
 
 // AttributePlacementKind is the closed attribute insertion placement
-// inside one start tag (edit.rs:91-100).
+// inside one start tag (edit.rs).
 type AttributePlacementKind uint8
 
 // The three frozen attribute placements.
@@ -89,7 +89,7 @@ func AttributePlacementEnd() AttributePlacement {
 }
 
 // ContentPlacementKind is the closed content insertion placement inside
-// one element (edit.rs:102-111).
+// one element (edit.rs).
 type ContentPlacementKind uint8
 
 // The three frozen content placements.
@@ -131,7 +131,7 @@ func ContentPlacementEnd() ContentPlacement {
 }
 
 // EditOperationKind is the closed XML edit operation category
-// (edit.rs:112-176).
+// (edit.rs).
 type EditOperationKind uint8
 
 // The eight frozen operation categories.
@@ -163,7 +163,7 @@ const (
 )
 
 // EditOperation is one typed XML edit operation bound to an immutable base
-// snapshot (edit.rs:112-176). Only the fields of the declared Kind are
+// snapshot (edit.rs). Only the fields of the declared Kind are
 // meaningful.
 type EditOperation struct {
 	// Kind is the closed operation category.
@@ -190,7 +190,7 @@ type EditOperation struct {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (edit.rs:178-197).
+// against one base snapshot (edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -206,7 +206,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder is a builder that is not a committed edit
-// (edit.rs:199-304).
+// (edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -295,7 +295,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	}
 }
 
-// EditCommit is the atomic edit success (edit.rs:306-317).
+// EditCommit is the atomic edit success (edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -309,7 +309,7 @@ type EditCommit struct {
 }
 
 // EditFailureKind is the stable edit validation or commit failure category
-// (edit.rs:319-360).
+// (edit.rs).
 type EditFailureKind uint8
 
 // The closed edit failure categories.
@@ -488,7 +488,7 @@ func (e *EditFailure) Code() string {
 }
 
 // Commit atomically commits the structural operations. On failure the base
-// document remains unchanged (edit.rs:410-570).
+// document remains unchanged (edit.rs).
 func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	if tx.base != d.SnapshotIdentity() {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -625,7 +625,7 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 }
 
 // DryRun fully validates and plans an edit without returning a new
-// Document (edit.rs:572-588).
+// Document (edit.rs).
 func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*document.EditPlan, *EditFailure) {
 	commit, failure := d.Commit(tx)
 	if failure != nil {
@@ -665,7 +665,7 @@ const (
 )
 
 // validateDependencies runs the cross-operation dependency checks before
-// any span is computed (edit.rs:597-641).
+// any span is computed (edit.rs).
 func validateDependencies(tx *EditTransaction) *EditFailure {
 	targets := make(map[document.NodeRef]bool)
 	for index := range tx.operations {
@@ -701,7 +701,7 @@ func validateDependencies(tx *EditTransaction) *EditFailure {
 	return nil
 }
 
-// prepareOperation prepares one operation into owned edits (edit.rs:745-776).
+// prepareOperation prepares one operation into owned edits (edit.rs).
 func (d *Document) prepareOperation(operation *EditOperation) ([]preparedEdit, *EditFailure) {
 	switch operation.Kind {
 	case EditOperationReplaceText:
@@ -727,7 +727,7 @@ func (d *Document) prepareOperation(operation *EditOperation) ([]preparedEdit, *
 }
 
 // charWidth is the raw bytes per decoded character under the source
-// encoding (edit.rs:643-649).
+// encoding (edit.rs).
 func charWidth(encoding document.SourceEncoding) int {
 	if encoding.Equal(document.Utf16LeEncoding()) || encoding.Equal(document.Utf16BeEncoding()) {
 		return 2
@@ -736,7 +736,7 @@ func charWidth(encoding document.SourceEncoding) int {
 }
 
 // emptyElementTagClose reports whether the element tag ending at spanEnd is
-// written with a `/>` close, probed in raw bytes (edit.rs:651-664).
+// written with a `/>` close, probed in raw bytes (edit.rs).
 func emptyElementTagClose(source []byte, spanEnd int, encoding document.SourceEncoding) bool {
 	offset := spanEnd - 2*charWidth(encoding)
 	if offset < 0 {
@@ -750,7 +750,7 @@ func emptyElementTagClose(source []byte, spanEnd int, encoding document.SourceEn
 }
 
 // pushEncodedText appends literal text to a replacement buffer under the
-// source encoding (edit.rs:666-687).
+// source encoding (edit.rs).
 func pushEncodedText(out *[]byte, text string, encoding document.SourceEncoding) {
 	switch {
 	case encoding.Equal(document.Utf16LeEncoding()):
@@ -767,7 +767,7 @@ func pushEncodedText(out *[]byte, text string, encoding document.SourceEncoding)
 }
 
 // spellingBytes encodes one name spelling under the source encoding
-// (edit.rs:696-705).
+// (edit.rs).
 func spellingBytes(name *NameFacts, encoding document.SourceEncoding) []byte {
 	var out []byte
 	if name.Prefix != nil {
@@ -779,7 +779,7 @@ func spellingBytes(name *NameFacts, encoding document.SourceEncoding) []byte {
 }
 
 // qnameSpellingBytes encodes one source QName spelling under the source
-// encoding (edit.rs:707-715).
+// encoding (edit.rs).
 func qnameSpellingBytes(qname *QNameFacts, encoding document.SourceEncoding) []byte {
 	var out []byte
 	if qname.Prefix != nil {
@@ -791,7 +791,7 @@ func qnameSpellingBytes(qname *QNameFacts, encoding document.SourceEncoding) []b
 }
 
 // escapeText escapes literal character data for text content under the
-// source encoding (edit.rs:718-728).
+// source encoding (edit.rs).
 func escapeText(text string, encoding document.SourceEncoding) []byte {
 	var out []byte
 	for _, c := range text {
@@ -808,7 +808,7 @@ func escapeText(text string, encoding document.SourceEncoding) []byte {
 }
 
 // escapeAttribute escapes literal text for double-quoted attribute values
-// under the source encoding (edit.rs:730-743).
+// under the source encoding (edit.rs).
 func escapeAttribute(text string, encoding document.SourceEncoding) []byte {
 	var out []byte
 	for _, c := range text {
@@ -826,7 +826,7 @@ func escapeAttribute(text string, encoding document.SourceEncoding) []byte {
 	return out
 }
 
-// prepareReplaceText replaces one whole text occurrence (edit.rs:778-790).
+// prepareReplaceText replaces one whole text occurrence (edit.rs).
 func (d *Document) prepareReplaceText(target document.NodeRef, text string) ([]preparedEdit, *EditFailure) {
 	textData, failure := d.textFor(target)
 	if failure != nil {
@@ -840,7 +840,7 @@ func (d *Document) prepareReplaceText(target document.NodeRef, text string) ([]p
 	}}, nil
 }
 
-// prepareInsertAttribute inserts one attribute association (edit.rs:792-862).
+// prepareInsertAttribute inserts one attribute association (edit.rs).
 func (d *Document) prepareInsertAttribute(target document.NodeRef, name *NameFacts,
 	value string, placement AttributePlacement) ([]preparedEdit, *EditFailure) {
 	element, failure := d.elementFor(target)
@@ -899,7 +899,7 @@ func (d *Document) prepareInsertAttribute(target document.NodeRef, name *NameFac
 }
 
 // prepareRemoveAttribute removes one attribute including its leading
-// whitespace (edit.rs:864-876).
+// whitespace (edit.rs).
 func (d *Document) prepareRemoveAttribute(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	attribute, failure := d.attributeFor(target)
 	if failure != nil {
@@ -918,7 +918,7 @@ func (d *Document) prepareRemoveAttribute(target document.NodeRef) ([]preparedEd
 }
 
 // prepareRenameAttribute renames one attribute name preserving its value
-// (edit.rs:878-914).
+// (edit.rs).
 func (d *Document) prepareRenameAttribute(target document.NodeRef, name *NameFacts) ([]preparedEdit, *EditFailure) {
 	attribute, failure := d.attributeFor(target)
 	if failure != nil {
@@ -951,7 +951,7 @@ func (d *Document) prepareRenameAttribute(target document.NodeRef, name *NameFac
 	}}, nil
 }
 
-// prepareSetAttributeValue replaces one attribute value (edit.rs:916-928).
+// prepareSetAttributeValue replaces one attribute value (edit.rs).
 func (d *Document) prepareSetAttributeValue(target document.NodeRef, value string) ([]preparedEdit, *EditFailure) {
 	attribute, failure := d.attributeFor(target)
 	if failure != nil {
@@ -966,7 +966,7 @@ func (d *Document) prepareSetAttributeValue(target document.NodeRef, value strin
 }
 
 // prepareInsertElement inserts one element into a parent's mixed content
-// (edit.rs:930-1007).
+// (edit.rs).
 func (d *Document) prepareInsertElement(target document.NodeRef, name *NameFacts,
 	content *string, placement ContentPlacement) ([]preparedEdit, *EditFailure) {
 	element, failure := d.elementFor(target)
@@ -1052,7 +1052,7 @@ func (d *Document) prepareInsertElement(target document.NodeRef, name *NameFacts
 }
 
 // prepareRemoveElement removes one element subtree including its leading
-// whitespace (edit.rs:1009-1030).
+// whitespace (edit.rs).
 func (d *Document) prepareRemoveElement(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	element, failure := d.elementFor(target)
 	if failure != nil {
@@ -1075,7 +1075,7 @@ func (d *Document) prepareRemoveElement(target document.NodeRef) ([]preparedEdit
 }
 
 // prepareRenameElement renames one element in both its start and end tags
-// (edit.rs:1032-1070).
+// (edit.rs).
 func (d *Document) prepareRenameElement(target document.NodeRef, name *NameFacts) ([]preparedEdit, *EditFailure) {
 	element, failure := d.elementFor(target)
 	if failure != nil {
@@ -1108,7 +1108,7 @@ func (d *Document) prepareRenameElement(target document.NodeRef, name *NameFacts
 	return edits, nil
 }
 
-// elementFor resolves one element occurrence by arena index (edit.rs:1073-1087).
+// elementFor resolves one element occurrence by arena index (edit.rs).
 func (d *Document) elementFor(target document.NodeRef) (*XmlElementData, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() || target.Role() != document.RoleXmlElement {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1128,7 +1128,7 @@ func (d *Document) elementFor(target document.NodeRef) (*XmlElementData, *EditFa
 }
 
 // attributeFor resolves one attribute association by ordinal
-// (edit.rs:1090-1098).
+// (edit.rs).
 func (d *Document) attributeFor(target document.NodeRef) (*XmlAttributeData, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() || target.Role() != document.RoleXmlAttribute {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1146,7 +1146,7 @@ func (d *Document) attributeFor(target document.NodeRef) (*XmlAttributeData, *Ed
 	return nil, &EditFailure{Kind: EditFailureTargetNotFound}
 }
 
-// textFor resolves one text occurrence by ordinal (edit.rs:1101-1108).
+// textFor resolves one text occurrence by ordinal (edit.rs).
 func (d *Document) textFor(target document.NodeRef) (*XmlTextData, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() || target.Role() != document.RoleXmlText {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1161,7 +1161,7 @@ func (d *Document) textFor(target document.NodeRef) (*XmlTextData, *EditFailure)
 
 // contentExtentEnd is the exact end of one content item's full extent: for
 // an element child this is its closing end tag, not its start-tag end
-// (edit.rs:1112-1144).
+// (edit.rs).
 func (d *Document) contentExtentEnd(index int) int {
 	content := &d.nodes[index]
 	if content.Kind != XmlContentElement {
@@ -1180,7 +1180,7 @@ func (d *Document) contentExtentEnd(index int) int {
 		data.QName.Span.Len() + width
 }
 
-// contentSpanFor resolves one content item span by role (edit.rs:1147-1186).
+// contentSpanFor resolves one content item span by role (edit.rs).
 func (d *Document) contentSpanFor(target document.NodeRef) (document.NodeRole, document.Span, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() {
 		return "", document.Span{}, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1258,7 +1258,7 @@ func (d *Document) elementOwningAttribute(attribute *XmlAttributeData) *XmlEleme
 }
 
 // validateNameFacts validates name facts against one element's in-scope
-// scope (edit.rs:1189-1255).
+// scope (edit.rs).
 func validateNameFacts(name *NameFacts, element *XmlElementData, attribute bool) *EditFailure {
 	if name.Local == "" || strings.Contains(name.Local, ":") {
 		return &EditFailure{Kind: EditFailureInvalidQName}
@@ -1308,7 +1308,7 @@ func validateNameFacts(name *NameFacts, element *XmlElementData, attribute bool)
 }
 
 // expandedNameForFacts is the expanded name promised by name facts, when
-// resolvable (edit.rs:1257-1287).
+// resolvable (edit.rs).
 func expandedNameForFacts(name *NameFacts, element *XmlElementData) (*ExpandedName, *EditFailure) {
 	if name.Namespace == nil {
 		return nil, nil
@@ -1341,7 +1341,7 @@ func expandedNameForFacts(name *NameFacts, element *XmlElementData) (*ExpandedNa
 }
 
 // rejectDuplicateAttribute rejects an attribute whose expanded name already
-// exists on the element (edit.rs:1289-1306).
+// exists on the element (edit.rs).
 func rejectDuplicateAttribute(element *XmlElementData, name *NameFacts) *EditFailure {
 	promised, failure := expandedNameForFacts(name, element)
 	if failure != nil {
@@ -1358,7 +1358,7 @@ func rejectDuplicateAttribute(element *XmlElementData, name *NameFacts) *EditFai
 	return nil
 }
 
-// findNodeBySpan locates one content node by exact span (edit.rs:1309-1336).
+// findNodeBySpan locates one content node by exact span (edit.rs).
 func findNodeBySpan(document *Document, start, end int) *document.NodeRef {
 	for _, content := range document.nodes {
 		span := content.Span()
@@ -1406,7 +1406,7 @@ func (d *Document) nodeRoleNode(content XmlContent) document.NodeRole {
 }
 
 // leadingWhitespaceStart scans back over the leading whitespace of one
-// owned span (edit.rs:1338-1344).
+// owned span (edit.rs).
 func leadingWhitespaceStart(source []byte, start int) int {
 	cursor := start
 	for cursor > 0 {
@@ -1421,7 +1421,7 @@ func leadingWhitespaceStart(source []byte, start int) int {
 }
 
 // sourcePatchLimits derives the patch limits from the parse limits
-// (edit.rs:1346-1356).
+// (edit.rs).
 func sourcePatchLimits(limits XmlParseLimits, operationCount int) document.SourcePatchLimits {
 	maxReplacements := operationCount
 	if maxReplacements < 1 {
@@ -1439,7 +1439,7 @@ func sourcePatchLimits(limits XmlParseLimits, operationCount int) document.Sourc
 }
 
 // operationMetadata builds the ordered operation metadata map
-// (edit.rs:1358-1370).
+// (edit.rs).
 func operationMetadata(tx *EditTransaction) map[string]string {
 	metadata := make(map[string]string, len(tx.operations))
 	for index, operation := range tx.operations {
@@ -1472,7 +1472,7 @@ func operationID(operation *EditOperation) string {
 }
 
 // operationSummaries builds the ordered safe operation summaries
-// (edit.rs:1385-1435).
+// (edit.rs).
 func operationSummaries(tx *EditTransaction) ([]*protocol.EditOperationSummary, *EditFailure) {
 	var summaries []*protocol.EditOperationSummary
 	for index := range tx.operations {

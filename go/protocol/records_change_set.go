@@ -9,7 +9,7 @@ import (
 )
 
 // SourceEditMessage is one exact source edit between the old and new
-// sources (change.rs:14-55).
+// sources (change.rs).
 type SourceEditMessage struct {
 	// OldStart is the inclusive old-source start.
 	OldStart uint64
@@ -24,7 +24,7 @@ type SourceEditMessage struct {
 }
 
 // NewSourceEditMessage validates range order and replacement/new-range
-// agreement (change.rs:27-45).
+// agreement (change.rs).
 func NewSourceEditMessage(oldStart, oldEnd, newStart, newEnd uint64, replacement []byte) (*SourceEditMessage, error) {
 	if oldStart > oldEnd || newStart > newEnd || newEnd-newStart != uint64(len(replacement)) {
 		return nil, invalid("$.source_edit", "invalid ranges or replacement length")
@@ -39,7 +39,7 @@ func NewSourceEditMessage(oldStart, oldEnd, newStart, newEnd uint64, replacement
 }
 
 // NodeMappingStatus is the closed node-mapping topology status
-// (change.rs:58-...).
+// (change.rs...).
 type NodeMappingStatus string
 
 // The six frozen mapping statuses.
@@ -53,7 +53,7 @@ const (
 )
 
 // NodeMappingMessage is one portable node-mapping fact using caller-defined
-// stable locators (change.rs:57-124).
+// stable locators (change.rs).
 type NodeMappingMessage struct {
 	// OldLocators are the one or more old locators.
 	OldLocators []string
@@ -66,7 +66,7 @@ type NodeMappingMessage struct {
 }
 
 // NewNodeMappingMessage validates locator topology against mapping status
-// (change.rs:76-118).
+// (change.rs).
 func NewNodeMappingMessage(oldLocators, newLocators []string, status NodeMappingStatus,
 	reason *string) (*NodeMappingMessage, error) {
 	if !uniqueLocators(oldLocators) || !uniqueLocators(newLocators) {
@@ -122,7 +122,7 @@ func uniqueLocators(locators []string) bool {
 }
 
 // ChangeSetMessage is the complete `core.change-set@1` record with external
-// source and node identities (change.rs:126-133).
+// source and node identities (change.rs).
 type ChangeSetMessage struct {
 	oldSourceID string
 	newSourceID string
@@ -132,7 +132,7 @@ type ChangeSetMessage struct {
 }
 
 // NewChangeSetMessage validates source identities, edit order, and global
-// old-locator uniqueness (change.rs:134-181).
+// old-locator uniqueness (change.rs).
 func NewChangeSetMessage(oldSourceID, newSourceID string, sourceEdits []*SourceEditMessage,
 	nodeMaps []*NodeMappingMessage, diagnostics []*Diagnostic) (*ChangeSetMessage, error) {
 	if oldSourceID == "" || newSourceID == "" || len(oldSourceID) > 1024 || len(newSourceID) > 1024 {
@@ -177,7 +177,7 @@ func (m *ChangeSetMessage) NodeMappings() []*NodeMappingMessage { return m.nodeM
 // Diagnostics returns the ordered diagnostics.
 func (m *ChangeSetMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.change-set@1` (change.rs:302-331).
+// ToValue encodes `core.change-set@1` (change.rs).
 func (m *ChangeSetMessage) ToValue() (core.Value, error) {
 	edits := make([]core.Value, 0, len(m.sourceEdits))
 	for _, edit := range m.sourceEdits {
@@ -233,13 +233,13 @@ func (m *ChangeSetMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.change-set@1` under the v1 registry
-// (change.rs:332-341).
+// (change.rs).
 func (m *ChangeSetMessage) FromValue(value core.Value) (*ChangeSetMessage, error) {
 	return m.FromValueWithRegistry(value, DefaultErrorCodeRegistry())
 }
 
 // FromValueWithRegistry strictly decodes the record under one explicit
-// semantic-model registry (change.rs:337-...).
+// semantic-model registry (change.rs...).
 func (m *ChangeSetMessage) FromValueWithRegistry(value core.Value, registry ErrorCodeRegistry) (*ChangeSetMessage, error) {
 	fields, err := schemaFields(value, "core.change-set@1",
 		[]string{"schema", "old_source_id", "new_source_id", "source_edits", "node_mappings", "diagnostics"}, "$")

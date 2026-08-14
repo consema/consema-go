@@ -46,7 +46,7 @@ import (
 // FormatProfile is one profile together with the format family that
 // publishes it (the inline `registry` module of
 // https://github.com/consema/consema-rs/blob/main/consema/src/lib.rs — G077,
-// adversarial audit 2026-08-14: "registry.rs:50-69" was a phantom bare-file
+// adversarial audit 2026-08-14: "registry.rs" was a phantom bare-file
 // reference; the module is inline in lib.rs).
 type FormatProfile struct {
 	family  document.FormatFamilyId

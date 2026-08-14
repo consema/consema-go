@@ -12,7 +12,7 @@ import (
 // and registry_manifest.rs).
 
 // ProfileReference is a versioned reference to a Profile, whose ID may
-// contain numeric segments (registry.rs:14-46).
+// contain numeric segments (registry.rs).
 type ProfileReference struct {
 	id      string
 	version uint32
@@ -36,7 +36,7 @@ func (r *ProfileReference) ID() string { return r.id }
 func (r *ProfileReference) Version() uint32 { return r.version }
 
 // ProfileDescriptor is an immutable language profile registry descriptor
-// (registry.rs:48-250).
+// (registry.rs).
 type ProfileDescriptor struct {
 	formatFamilyID       string
 	formatFamilyVersion  uint32
@@ -48,7 +48,7 @@ type ProfileDescriptor struct {
 }
 
 // NewProfileDescriptor creates a normalized descriptor and rejects malformed
-// or duplicate facts (registry.rs:60-114).
+// or duplicate facts (registry.rs).
 func NewProfileDescriptor(formatFamilyID string, formatFamilyVersion uint32,
 	profileID string, profileVersion uint32, baseProfile *ProfileReference,
 	differences []string, requiredCapabilities []*CapabilityId) (*ProfileDescriptor, error) {
@@ -123,7 +123,7 @@ func (d *ProfileDescriptor) RequiredCapabilities() []*CapabilityId {
 	return append([]*CapabilityId(nil), d.requiredCapabilities...)
 }
 
-// ToValue encodes `core.profile-descriptor@1` (registry.rs:158-201).
+// ToValue encodes `core.profile-descriptor@1` (registry.rs).
 func (d *ProfileDescriptor) ToValue() (core.Value, error) {
 	differences := make([]core.Value, 0, len(d.differences))
 	for _, difference := range d.differences {
@@ -149,7 +149,7 @@ func (d *ProfileDescriptor) ToValue() (core.Value, error) {
 	)
 }
 
-// FromValue strictly decodes `core.profile-descriptor@1` (registry.rs:203-249).
+// FromValue strictly decodes `core.profile-descriptor@1` (registry.rs).
 func (d *ProfileDescriptor) FromValue(value core.Value) (*ProfileDescriptor, error) {
 	fields, err := schemaFields(value, "core.profile-descriptor@1",
 		[]string{"schema", "format_family_id", "format_family_version", "profile_id",
@@ -210,7 +210,7 @@ func (d *ProfileDescriptor) FromValue(value core.Value) (*ProfileDescriptor, err
 }
 
 // CapabilityId is a stable namespaced capability contract
-// (consema-core capability.rs:7-28).
+// (consema-core capability.rs).
 type CapabilityId struct {
 	namespace string
 	version   uint32
@@ -247,7 +247,7 @@ func (c *CapabilityId) Equal(other *CapabilityId) bool {
 }
 
 // CapabilitySet is a deterministic set of capabilities available to an
-// operation (consema-core capability.rs:59-96).
+// operation (consema-core capability.rs).
 type CapabilitySet struct {
 	capabilities map[string]*CapabilityId
 }
@@ -287,7 +287,7 @@ func (s *CapabilitySet) Iterate(visit func(*CapabilityId)) {
 }
 
 // ImplementationSupport is the declared support state of one capability
-// (consema-core capability.rs:30-43).
+// (consema-core capability.rs).
 type ImplementationSupport struct {
 	// Kind is the closed support kind.
 	Kind SupportKind
@@ -317,7 +317,7 @@ type Precondition struct {
 }
 
 // VerificationStatus is how capability support was verified
-// (consema-core capability.rs:45-56).
+// (consema-core capability.rs).
 type VerificationStatus string
 
 const (
@@ -346,7 +346,7 @@ func ParseVerificationStatus(name string) (VerificationStatus, error) {
 func (s VerificationStatus) String() string { return string(s) }
 
 // CapabilityDeclaration is one implementation's support and verification
-// claim for a capability (registry.rs:252-439).
+// claim for a capability (registry.rs).
 type CapabilityDeclaration struct {
 	capability   *CapabilityId
 	support      ImplementationSupport
@@ -355,7 +355,7 @@ type CapabilityDeclaration struct {
 }
 
 // NewCapabilityDeclaration validates the cross-field support and
-// verification invariants (registry.rs:262-315).
+// verification invariants (registry.rs).
 func NewCapabilityDeclaration(capability *CapabilityId, support ImplementationSupport,
 	verification VerificationStatus, suiteID *string) (*CapabilityDeclaration, error) {
 	if _, err := NewContractId(capability.Namespace(), capability.Version()); err != nil {
@@ -404,7 +404,7 @@ func (c *CapabilityDeclaration) Verification() VerificationStatus { return c.ver
 // SuiteID returns the conformance suite used for Verified status.
 func (c *CapabilityDeclaration) SuiteID() *string { return c.suiteID }
 
-// ToValue encodes `core.capability-declaration@1` (registry.rs:341-379).
+// ToValue encodes `core.capability-declaration@1` (registry.rs).
 func (c *CapabilityDeclaration) ToValue() (core.Value, error) {
 	supportName := "Conformant"
 	preconditions := make(map[string]string)
@@ -433,7 +433,7 @@ func (c *CapabilityDeclaration) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.capability-declaration@1`
-// (registry.rs:381-438).
+// (registry.rs).
 func (c *CapabilityDeclaration) FromValue(value core.Value) (*CapabilityDeclaration, error) {
 	fields, err := schemaFields(value, "core.capability-declaration@1",
 		[]string{"schema", "capability_id", "capability_version", "support",
@@ -493,7 +493,7 @@ func (c *CapabilityDeclaration) FromValue(value core.Value) (*CapabilityDeclarat
 }
 
 // RegistryManifest is the `core.registry-manifest@1` record of one
-// semantic-model contract set (registry_manifest.rs:30-282).
+// semantic-model contract set (registry_manifest.rs).
 type RegistryManifest struct {
 	semanticModel *ContractId
 	contracts     []ContractManifestEntry
@@ -549,7 +549,7 @@ func NewRegistryManifest(semanticModelVersion uint32, contractRegistry ContractR
 }
 
 // ValidateRegistryManifest validates a manifest's sorted, unique, versioned
-// records (registry_manifest.rs:119-151).
+// records (registry_manifest.rs).
 func ValidateRegistryManifest(semanticModel *ContractId, contracts []ContractManifestEntry,
 	errorCodes []ErrorCodeManifestEntry) (*RegistryManifest, error) {
 	for index := 1; index < len(contracts); index++ {
@@ -613,7 +613,7 @@ func (m *RegistryManifest) IsCurrent() bool {
 	return true
 }
 
-// ToValue encodes `core.registry-manifest@1` (registry_manifest.rs:177-230).
+// ToValue encodes `core.registry-manifest@1` (registry_manifest.rs).
 func (m *RegistryManifest) ToValue() (core.Value, error) {
 	contracts := make([]core.Value, 0, len(m.contracts))
 	for _, entry := range m.contracts {
@@ -650,7 +650,7 @@ func (m *RegistryManifest) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.registry-manifest@1`
-// (registry_manifest.rs:232-281).
+// (registry_manifest.rs).
 func (m *RegistryManifest) FromValue(value core.Value) (*RegistryManifest, error) {
 	fields, err := schemaFields(value, "core.registry-manifest@1",
 		[]string{"schema", "semantic_model", "contracts", "error_codes"}, "$")
@@ -748,7 +748,7 @@ func referenceValue(id string, version uint32) core.Value {
 }
 
 // parseContractReference strictly decodes a {"id","version"} reference
-// (registry_manifest.rs:284-290).
+// (registry_manifest.rs).
 func parseContractReference(value core.Value, path string) (*ContractId, error) {
 	fields, err := exactFields(value, []string{"id", "version"}, path)
 	if err != nil {
@@ -766,7 +766,7 @@ func parseContractReference(value core.Value, path string) (*ContractId, error) 
 }
 
 // parseProfileReference strictly decodes a profile reference
-// (registry.rs:459-465).
+// (registry.rs).
 func parseProfileReference(value core.Value, path string) (*ProfileReference, error) {
 	fields, err := exactFields(value, []string{"id", "version"}, path)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 
 // TestEveryIniProfilePublishesTheSameFrozenEightOperationSurface pins the
 // shared operation registry across all three profiles (consema-ini
-// operation_registry.rs:105-137).
+// operation_registry.rs).
 func TestEveryIniProfilePublishesTheSameFrozenEightOperationSurface(t *testing.T) {
 	expected := []string{
 		"ini.edit.insert-entry@1",

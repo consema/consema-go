@@ -61,7 +61,7 @@ type OperationDescriptor struct {
 }
 
 // FormatOperationRegistry is the validated operation registry for one
-// exact INI profile (consema-ini operation_registry.rs:9-14).
+// exact INI profile (consema-ini operation_registry.rs).
 type FormatOperationRegistry struct {
 	profile    document.ProfileId
 	operations []OperationDescriptor
@@ -81,7 +81,7 @@ func (r FormatOperationRegistry) Operations() []OperationDescriptor {
 // insert-entry, remove-entry, rename-entry (six mandatory structural
 // operations) and replace-semantic-value, replace-literal-value (two
 // existing typed capabilities). Descriptors are published in the canonical
-// operation-ID order (consema-document operation_registry.rs:234).
+// operation-ID order (consema-document operation_registry.rs).
 func NewFormatOperationRegistry(profile IniProfile) FormatOperationRegistry {
 	operations := []OperationDescriptor{
 		{

@@ -389,7 +389,7 @@ func encodingFactsNode(facts *EncodingFacts) *jsonNode {
 
 // parseEncodingFactsNode decodes the encoding facts tree. profile_default is
 // a required `core.source-encoding@1` record at the value level
-// (source.rs:697-699); the tree codec mirrors that acceptance and rejects
+// (source.rs); the tree codec mirrors that acceptance and rejects
 // Null here.
 func parseEncodingFactsNode(node *jsonNode, path string) (*EncodingFacts, error) {
 	fields, err := jsonRecordFields(node, []string{"profile_default", "bom_policy",

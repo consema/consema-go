@@ -502,7 +502,7 @@ func (c *projectionContext) elementNodeRef(container PlistValueRef) document.Nod
 }
 
 // projectValueTree builds the exact `plist.value-tree@1` record for the
-// document root (projection.rs:571-585).
+// document root (projection.rs).
 func (c *projectionContext) projectValueTree(uidPolicy UIDPolicy) (core.Value, Fidelity, *ProjectionFailure) {
 	native := c.document.native
 	rootPath := protocol.RootValuePath().Child(protocol.ValuePathSegment{

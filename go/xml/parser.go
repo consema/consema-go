@@ -65,7 +65,7 @@ type xmlToken struct {
 // isPrefix reports whether the token's name carries a prefix.
 func (t *xmlToken) isPrefix() bool { return t.prefixStart < t.prefixEnd }
 
-// xmlParser is the formation state machine (parser.rs:182-208).
+// xmlParser is the formation state machine (parser.rs).
 type xmlParser struct {
 	ctx                     context.Context
 	source                  *document.SourceSnapshot
@@ -95,7 +95,7 @@ type xmlParser struct {
 	pending                 []*xmlToken
 }
 
-// xmlFrame is one open element's formation state (parser.rs:163-180).
+// xmlFrame is one open element's formation state (parser.rs).
 type xmlFrame struct {
 	start               int
 	span                document.Span
@@ -111,7 +111,7 @@ type xmlFrame struct {
 }
 
 // pendingDeclaration is one namespace declaration seen before start-tag
-// finalization (parser.rs:161-169).
+// finalization (parser.rs).
 type pendingDeclaration struct {
 	qname   QNameFacts
 	uri     string
@@ -119,7 +119,7 @@ type pendingDeclaration struct {
 }
 
 // pendingAttribute is one attribute seen before start-tag finalization
-// (parser.rs:151-159).
+// (parser.rs).
 type pendingAttribute struct {
 	qname       QNameFacts
 	span        document.Span
@@ -130,7 +130,7 @@ type pendingAttribute struct {
 }
 
 // buildDocument forms one document from the decoded text
-// (parser.rs:246-273).
+// (parser.rs).
 func buildDocument(ctx context.Context, source *document.SourceSnapshot,
 	decoded string, limits XmlParseLimits) (*Document, *FormationFailure) {
 	parser := &xmlParser{
@@ -171,7 +171,7 @@ func buildDocument(ctx context.Context, source *document.SourceSnapshot,
 }
 
 // coverBOM covers a leading BOM as trivia; the tokenizer skips it in
-// decoded text (parser.rs:275-285).
+// decoded text (parser.rs).
 func (p *xmlParser) coverBOM() {
 	if bom := p.source.EncodingFacts().Bom(); bom != nil {
 		length := 0
@@ -886,7 +886,7 @@ func isNameChar(r rune) bool {
 	return false
 }
 
-// handle dispatches one token to its formation handler (parser.rs:287-332).
+// handle dispatches one token to its formation handler (parser.rs).
 func (p *xmlParser) handle(token *xmlToken) *FormationFailure {
 	switch token.kind {
 	case tokenDeclaration:
@@ -921,7 +921,7 @@ func (p *xmlParser) handle(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// declaration handles the XML declaration token (parser.rs:334-503).
+// declaration handles the XML declaration token (parser.rs).
 func (p *xmlParser) handleDeclaration(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -983,7 +983,7 @@ func (p *xmlParser) handleDeclaration(token *xmlToken) *FormationFailure {
 }
 
 // declarationParts pushes the declaration part pieces and locates the
-// standalone value span (parser.rs:411-503).
+// standalone value span (parser.rs).
 func (p *xmlParser) declarationParts(token *xmlToken) (*XmlStandaloneFact, *FormationFailure) {
 	text := p.decoded[token.start:token.end]
 	cursor := 5 // past `<?xml`, relative to the declaration span
@@ -1059,7 +1059,7 @@ func (p *xmlParser) declarationParts(token *xmlToken) (*XmlStandaloneFact, *Form
 }
 
 // skipDeclarationSpaces skips XML declaration spaces forward
-// (parser.rs:140-149).
+// (parser.rs).
 func skipDeclarationSpaces(text string, cursor int) int {
 	for cursor < len(text) {
 		switch text[cursor] {
@@ -1072,7 +1072,7 @@ func skipDeclarationSpaces(text string, cursor int) int {
 	return cursor
 }
 
-// processingInstruction handles one PI token (parser.rs:505-579).
+// processingInstruction handles one PI token (parser.rs).
 func (p *xmlParser) processingInstruction(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1140,7 +1140,7 @@ func (p *xmlParser) processingInstruction(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// comment handles one comment token (parser.rs:581-644).
+// comment handles one comment token (parser.rs).
 func (p *xmlParser) comment(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1196,7 +1196,7 @@ func (p *xmlParser) comment(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// doctypeStart handles `<!DOCTYPE name [ …` (parser.rs:646-667).
+// doctypeStart handles `<!DOCTYPE name [ …` (parser.rs).
 func (p *xmlParser) doctypeStart(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1220,7 +1220,7 @@ func (p *xmlParser) doctypeStart(token *xmlToken) *FormationFailure {
 }
 
 // doctypeEmpty handles `<!DOCTYPE name … >` without an internal subset
-// (parser.rs:669-689).
+// (parser.rs).
 func (p *xmlParser) doctypeEmpty(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1242,7 +1242,7 @@ func (p *xmlParser) doctypeEmpty(token *xmlToken) *FormationFailure {
 }
 
 // buildDoctype assembles the immutable DOCTYPE facts once its end is known
-// (parser.rs:692-711).
+// (parser.rs).
 func (p *xmlParser) buildDoctype(end document.Span) *FormationFailure {
 	if p.doctypeSpanStart == nil || p.doctypeName == nil {
 		return profileFailure("xml.source.span@1")
@@ -1263,7 +1263,7 @@ func (p *xmlParser) buildDoctype(end document.Span) *FormationFailure {
 }
 
 // pushDoctypeOpen pushes the `<!DOCTYPE` opening piece for a DTD start
-// span (parser.rs:714-718).
+// span (parser.rs).
 func (p *xmlParser) pushDoctypeOpen(raw document.Span) *FormationFailure {
 	open, err := p.authority.Span(raw.StartByte(), raw.StartByte()+9)
 	if err != nil {
@@ -1273,7 +1273,7 @@ func (p *xmlParser) pushDoctypeOpen(raw document.Span) *FormationFailure {
 	return nil
 }
 
-// doctypeCommon records the DOCTYPE name facts (parser.rs:720-745).
+// doctypeCommon records the DOCTYPE name facts (parser.rs).
 func (p *xmlParser) doctypeCommon(token *xmlToken, raw document.Span) *FormationFailure {
 	if p.doctype != nil {
 		p.recover("xml.dtd.multiple-doctype@1", raw, protocol.CategorySyntax)
@@ -1290,7 +1290,7 @@ func (p *xmlParser) doctypeCommon(token *xmlToken, raw document.Span) *Formation
 	return nil
 }
 
-// entityDeclaration handles one `<!ENTITY …>` token (parser.rs:747-849).
+// entityDeclaration handles one `<!ENTITY …>` token (parser.rs).
 func (p *xmlParser) entityDeclaration(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1368,7 +1368,7 @@ func isSpaceByte(byte byte) bool {
 	return byte == ' ' || byte == '\t' || byte == '\n' || byte == '\r'
 }
 
-// dtdEnd handles the `]>` closing of the internal subset (parser.rs:851-867).
+// dtdEnd handles the `]>` closing of the internal subset (parser.rs).
 func (p *xmlParser) dtdEnd(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1389,7 +1389,7 @@ func (p *xmlParser) dtdEnd(token *xmlToken) *FormationFailure {
 }
 
 // scanExcludedDtdMarkup scans the internal subset raw text for excluded
-// declarations; comments are skipped as a whole (parser.rs:869-911).
+// declarations; comments are skipped as a whole (parser.rs).
 func (p *xmlParser) scanExcludedDtdMarkup(subset string) *FormationFailure {
 	markers := []string{"<!ELEMENT", "<!ATTLIST", "<!NOTATION", "<!["}
 	search := subset
@@ -1435,7 +1435,7 @@ func (p *xmlParser) scanExcludedDtdMarkup(subset string) *FormationFailure {
 	}
 }
 
-// elementStart handles one `< name` token (parser.rs:913-961).
+// elementStart handles one `< name` token (parser.rs).
 func (p *xmlParser) elementStart(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1480,7 +1480,7 @@ func (p *xmlParser) elementStart(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// attribute handles one attribute token (parser.rs:963-1063).
+// attribute handles one attribute token (parser.rs).
 func (p *xmlParser) attribute(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1560,7 +1560,7 @@ func (p *xmlParser) attribute(token *xmlToken) *FormationFailure {
 }
 
 // finalizeStartTag resolves element and attribute names once the whole
-// start tag has been read (parser.rs:1065-1174).
+// start tag has been read (parser.rs).
 func (p *xmlParser) finalizeStartTag() {
 	if len(p.stack) == 0 {
 		return
@@ -1650,7 +1650,7 @@ func (p *xmlParser) finalizeStartTag() {
 }
 
 // elementOpenEnd handles the `>` closing of a start tag
-// (parser.rs:1176-1195).
+// (parser.rs).
 func (p *xmlParser) elementOpenEnd(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1669,7 +1669,7 @@ func (p *xmlParser) elementOpenEnd(token *xmlToken) *FormationFailure {
 }
 
 // elementEmptyEnd handles the `/>` closing of an empty element
-// (parser.rs:1196-1214).
+// (parser.rs).
 func (p *xmlParser) elementEmptyEnd(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1688,7 +1688,7 @@ func (p *xmlParser) elementEmptyEnd(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// elementCloseEnd handles one `</ name >` end tag (parser.rs:1215-1248).
+// elementCloseEnd handles one `</ name >` end tag (parser.rs).
 func (p *xmlParser) elementCloseEnd(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1722,7 +1722,7 @@ func (p *xmlParser) elementCloseEnd(token *xmlToken) *FormationFailure {
 }
 
 // closeFrame closes one element frame and publishes its arena node
-// (parser.rs:1250-1305).
+// (parser.rs).
 func (p *xmlParser) closeFrame(endTagSpan document.Span) {
 	if len(p.stack) == 0 {
 		// An extra end tag cannot close any proven element; it is a
@@ -1769,7 +1769,7 @@ func (p *xmlParser) closeFrame(endTagSpan document.Span) {
 	}
 }
 
-// text handles one text token (parser.rs:1307-1369).
+// text handles one text token (parser.rs).
 func (p *xmlParser) text(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1838,7 +1838,7 @@ func (p *xmlParser) text(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// cdata handles one CDATA token (parser.rs:1371-1401).
+// cdata handles one CDATA token (parser.rs).
 func (p *xmlParser) cdata(token *xmlToken) *FormationFailure {
 	raw, failure := p.rawSpan(token.start, token.end)
 	if failure != nil {
@@ -1874,7 +1874,7 @@ func (p *xmlParser) cdata(token *xmlToken) *FormationFailure {
 }
 
 // pushContent attaches one content occurrence to the current element
-// (parser.rs:1403-1422).
+// (parser.rs).
 func (p *xmlParser) pushContent(item XmlContent) {
 	if len(p.stack) > 0 {
 		frame := p.stack[len(p.stack)-1]
@@ -1895,7 +1895,7 @@ func (p *xmlParser) pushContent(item XmlContent) {
 
 // pushWhitespacePieces splits one whitespace-only text run into
 // Whitespace and LineBreak pieces; CRLF counts as one line break
-// (parser.rs:1424-1458).
+// (parser.rs).
 func (p *xmlParser) pushWhitespacePieces(token *xmlToken) *FormationFailure {
 	bytes := []byte(p.decoded[token.start:token.end])
 	index := 0
@@ -1928,7 +1928,7 @@ func (p *xmlParser) pushWhitespacePieces(token *xmlToken) *FormationFailure {
 }
 
 // textFragments splits one text or attribute-value occurrence into
-// reference fragments (parser.rs:1460-1555).
+// reference fragments (parser.rs).
 func (p *xmlParser) textFragments(token *xmlToken, literalKind XmlSyntaxKind) ([]ReferenceFragment, *FormationFailure) {
 	bytes := p.decoded[token.valueStart:token.valueEnd]
 	if !strings.Contains(bytes, "&") {
@@ -2011,7 +2011,7 @@ func (p *xmlParser) textFragments(token *xmlToken, literalKind XmlSyntaxKind) ([
 }
 
 // resolveReference resolves one `&…;` reference body into a fragment
-// (parser.rs:1557-1645).
+// (parser.rs).
 func (p *xmlParser) resolveReference(body string, refSpan document.Span, depth int) *ReferenceFragment {
 	if strings.HasPrefix(body, "#") {
 		digits := body[1:]
@@ -2068,7 +2068,7 @@ func (p *xmlParser) resolveReference(body string, refSpan document.Span, depth i
 
 // resolveNested resolves nested references inside one replacement text;
 // unknown references, cycles, or limit breaches inside replacement text
-// produce no partial native text (parser.rs:1647-1692).
+// produce no partial native text (parser.rs).
 func (p *xmlParser) resolveNested(replacement string, sourceSpan document.Span, depth int) *string {
 	if depth > p.limits.MaxEntityExpansionDepth {
 		return nil
@@ -2110,7 +2110,7 @@ func (p *xmlParser) resolveNested(replacement string, sourceSpan document.Span, 
 }
 
 // valueFragments splits an attribute value into fragments and applies XML
-// 1.0 CDATA normalization to the semantic value (parser.rs:1694-1729).
+// 1.0 CDATA normalization to the semantic value (parser.rs).
 func (p *xmlParser) valueFragments(token *xmlToken) ([]ReferenceFragment, string) {
 	fragments, _ := p.textFragments(token, XmlSyntaxKindAttributeValue)
 	var normalized strings.Builder
@@ -2140,7 +2140,7 @@ func (p *xmlParser) valueFragments(token *xmlToken) ([]ReferenceFragment, string
 }
 
 // recover records a recovery diagnostic with its exact failing span
-// (parser.rs:1731-1749).
+// (parser.rs).
 func (p *xmlParser) recover(code string, span document.Span, category protocol.DiagnosticCategory) {
 	p.recovered = true
 	if p.errorRegions >= p.limits.MaxRecoveryRegions {
@@ -2158,7 +2158,7 @@ func (p *xmlParser) recover(code string, span document.Span, category protocol.D
 }
 
 // entityLimit maps one expansion breach to its recovery diagnostic
-// (parser.rs:1751-1757).
+// (parser.rs).
 func (p *xmlParser) entityLimit(breach *ExpansionBreach, span document.Span) {
 	code := "xml.entity.limit@1"
 	if breach.Kind == ExpansionBreachAmplification {
@@ -2168,7 +2168,7 @@ func (p *xmlParser) entityLimit(breach *ExpansionBreach, span document.Span) {
 }
 
 // recoverErrorRegion covers one tokenizer error region and publishes the
-// well-formedness diagnostic (parser.rs:1759-1786). The error position is
+// well-formedness diagnostic (parser.rs). The error position is
 // the end of the document: a tokenizer error jumps the stream to the end
 // (xmlparser Stream::jump_to_end), so the region is the final byte.
 func (p *xmlParser) recoverErrorRegion(start, end int) *FormationFailure {
@@ -2197,7 +2197,7 @@ func (p *xmlParser) recoverErrorRegion(start, end int) *FormationFailure {
 }
 
 // finish completes formation and assembles the immutable document
-// (parser.rs:1792-1914).
+// (parser.rs).
 func (p *xmlParser) finish() (*Document, *FormationFailure) {
 	if len(p.stack) > 0 {
 		p.recovered = true
@@ -2391,7 +2391,7 @@ func (p *xmlParser) qnameFactsFromToken(token *xmlToken) (QNameFacts, *Formation
 }
 
 // pushQNameParts pushes the QName part pieces for one element or end-tag
-// name (parser.rs:1944-1976).
+// name (parser.rs).
 func (p *xmlParser) pushQNameParts(token *xmlToken) *FormationFailure {
 	if !token.isPrefix() {
 		localRaw, failure := p.rawSpanOffset(token.localStart, token.localEnd)
@@ -2419,7 +2419,7 @@ func (p *xmlParser) pushQNameParts(token *xmlToken) *FormationFailure {
 	return nil
 }
 
-// ordinal issues one document-wide occurrence ordinal (parser.rs:2009-2013).
+// ordinal issues one document-wide occurrence ordinal (parser.rs).
 func (p *xmlParser) ordinal() uint64 {
 	ordinal := p.nextOrdinal
 	p.nextOrdinal++
@@ -2436,7 +2436,7 @@ func (p *xmlParser) rawSpan(start, end int) (document.Span, *FormationFailure) {
 }
 
 // rawOffset converts one decoded UTF-8 byte offset to a raw source byte
-// offset (parser.rs:2022-2052).
+// offset (parser.rs).
 func (p *xmlParser) rawOffset(decoded int) (int, *FormationFailure) {
 	if p.source.EncodingFacts().Selected().Equal(document.Utf8Encoding()) {
 		return decoded, nil
@@ -2449,7 +2449,7 @@ func (p *xmlParser) rawOffset(decoded int) (int, *FormationFailure) {
 }
 
 // rawSpanOffset converts one decoded byte range to an exact raw span
-// (parser.rs:2054-2062).
+// (parser.rs).
 func (p *xmlParser) rawSpanOffset(start, end int) (document.Span, *FormationFailure) {
 	startRaw, failure := p.rawOffset(start)
 	if failure != nil {
@@ -2467,7 +2467,7 @@ func (p *xmlParser) rawSpanOffset(start, end int) (document.Span, *FormationFail
 }
 
 // pushPiece records one structural piece with its format kind
-// (parser.rs:2070-2073).
+// (parser.rs).
 func (p *xmlParser) pushPiece(span document.Span, kind XmlSyntaxKind, structural document.StructuralPieceKind) {
 	p.pieces = append(p.pieces, document.NewStructuralPiece(span, structural))
 	p.syntaxKinds = append(p.syntaxKinds, kind)
@@ -2493,7 +2493,7 @@ func (p *xmlParser) diagnosticLocation(span document.Span) *protocol.SourceLocat
 }
 
 // namespaceCode maps one namespace error to its stable diagnostic code
-// (parser.rs:130-137).
+// (parser.rs).
 func namespaceCode(err *NamespaceError) string {
 	switch err.Kind {
 	case NamespaceErrorUnboundPrefix:
@@ -2520,7 +2520,7 @@ func (p *xmlParser) findEntity(name string) *EntityDeclarationData {
 
 // sortDiagnostics orders diagnostics deterministically: primary start
 // byte (absent last), category, code, occurrence (consema-core
-// diagnostic.rs:107-123).
+// diagnostic.rs).
 func sortDiagnostics(diagnostics []*protocol.Diagnostic) {
 	for i := 1; i < len(diagnostics); i++ {
 		for j := i; j > 0 && diagnosticLess(diagnostics[j], diagnostics[j-1]); j-- {

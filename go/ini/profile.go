@@ -40,7 +40,7 @@ func (p IniProfile) isWindows() bool { return p == WindowsV1 }
 func (p IniProfile) isPython() bool { return p == PythonConfigParserV1 }
 
 // IniEncodingSelection is the explicit source-encoding selection; no host
-// locale is ever consulted (consema-ini lib.rs:58-65).
+// locale is ever consulted (consema-ini lib.rs).
 type IniEncodingSelection struct {
 	explicit *document.SourceEncoding
 }
@@ -69,7 +69,7 @@ func (s IniEncodingSelection) Explicit() *document.SourceEncoding {
 }
 
 // IniParseLimits are the INI-specific parse and recovery resource bounds
-// (consema-ini lib.rs:67-98).
+// (consema-ini lib.rs).
 type IniParseLimits struct {
 	// Common holds the shared source, node, piece, nesting, and diagnostic
 	// limits.
@@ -107,7 +107,7 @@ type IniParseLimits struct {
 }
 
 // DefaultIniParseLimits returns the frozen defaults (consema-ini
-// lib.rs:100-118).
+// lib.rs).
 func DefaultIniParseLimits() IniParseLimits {
 	return IniParseLimits{
 		Common:                   document.DefaultParseLimits(),
@@ -223,7 +223,7 @@ const (
 func (s IniValueState) AsStr() string { return string(s) }
 
 // IniQuoteStyle is the profile-recognized outer quote style (consema-ini
-// lib.rs:208-217).
+// lib.rs).
 type IniQuoteStyle string
 
 // The three frozen quote styles.
@@ -240,7 +240,7 @@ const (
 func (s IniQuoteStyle) AsStr() string { return string(s) }
 
 // IniLogicalLineKind is the kind of one logical INI record (consema-ini
-// lib.rs:219-228).
+// lib.rs).
 type IniLogicalLineKind string
 
 // The three frozen logical-record kinds.

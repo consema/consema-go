@@ -283,7 +283,7 @@ func (c *plistQueryContext) append(output *[]PlistMatch, values []PlistMatch) *p
 
 // sourceOrder is the deterministic structure-order key: the pre-order rank
 // of the owning node, with association position as the tiebreak
-// (query.rs:532-543).
+// (query.rs).
 func (c *plistQueryContext) sourceOrder(item *PlistMatch) (int, int) {
 	switch item.Kind {
 	case PlistMatchDocument:
@@ -375,13 +375,13 @@ func (c *plistBinaryContext) append(output *[]PlistBinaryMatch, values []PlistBi
 }
 
 // factNode issues the flat identity ordinal shared by the fact arrays, so
-// every fact kind has a distinct identity space (query.rs:655-685).
+// every fact kind has a distinct identity space (query.rs).
 func (c *plistBinaryContext) factNode(index int) document.NodeRef {
 	return c.document.nodeRef(index, document.RoleBinaryRegion)
 }
 
 // sourceOrder is the deterministic structure-order key over the flat fact
-// identity space (query.rs:687-699).
+// identity space (query.rs).
 func (c *plistBinaryContext) sourceOrder(item *PlistBinaryMatch) int {
 	objects := len(c.facts.objects)
 	offsets := len(c.facts.offsets)
@@ -550,7 +550,7 @@ func executeBinaryExpression(ctx context.Context, expression *protocol.QueryExpr
 	return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
 }
 
-// applyNativeOperator applies one native operator (query.rs:810-1163).
+// applyNativeOperator applies one native operator (query.rs).
 func applyNativeOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []PlistMatch, context *plistQueryContext) ([]PlistMatch, *protocol.QueryFailure) {
 	var output []PlistMatch
@@ -815,7 +815,7 @@ func typedAccessor(target PlistValueKind, input []PlistMatch,
 }
 
 // valuePayload is the value payload of one value-bearing match: a plain
-// value or an array element association (query.rs:1123-1131).
+// value or an array element association (query.rs).
 func valuePayload(item *PlistMatch) (PlistValueRef, PlistValueKind, bool) {
 	switch item.Kind {
 	case PlistMatchValue:
@@ -853,7 +853,7 @@ func codeUnitsEqual(left, right []uint16) bool {
 	return true
 }
 
-// applySyntaxOperator applies one syntax operator (query.rs:1253-1302).
+// applySyntaxOperator applies one syntax operator (query.rs).
 func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []PlistSyntaxMatch, context *plistSyntaxContext) ([]PlistSyntaxMatch, *protocol.QueryFailure) {
 	var output []PlistSyntaxMatch
@@ -908,7 +908,7 @@ func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 
 // decodedSpanText is the exact decoded text of one raw span, resolved
 // through the source's decoded text so UTF-8 and UTF-16 sources decode
-// correctly (RFC 0013 §2.1; query.rs:1307-1319).
+// correctly (RFC 0013 §2.1; query.rs).
 func decodedSpanText(document *Document, span document.Span) string {
 	decoded, ok := document.source.DecodedText()
 	if !ok {
@@ -925,7 +925,7 @@ func decodedSpanText(document *Document, span document.Span) string {
 	return decoded[start.DecodedUTF8Byte:end.DecodedUTF8Byte]
 }
 
-// applyBinaryOperator applies one binary structure operator (query.rs:1321-
+// applyBinaryOperator applies one binary structure operator (query.rs
 // 1511). The facts are document-level: every operator projects its fact set
 // once, regardless of how many binary-structure matches arrive.
 func applyBinaryOperator(ctx context.Context, operator *protocol.OperatorCall,
@@ -1040,7 +1040,7 @@ func applyBinaryOperator(ctx context.Context, operator *protocol.OperatorCall,
 }
 
 // preorderRanks computes the pre-order document ranks of the arena, first
-// visit winning for shared nodes (query.rs:1223-1251).
+// visit winning for shared nodes (query.rs).
 func preorderRanks(native *PlistDocument) []int {
 	if native == nil {
 		return nil

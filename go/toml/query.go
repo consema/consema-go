@@ -10,7 +10,7 @@ import (
 )
 
 // TomlMatch is one snapshot-bound TOML native semantic query match
-// (consema-toml query.rs:9-41).
+// (consema-toml query.rs).
 type TomlMatch struct {
 	// Kind is the match variant: Item, Entry, or ArrayElement.
 	Kind string
@@ -38,7 +38,7 @@ type TomlMatch struct {
 }
 
 // TomlSyntaxMatch is one snapshot-bound TOML lossless syntax query match
-// (consema-toml query.rs:53-86).
+// (consema-toml query.rs).
 type TomlSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -59,7 +59,7 @@ func (m TomlSyntaxMatch) Kind() TomlSyntaxKind { return m.kind }
 func (m TomlSyntaxMatch) Ordinal() int { return m.ordinal }
 
 // ExecuteTomlQuery executes a validated TOML native semantic query against
-// one immutable snapshot (consema-toml query.rs:88-127). The context is
+// one immutable snapshot (consema-toml query.rs). The context is
 // used for cancellation and deadlines only. Steps and result counts are
 // bounded by limits; exceeding either is core.query.resource-limit@1.
 func ExecuteTomlQuery(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -88,7 +88,7 @@ func ExecuteTomlQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 }
 
 // ExecuteTomlSyntaxQuery executes a validated TOML lossless syntax query
-// against every source piece in raw order (consema-toml query.rs:129-169).
+// against every source piece in raw order (consema-toml query.rs).
 func ExecuteTomlSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]TomlSyntaxMatch, *protocol.QueryFailure) {
 	domain := executable.Definition().Domain()
@@ -142,7 +142,7 @@ func (c *queryContext) step(results int) *protocol.QueryFailure {
 }
 
 // executeQueryExpression evaluates one native expression against the input
-// matches (consema-toml query.rs:213-254).
+// matches (consema-toml query.rs).
 func executeQueryExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []TomlMatch, context *queryContext) ([]TomlMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -221,7 +221,7 @@ func (d *Document) authoritySpan(node document.NodeRef) document.Span {
 }
 
 // applyQueryOperator evaluates one native operator (consema-toml
-// query.rs:341-469).
+// query.rs).
 func applyQueryOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []TomlMatch, context *queryContext) ([]TomlMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -348,7 +348,7 @@ func applyQueryOperator(ctx context.Context, operator *protocol.OperatorCall,
 }
 
 // executeSyntaxExpression evaluates one lossless-syntax expression
-// (consema-toml query.rs:256-288).
+// (consema-toml query.rs).
 func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []TomlSyntaxMatch, context *queryContext) ([]TomlSyntaxMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -394,7 +394,7 @@ func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpr
 }
 
 // applySyntaxOperator evaluates one lossless-syntax operator
-// (consema-toml query.rs:290-339).
+// (consema-toml query.rs).
 func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []TomlSyntaxMatch, context *queryContext) ([]TomlSyntaxMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -504,7 +504,7 @@ func checkCancelled(ctx context.Context) *protocol.QueryFailure {
 }
 
 // applyTomlSelection applies the definition selection (consema-toml
-// query.rs:471-488).
+// query.rs).
 func applyTomlSelection(matches []TomlMatch, selection protocol.QuerySelection) ([]TomlMatch, *protocol.QueryFailure) {
 	switch selection {
 	case protocol.SelectionAll:

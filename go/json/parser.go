@@ -197,7 +197,7 @@ func (l lexeme) syntaxKind() JsonSyntaxKind {
 }
 
 // lexJSON lexes one strict or JSONC source over its decoded text
-// (parser.rs:174-402).
+// (parser.rs).
 func lexJSON(ctx context.Context, text string, profile JsonProfile,
 	authority document.DocumentAuthority, limits document.ParseLimits,
 	sink *diagnosticSink) ([]lexeme, []token, bool, *FormationFailure) {
@@ -391,7 +391,7 @@ func isWordContinue(octet byte) bool {
 }
 
 // utf8Width returns the raw byte width of one UTF-8 scalar from its
-// leading octet (parser.rs:767-774).
+// leading octet (parser.rs).
 func utf8Width(leading byte) int {
 	switch {
 	case leading <= 0x7f:
@@ -405,7 +405,7 @@ func utf8Width(leading byte) int {
 }
 
 // validJSONNumber validates one strict/JSONC number lexeme
-// (parser.rs:776-815).
+// (parser.rs).
 func validJSONNumber(text string) bool {
 	index := 0
 	if index < len(text) && text[index] == '-' {
@@ -449,7 +449,7 @@ func validJSONNumber(text string) bool {
 }
 
 // lexJSON5 lexes one Standard JSON5 source over its decoded text
-// (parser.rs:404-581).
+// (parser.rs).
 func lexJSON5(ctx context.Context, source string, authority document.DocumentAuthority,
 	limits document.ParseLimits, sink *diagnosticSink) ([]lexeme, []token, bool, *FormationFailure) {
 	lexemes := make([]lexeme, 0, 64)
@@ -610,13 +610,13 @@ func isDigitAt(source string, offset int) bool {
 }
 
 // isJSON5LineTerminator reports one JSON5 line terminator
-// (parser.rs:590-593).
+// (parser.rs).
 func isJSON5LineTerminator(character rune) bool {
 	return character == '\n' || character == '\r' || character == '\u2028' || character == '\u2029'
 }
 
 // isJSON5Whitespace reports one JSON5 whitespace scalar
-// (parser.rs:594-614).
+// (parser.rs).
 func isJSON5Whitespace(character rune) bool {
 	switch character {
 	case '\t', '\n', '\v', '\f', '\r', ' ', '\u00a0', '\u1680',
@@ -627,7 +627,7 @@ func isJSON5Whitespace(character rune) bool {
 }
 
 // isJSON5IdentifierStart reports one ID_Start scalar including the JSON5
-// dollar/underscore additions (parser.rs:616-623). The Go stdlib category
+// dollar/underscore additions (parser.rs). The Go stdlib category
 // tables do not include the Unicode Other_ID_Start characters, so the
 // unicode-id-start 1.4.0 set pinned by the Rust reference is added
 // explicitly (U+1885, U+1886, U+2118, U+212E, U+309B, U+309C; G067,
@@ -645,7 +645,7 @@ func isJSON5IdentifierStart(character rune) bool {
 }
 
 // isJSON5IdentifierContinue reports one ID_Continue scalar including the
-// JSON5 additions (parser.rs:619-623). As with the start set, the
+// JSON5 additions (parser.rs). As with the start set, the
 // unicode-id-start 1.4.0 Other_ID_Continue characters that the Go stdlib
 // tables do not cover are added explicitly (U+00B7, U+0387, U+1369-U+1371,
 // U+19DA; G067).
@@ -662,7 +662,7 @@ func isJSON5IdentifierContinue(character rune) bool {
 }
 
 // scanJSON5Identifier scans one identifier candidate with escape decoding
-// (parser.rs:625-658).
+// (parser.rs).
 func scanJSON5Identifier(source string, start int) (int, bool) {
 	offset := start
 	first := true
@@ -701,7 +701,7 @@ func scanJSON5Identifier(source string, start int) (int, bool) {
 }
 
 // scanJSON5InvalidWord consumes one recovered invalid word
-// (parser.rs:660-675).
+// (parser.rs).
 func scanJSON5InvalidWord(source string, start int) int {
 	offset := start
 	for offset < len(source) {
@@ -722,7 +722,7 @@ func scanJSON5InvalidWord(source string, start int) int {
 }
 
 // decodeIdentifierEscape decodes one `\uXXXX` identifier escape
-// (parser.rs:677-687).
+// (parser.rs).
 func decodeIdentifierEscape(source string) (rune, bool) {
 	if !strings.HasPrefix(source, "\\u") || len(source) < 6 {
 		return 0, false
@@ -752,7 +752,7 @@ func hexDigit(octet byte) int {
 }
 
 // scanJSON5NumberCandidate consumes one JSON5 number candidate
-// (parser.rs:689-699).
+// (parser.rs).
 func scanJSON5NumberCandidate(source string, start int) int {
 	offset := start
 	for offset < len(source) {
@@ -768,7 +768,7 @@ func scanJSON5NumberCandidate(source string, start int) int {
 }
 
 // validJSON5Number validates one JSON5 number lexeme
-// (parser.rs:701-760).
+// (parser.rs).
 func validJSON5Number(text string) bool {
 	unsigned := text
 	if len(unsigned) > 0 && (unsigned[0] == '+' || unsigned[0] == '-') {
@@ -855,7 +855,7 @@ type parserState struct {
 }
 
 // parseValue parses one value at the current token position
-// (parser.rs:830-951).
+// (parser.rs).
 func (p *parserState) parseValue(depth int) (int, *FormationFailure) {
 	if depth > p.limits.MaxNestingDepth {
 		return 0, &FormationFailure{Kind: FormationFailureResourceLimit,
@@ -936,7 +936,7 @@ func (p *parserState) parseValue(depth int) (int, *FormationFailure) {
 }
 
 // parseObject parses one object at the current token position
-// (parser.rs:953-1069).
+// (parser.rs).
 func (p *parserState) parseObject(depth int) (int, *FormationFailure) {
 	open, _ := p.consume(tokenLeftBrace)
 	members := make([]int, 0, 4)
@@ -1037,7 +1037,7 @@ func (p *parserState) parseObject(depth int) (int, *FormationFailure) {
 }
 
 // parseArray parses one array at the current token position
-// (parser.rs:1071-1133).
+// (parser.rs).
 func (p *parserState) parseArray(depth int) (int, *FormationFailure) {
 	open, _ := p.consume(tokenLeftBracket)
 	elements := make([]int, 0, 4)
@@ -1086,7 +1086,7 @@ func (p *parserState) parseArray(depth int) (int, *FormationFailure) {
 	}
 }
 
-// parseObjectKey parses one object key token (parser.rs:1135-1145).
+// parseObjectKey parses one object key token (parser.rs).
 func (p *parserState) parseObjectKey(depth int) (int, *FormationFailure) {
 	item, _ := p.peek()
 	if item.kind == tokenString {
@@ -1101,12 +1101,12 @@ func (p *parserState) parseObjectKey(depth int) (int, *FormationFailure) {
 }
 
 // allocScalar allocates one complete literal value entity
-// (parser.rs:1147-1159).
+// (parser.rs).
 func (p *parserState) allocScalar(item token, kind internalValueKind) (int, *FormationFailure) {
 	return p.allocValue(item.start, item.end, &[2]int{item.start, item.end}, true, kind)
 }
 
-// allocValue allocates one value entity (parser.rs:1161-1176).
+// allocValue allocates one value entity (parser.rs).
 func (p *parserState) allocValue(start, end int, literal *[2]int, complete bool,
 	kind internalValueKind) (int, *FormationFailure) {
 	var literalSpan *document.Span
@@ -1145,7 +1145,7 @@ func (p *parserState) allocElement(start, end, value, ordinal int) (int, *Format
 		span: span, value: value, ordinal: ordinal}})
 }
 
-// allocEntity allocates one structural entity (parser.rs:1178-1189).
+// allocEntity allocates one structural entity (parser.rs).
 func (p *parserState) allocEntity(item *entity) (int, *FormationFailure) {
 	if len(p.entities) >= p.limits.MaxNodeCount {
 		return 0, &FormationFailure{Kind: FormationFailureResourceLimit,
@@ -1188,7 +1188,7 @@ func (p *parserState) consume(kind tokenKind) (token, bool) {
 }
 
 // currentOffset returns the byte offset of the next token or the source
-// end (parser.rs:1212-1214).
+// end (parser.rs).
 func (p *parserState) currentOffset() int {
 	if item, ok := p.peek(); ok {
 		return item.start
@@ -1203,7 +1203,7 @@ func (p *parserState) syntaxDiagnostic(code string, start, end int) {
 }
 
 // parseNumberKind resolves one validated number lexeme into its native
-// category (parser.rs:863-877, 1375-1443).
+// category (parser.rs).
 func parseNumberKind(text string, profile JsonProfile) internalValueKind {
 	if profile.isJSON5() {
 		return parseJSON5Number(text)
@@ -1244,7 +1244,7 @@ func parseJSONNumberDecimal(text string) core.Decimal {
 }
 
 // parseJSON5Number resolves one validated JSON5 number lexeme
-// (parser.rs:1375-1443).
+// (parser.rs).
 func parseJSON5Number(text string) internalValueKind {
 	negative := false
 	unsigned := text
@@ -1318,7 +1318,7 @@ type decodedString struct {
 }
 
 // decodeJSONString decodes one string literal under the profile
-// (parser.rs:1232-1315).
+// (parser.rs).
 func decodeJSONString(literal string, profile JsonProfile) (decodedString, bool) {
 	quote := charAt(literal, 0)
 	if quote != '"' && !(profile.isJSON5() && quote == '\'') {
@@ -1488,7 +1488,7 @@ func hexDigitFromRune(character rune) int {
 }
 
 // decodeJSON5Identifier decodes one JSON5 IdentifierName literal
-// (parser.rs:1349-1373).
+// (parser.rs).
 func decodeJSON5Identifier(literal string) (string, bool) {
 	var output strings.Builder
 	offset := 0
@@ -1525,7 +1525,7 @@ func decodeJSON5Identifier(literal string) (string, bool) {
 }
 
 // diagnosticSink applies the diagnostic budget with the explicit
-// truncation marker (parser.rs:1500-1537).
+// truncation marker (parser.rs).
 type diagnosticSink struct {
 	diagnostics []*protocol.Diagnostic
 	max         int
@@ -1602,7 +1602,7 @@ func diagnosticLocation(authority document.DocumentAuthority, span document.Span
 
 // sortDiagnostics orders diagnostics deterministically: primary start
 // byte (absent last), category, code, occurrence
-// (consema-core diagnostic.rs:107-123).
+// (consema-core diagnostic.rs).
 func sortDiagnostics(diagnostics []*protocol.Diagnostic) {
 	for i := 1; i < len(diagnostics); i++ {
 		for j := i; j > 0 && diagnosticLess(diagnostics[j], diagnostics[j-1]); j-- {

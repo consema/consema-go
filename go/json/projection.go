@@ -14,7 +14,7 @@ import (
 // attempt never contains a partial value.
 
 // ProjectionTarget is a versioned projection target contract
-// (projection.rs:14-24).
+// (projection.rs).
 type ProjectionTarget uint8
 
 // The four frozen targets.
@@ -34,7 +34,7 @@ const (
 )
 
 // DuplicateKeyPolicy is the explicit duplicate member policy
-// (projection.rs:26-35).
+// (projection.rs).
 type DuplicateKeyPolicy uint8
 
 // The three frozen duplicate policies.
@@ -51,7 +51,7 @@ const (
 )
 
 // ProjectionPolicyScope is the scope supported by projection policy rules
-// (projection.rs:37-44).
+// (projection.rs).
 type ProjectionPolicyScope struct {
 	// Global applies to all applicable native objects.
 	Global bool
@@ -61,7 +61,7 @@ type ProjectionPolicyScope struct {
 }
 
 // ProjectionLimits are the projection resource limits
-// (projection.rs:146-168).
+// (projection.rs).
 type ProjectionLimits struct {
 	// MaxValueNodes is the maximum produced PortableValue nodes.
 	MaxValueNodes int
@@ -85,7 +85,7 @@ func DefaultProjectionLimits() ProjectionLimits {
 }
 
 // ProjectionRequest is the immutable versioned projection request
-// (projection.rs:52-72).
+// (projection.rs).
 type ProjectionRequest struct {
 	target         ProjectionTarget
 	duplicateRules []duplicateRule
@@ -105,7 +105,7 @@ type duplicateRule struct {
 }
 
 // ProjectionRequestBuilder builds an immutable request and rejects
-// conflicting equal-precedence rules (projection.rs:74-144).
+// conflicting equal-precedence rules (projection.rs).
 type ProjectionRequestBuilder struct {
 	target         ProjectionTarget
 	duplicateRules []duplicateRule
@@ -157,7 +157,7 @@ func (b *ProjectionRequestBuilder) Limits(limits ProjectionLimits) *ProjectionRe
 }
 
 // Build validates rule precedence and completes the request
-// (projection.rs:130-143).
+// (projection.rs).
 func (b *ProjectionRequestBuilder) Build() (*ProjectionRequest, *ProjectionFailure) {
 	for index, left := range b.duplicateRules {
 		for _, right := range b.duplicateRules[index+1:] {
@@ -181,7 +181,7 @@ func sameScope(left, right ProjectionPolicyScope) bool {
 	return left.Node == right.Node
 }
 
-// Fidelity is the projection fidelity classification (projection.rs:171-179).
+// Fidelity is the projection fidelity classification (projection.rs).
 type Fidelity uint8
 
 // The three frozen fidelity classes.
@@ -210,7 +210,7 @@ func (f Fidelity) String() string {
 }
 
 // ProjectedLocation is a projected value or association location
-// (projection.rs:181-188).
+// (projection.rs).
 type ProjectedLocation struct {
 	// IsAssociation reports whether the location is an association.
 	IsAssociation bool
@@ -222,7 +222,7 @@ type ProjectedLocation struct {
 }
 
 // ProvenanceRelation is the source-to-projection relation
-// (projection.rs:190-204).
+// (projection.rs).
 type ProvenanceRelation string
 
 // The five frozen relations.
@@ -240,7 +240,7 @@ const (
 	ProvenanceRelationGenerated ProvenanceRelation = "Generated"
 )
 
-// SourceOrigin is one exact source origin (projection.rs:205-217).
+// SourceOrigin is one exact source origin (projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source document snapshot.
 	Snapshot document.SnapshotIdentity
@@ -253,7 +253,7 @@ type SourceOrigin struct {
 }
 
 // ProvenanceEntry is one many-valued provenance mapping entry
-// (projection.rs:219-225).
+// (projection.rs).
 type ProvenanceEntry struct {
 	// Projected is the projected value or association.
 	Projected ProjectedLocation
@@ -262,7 +262,7 @@ type ProvenanceEntry struct {
 }
 
 // ProvenanceMap is the immutable multi-map from projected locations to
-// source origins (projection.rs:227-239).
+// source origins (projection.rs).
 type ProvenanceMap struct {
 	entries []ProvenanceEntry
 }
@@ -274,7 +274,7 @@ func (m *ProvenanceMap) Entries() []ProvenanceEntry {
 }
 
 // ProjectionEventKind is the machine-readable projection event category
-// (projection.rs:241-257).
+// (projection.rs).
 type ProjectionEventKind string
 
 // The six frozen event categories.
@@ -299,7 +299,7 @@ const (
 )
 
 // ProjectionEvent is one structured projection report event
-// (projection.rs:259-277).
+// (projection.rs).
 type ProjectionEvent struct {
 	// Kind is the stable event kind.
 	Kind ProjectionEventKind
@@ -321,7 +321,7 @@ type ProjectionEvent struct {
 }
 
 // ProjectionReport is the complete ordered projection report
-// (projection.rs:279-291).
+// (projection.rs).
 type ProjectionReport struct {
 	events []ProjectionEvent
 }
@@ -333,7 +333,7 @@ func (r *ProjectionReport) Events() []ProjectionEvent {
 }
 
 // CompleteProjection is the complete successful projection; its value is
-// never partial (projection.rs:293-305).
+// never partial (projection.rs).
 type CompleteProjection struct {
 	// Value is the complete immutable value.
 	Value core.Value
@@ -346,7 +346,7 @@ type CompleteProjection struct {
 }
 
 // FailedProjectionAttempt is a failed attempt without a partial
-// PortableValue (projection.rs:307-315).
+// PortableValue (projection.rs).
 type FailedProjectionAttempt struct {
 	// Diagnostics are the ordered operation diagnostics.
 	Diagnostics []*protocol.Diagnostic
@@ -359,7 +359,7 @@ type FailedProjectionAttempt struct {
 }
 
 // ProjectionResult is the sealed projection outcome: exactly one of
-// Complete or Failed is set (projection.rs:317-324).
+// Complete or Failed is set (projection.rs).
 type ProjectionResult struct {
 	// Complete is the successful outcome.
 	Complete *CompleteProjection
@@ -368,7 +368,7 @@ type ProjectionResult struct {
 }
 
 // ProjectionFailureKind is the stable projection failure category
-// (projection.rs:327-355).
+// (projection.rs).
 type ProjectionFailureKind uint8
 
 // The closed projection failure categories.
@@ -438,7 +438,7 @@ func (e *ProjectionFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (projection.rs:754-765).
+// (projection.rs).
 func (e *ProjectionFailure) Code() string {
 	switch e.Kind {
 	case ProjectionFailureRecoveredDocument:
@@ -462,7 +462,7 @@ func (e *ProjectionFailure) Code() string {
 }
 
 // Project applies an immutable request; a failure never contains a
-// partial value (projection.rs:357-430).
+// partial value (projection.rs).
 func (d *Document) Project(request *ProjectionRequest) ProjectionResult {
 	if d.formationStatus != document.FormationStatusComplete {
 		return failedProjection(&ProjectionFailure{Kind: ProjectionFailureRecoveredDocument},
@@ -515,7 +515,7 @@ func (d *Document) Project(request *ProjectionRequest) ProjectionResult {
 }
 
 // failedProjection builds the failed attempt with its diagnostic
-// (projection.rs:728-752).
+// (projection.rs).
 func failedProjection(failure *ProjectionFailure, report ProjectionReport,
 	analysis []string) ProjectionResult {
 	diagnostic, err := protocol.NewDiagnostic(failure.Code(),
@@ -533,7 +533,7 @@ func failedProjection(failure *ProjectionFailure, report ProjectionReport,
 	}}
 }
 
-// projectionContext is the state of one projection (projection.rs:432-441).
+// projectionContext is the state of one projection (projection.rs).
 type projectionContext struct {
 	document        *Document
 	request         *ProjectionRequest
@@ -544,7 +544,7 @@ type projectionContext struct {
 	partialAnalysis []string
 }
 
-// projectValue projects one value node (projection.rs:443-499).
+// projectValue projects one value node (projection.rs).
 func (c *projectionContext) projectValue(value JsonValue, path protocol.ValuePath,
 	depth int) (core.Value, *ProjectionFailure) {
 	if depth > c.request.limits.MaxDepth {
@@ -599,7 +599,7 @@ func (c *projectionContext) projectValue(value JsonValue, path protocol.ValuePat
 		Node: value.NodeRef(), Reason: SemanticUnavailableMissing}
 }
 
-// projectObject projects one object value (projection.rs:501-639).
+// projectObject projects one object value (projection.rs).
 func (c *projectionContext) projectObject(object JsonValue, members []JsonObjectMember,
 	path protocol.ValuePath, depth int) (core.Value, *ProjectionFailure) {
 	names := make([]string, 0, len(members))
@@ -749,7 +749,7 @@ func (c *projectionContext) projectObject(object JsonValue, members []JsonObject
 }
 
 // duplicatePolicy resolves the effective policy for one object node
-// (projection.rs:641-657).
+// (projection.rs).
 func (c *projectionContext) duplicatePolicy(node document.NodeRef) DuplicateKeyPolicy {
 	for _, rule := range c.request.duplicateRules {
 		if !rule.scope.Global && rule.scope.Node == node {
@@ -764,7 +764,7 @@ func (c *projectionContext) duplicatePolicy(node document.NodeRef) DuplicateKeyP
 	return DuplicateKeyPolicyReject
 }
 
-// addOrigin records one provenance mapping (projection.rs:659-678).
+// addOrigin records one provenance mapping (projection.rs).
 func (c *projectionContext) addOrigin(projected ProjectedLocation, node document.NodeRef,
 	span document.Span) *ProjectionFailure {
 	if len(c.provenance.entries) >= c.request.limits.MaxProvenanceEntries {
@@ -783,7 +783,7 @@ func (c *projectionContext) addOrigin(projected ProjectedLocation, node document
 	return nil
 }
 
-// pushEvent records one report event (projection.rs:680-688).
+// pushEvent records one report event (projection.rs).
 func (c *projectionContext) pushEvent(event ProjectionEvent) *ProjectionFailure {
 	if len(c.report.events) >= c.request.limits.MaxReportEntries {
 		return &ProjectionFailure{Kind: ProjectionFailureResourceLimit,
@@ -794,7 +794,7 @@ func (c *projectionContext) pushEvent(event ProjectionEvent) *ProjectionFailure 
 }
 
 // selectMembers selects the retained members under one policy
-// (projection.rs:691-726).
+// (projection.rs).
 func selectMembers(members []JsonObjectMember, names []string, policy DuplicateKeyPolicy,
 	node document.NodeRef) ([]int, *ProjectionFailure) {
 	counts := make(map[string]int, len(names))

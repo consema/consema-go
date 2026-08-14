@@ -9,7 +9,7 @@ package conformance
 // Extends the 0.16.0 limits matrix (limits_matrix_test.go, five families)
 // to the recovery-capable families shipped in 0.16.0-0.18.0 (xml/plist/hcl)
 // and mirrors the Rust adversarial surface (consema-rs/consema-conformance/
-// tests/{xml,plist,hcl,yaml}_hardening.rs; SECURITY.md:16,32-36). Every
+// tests/{xml,plist,hcl,yaml}_hardening.rs; SECURITY.md). Every
 // public limit parameter is pinned with its exact positive/negative
 // boundary (N-1 fails with the family's frozen code, N succeeds), and the
 // family-specific threat tests run against the production default limits.
@@ -102,7 +102,7 @@ func TestSecurityLimitsMatrixXML(t *testing.T) {
 // smallest limit N at which the source completes without an entity-limit
 // diagnostic; N-1 must be Recovered with the expected `xml.entity.*@1`
 // code. Entity limits are document-wide accounting that recovers (RFC
-// 0013 §12; SECURITY.md:32), never a fatal failure.
+// 0013 §12; SECURITY.md), never a fatal failure.
 func pinXmlEntityBoundary(t *testing.T, param, expectedCode string,
 	run func(limit int) (*xml.Document, *xml.FormationFailure)) {
 	t.Helper()

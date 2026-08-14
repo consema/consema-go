@@ -21,7 +21,7 @@ import (
 // XmlMatchKind is the closed XML native match category.
 type XmlMatchKind uint8
 
-// The thirteen frozen native match categories (query.rs:31-165).
+// The thirteen frozen native match categories (query.rs).
 const (
 	// XmlMatchDocument is the complete XML document.
 	XmlMatchDocument XmlMatchKind = iota
@@ -51,7 +51,7 @@ const (
 	XmlMatchErrorRegion
 )
 
-// XmlReferenceKind is one XML reference occurrence kind (query.rs:20-29).
+// XmlReferenceKind is one XML reference occurrence kind (query.rs).
 type XmlReferenceKind uint8
 
 // The three frozen reference kinds.
@@ -81,7 +81,7 @@ func (k XmlReferenceKind) String() string {
 }
 
 // XmlMatch is one snapshot-bound XML native semantic query match
-// (query.rs:31-165). Only the fields of the declared Kind are meaningful.
+// (query.rs). Only the fields of the declared Kind are meaningful.
 type XmlMatch struct {
 	// Kind is the closed match category.
 	Kind XmlMatchKind
@@ -133,11 +133,11 @@ type XmlMatch struct {
 	Span document.Span
 }
 
-// Identity returns the exact match identity (query.rs:167-185).
+// Identity returns the exact match identity (query.rs).
 func (m *XmlMatch) Identity() document.NodeRef { return m.Node }
 
 // XmlSyntaxMatch is one snapshot-bound XML lossless syntax query match
-// (query.rs:187-220).
+// (query.rs).
 type XmlSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -158,7 +158,7 @@ func (m *XmlSyntaxMatch) Kind() XmlSyntaxKind { return m.kind }
 func (m *XmlSyntaxMatch) Ordinal() int { return m.ordinal }
 
 // ExecuteXMLQuery executes a validated XML native semantic query against
-// one immutable snapshot (query.rs:222-269). ctx carries cancellation
+// one immutable snapshot (query.rs). ctx carries cancellation
 // only.
 func ExecuteXMLQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]*XmlMatch, *protocol.QueryFailure) {
@@ -212,7 +212,7 @@ func (c *XmlQueryCursor) NextMatch() (*XmlMatch, *protocol.QueryFailure) {
 }
 
 // ExecuteXMLSyntaxQuery executes a validated XML lossless syntax query
-// against every source piece in raw order (query.rs:285-355).
+// against every source piece in raw order (query.rs).
 func ExecuteXMLSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]*XmlSyntaxMatch, *protocol.QueryFailure) {
 	domain := executable.Definition().Domain()
@@ -273,7 +273,7 @@ func (c *XmlSyntaxQueryCursor) NextMatch() (*XmlSyntaxMatch, *protocol.QueryFail
 	return match, nil
 }
 
-// queryContext is the execution state of one query (query.rs:371-482).
+// queryContext is the execution state of one query (query.rs).
 type queryContext struct {
 	document *Document
 	limits   protocol.QueryLimits
@@ -362,7 +362,7 @@ func (c *queryContext) prologItem(item *XmlPrologItem) *XmlMatch {
 	return &XmlMatch{Kind: XmlMatchPrologItem, Node: node, KindText: kind}
 }
 
-// executeExpression evaluates one native expression (query.rs:484-518).
+// executeExpression evaluates one native expression (query.rs).
 func executeExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []*XmlMatch, context *queryContext) ([]*XmlMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -411,7 +411,7 @@ func executeExpression(ctx context.Context, expression *protocol.QueryExpression
 	return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
 }
 
-// executeSyntaxExpression evaluates one syntax expression (query.rs:520-554).
+// executeSyntaxExpression evaluates one syntax expression (query.rs).
 func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []*XmlSyntaxMatch, context *queryContext) ([]*XmlSyntaxMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -455,7 +455,7 @@ func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpr
 }
 
 // matchSourceOrder is the structural identity order of one native match
-// (query.rs:556-576).
+// (query.rs).
 func matchSourceOrder(item *XmlMatch) int {
 	switch item.Kind {
 	case XmlMatchDocument:
@@ -467,7 +467,7 @@ func matchSourceOrder(item *XmlMatch) int {
 	}
 }
 
-// applyOperator applies one native operator (query.rs:578-622).
+// applyOperator applies one native operator (query.rs).
 func applyOperator(ctx context.Context, operator *protocol.OperatorCall, input []*XmlMatch,
 	context *queryContext) ([]*XmlMatch, *protocol.QueryFailure) {
 	var output []*XmlMatch
@@ -750,7 +750,7 @@ func elementChildPi(input []*XmlMatch, context *queryContext, output *[]*XmlMatc
 }
 
 // elementDescendants: bounded pre-order traversal with an explicit stack;
-// the input element itself is never included (query.rs:879-903).
+// the input element itself is never included (query.rs).
 func elementDescendants(input []*XmlMatch, context *queryContext, output *[]*XmlMatch) {
 	var stack []int
 	for _, item := range input {
@@ -1148,7 +1148,7 @@ func takeCount(operator *protocol.OperatorCall) int {
 }
 
 // applySelection applies the native cardinality selection
-// (query.rs:252-269).
+// (query.rs).
 func applySelection(values []*XmlMatch,
 	selection protocol.QuerySelection) ([]*XmlMatch, *protocol.QueryFailure) {
 	switch selection {

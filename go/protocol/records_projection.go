@@ -12,7 +12,7 @@ import (
 )
 
 // ProjectionPolicy is a versioned policy contract with deterministic
-// arguments (projection.rs:19-47).
+// arguments (projection.rs).
 type ProjectionPolicy struct {
 	contract  *ContractId
 	arguments map[string]core.Value
@@ -53,7 +53,7 @@ func (p *ProjectionPolicy) Equal(other *ProjectionPolicy) bool {
 }
 
 // ProjectionScope is the transferable projection rule scope
-// (projection.rs:49-74).
+// (projection.rs).
 type ProjectionScope struct {
 	// Kind is "Global", "ExactNativePath", or "ResolvedQuery".
 	Kind string
@@ -67,7 +67,7 @@ type ProjectionScope struct {
 }
 
 // ProjectionRule is one auditable scoped projection policy rule
-// (projection.rs:76-87).
+// (projection.rs).
 type ProjectionRule struct {
 	// RuleID is the stable request-local rule ID.
 	RuleID string
@@ -80,7 +80,7 @@ type ProjectionRule struct {
 }
 
 // ProjectionRequestMessage is the `core.projection-request@1` record
-// (projection.rs:89-97).
+// (projection.rs).
 type ProjectionRequestMessage struct {
 	target        *ContractId
 	defaultPolicy ProjectionPolicy
@@ -89,7 +89,7 @@ type ProjectionRequestMessage struct {
 }
 
 // NewProjectionRequestMessage validates rule IDs, portable scopes, and
-// semantic conflicts (projection.rs:98-148).
+// semantic conflicts (projection.rs).
 func NewProjectionRequestMessage(target *ContractId, defaultPolicy ProjectionPolicy,
 	rules []ProjectionRule, limits map[string]uint64) (*ProjectionRequestMessage, error) {
 	ruleIDs := make(map[string]bool, len(rules))
@@ -144,7 +144,7 @@ func (m *ProjectionRequestMessage) Limits() map[string]uint64 {
 	return output
 }
 
-// ToValue encodes `core.projection-request@1` (projection.rs:174-194).
+// ToValue encodes `core.projection-request@1` (projection.rs).
 func (m *ProjectionRequestMessage) ToValue() (core.Value, error) {
 	rules := make([]core.Value, 0, len(m.rules))
 	for _, rule := range m.rules {
@@ -172,7 +172,7 @@ func (m *ProjectionRequestMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.projection-request@1`
-// (projection.rs:196-230).
+// (projection.rs).
 func (m *ProjectionRequestMessage) FromValue(value core.Value) (*ProjectionRequestMessage, error) {
 	fields, err := schemaFields(value, "core.projection-request@1",
 		[]string{"schema", "target", "default_policy", "rules", "limits"}, "$")
@@ -208,7 +208,7 @@ func (m *ProjectionRequestMessage) FromValue(value core.Value) (*ProjectionReque
 }
 
 // ProjectedLocationMessage is a projected value or association location
-// (projection.rs:232-250).
+// (projection.rs).
 type ProjectedLocationMessage struct {
 	// Kind is "ValuePath" or "AssociationLocation".
 	Kind string
@@ -243,7 +243,7 @@ func (l ProjectedLocationMessage) Equal(other ProjectedLocationMessage) bool {
 }
 
 // ProvenanceRelation is the provenance relationship from a source fact to a
-// projected fact (projection.rs:241-254).
+// projected fact (projection.rs).
 type ProvenanceRelation string
 
 // The five frozen relations.
@@ -256,7 +256,7 @@ const (
 )
 
 // SourceOriginMessage is a transferable source origin with stable external
-// identities (projection.rs:256-269).
+// identities (projection.rs).
 type SourceOriginMessage struct {
 	// SourceID is the stable source identity.
 	SourceID string
@@ -271,7 +271,7 @@ type SourceOriginMessage struct {
 }
 
 // NewSourceOriginMessage validates a transferable source origin
-// (projection.rs:271-301).
+// (projection.rs).
 func NewSourceOriginMessage(sourceID string, nodeLocator *string, startByte, endByte uint64,
 	relation ProvenanceRelation) (*SourceOriginMessage, error) {
 	if sourceID == "" || len(sourceID) > 1024 || startByte > endByte ||
@@ -288,7 +288,7 @@ func NewSourceOriginMessage(sourceID string, nodeLocator *string, startByte, end
 }
 
 // ProvenanceEntryMessage is one projected location and all of its source
-// origins (projection.rs:312-320).
+// origins (projection.rs).
 type ProvenanceEntryMessage struct {
 	// Projected is the projected location.
 	Projected ProjectedLocationMessage
@@ -297,13 +297,13 @@ type ProvenanceEntryMessage struct {
 }
 
 // ProvenanceMapMessage is the sorted unique `core.provenance-map@1` record
-// (projection.rs:321-326).
+// (projection.rs).
 type ProvenanceMapMessage struct {
 	entries []ProvenanceEntryMessage
 }
 
 // NewProvenanceMapMessage validates sorted unique projected locations and
-// non-empty origins (projection.rs:327-341).
+// non-empty origins (projection.rs).
 func NewProvenanceMapMessage(entries []ProvenanceEntryMessage) (*ProvenanceMapMessage, error) {
 	for _, entry := range entries {
 		if len(entry.Origins) == 0 {
@@ -321,7 +321,7 @@ func NewProvenanceMapMessage(entries []ProvenanceEntryMessage) (*ProvenanceMapMe
 // Entries returns the sorted provenance entries.
 func (m *ProvenanceMapMessage) Entries() []ProvenanceEntryMessage { return m.entries }
 
-// ToValue encodes `core.provenance-map@1` (projection.rs:349-367).
+// ToValue encodes `core.provenance-map@1` (projection.rs).
 func (m *ProvenanceMapMessage) ToValue() (core.Value, error) {
 	entries := make([]core.Value, 0, len(m.entries))
 	for _, entry := range m.entries {
@@ -353,7 +353,7 @@ func (m *ProvenanceMapMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.provenance-map@1`
-// (projection.rs:369-392).
+// (projection.rs).
 func (m *ProvenanceMapMessage) FromValue(value core.Value) (*ProvenanceMapMessage, error) {
 	fields, err := schemaFields(value, "core.provenance-map@1", []string{"schema", "entries"}, "$")
 	if err != nil {
@@ -393,7 +393,7 @@ func (m *ProvenanceMapMessage) FromValue(value core.Value) (*ProvenanceMapMessag
 }
 
 // ProjectionFidelity is the projection fidelity classification
-// (projection.rs:394-403).
+// (projection.rs).
 type ProjectionFidelity string
 
 // The three frozen fidelities.
@@ -404,7 +404,7 @@ const (
 )
 
 // LossClassification is the event loss classification independent from
-// reversibility (projection.rs:405-414).
+// reversibility (projection.rs).
 type LossClassification string
 
 // The three frozen loss classifications.
@@ -415,7 +415,7 @@ const (
 )
 
 // ProjectionEventMessage is one machine-readable projection report event
-// (projection.rs:416-437).
+// (projection.rs).
 type ProjectionEventMessage struct {
 	// Code is the stable event code.
 	Code string
@@ -439,19 +439,19 @@ type ProjectionEventMessage struct {
 }
 
 // ProjectionReportMessage is the ordered `core.projection-report@1` record
-// (projection.rs:439-444).
+// (projection.rs).
 type ProjectionReportMessage struct {
 	events []ProjectionEventMessage
 }
 
 // NewProjectionReportMessage validates event cross-field invariants against
-// the v1 error registry (projection.rs:445-451).
+// the v1 error registry (projection.rs).
 func NewProjectionReportMessage(events []ProjectionEventMessage) (*ProjectionReportMessage, error) {
 	return NewProjectionReportMessageWithRegistry(events, DefaultErrorCodeRegistry())
 }
 
 // NewProjectionReportMessageWithRegistry validates events under one explicit
-// semantic-model error registry (projection.rs:452-471).
+// semantic-model error registry (projection.rs).
 func NewProjectionReportMessageWithRegistry(events []ProjectionEventMessage,
 	registry ErrorCodeRegistry) (*ProjectionReportMessage, error) {
 	for _, event := range events {
@@ -472,7 +472,7 @@ func NewProjectionReportMessageWithRegistry(events []ProjectionEventMessage,
 // Events returns the ordered events.
 func (m *ProjectionReportMessage) Events() []ProjectionEventMessage { return m.events }
 
-// ToValue encodes `core.projection-report@1` (projection.rs:479-491).
+// ToValue encodes `core.projection-report@1` (projection.rs).
 func (m *ProjectionReportMessage) ToValue() (core.Value, error) {
 	events := make([]core.Value, 0, len(m.events))
 	for _, event := range m.events {
@@ -489,13 +489,13 @@ func (m *ProjectionReportMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.projection-report@1` under the v1
-// registry (projection.rs:492-495).
+// registry (projection.rs).
 func (m *ProjectionReportMessage) FromValue(value core.Value) (*ProjectionReportMessage, error) {
 	return m.FromValueWithRegistry(value, DefaultErrorCodeRegistry())
 }
 
 // FromValueWithRegistry strictly decodes the report under one explicit
-// semantic-model registry (projection.rs:498-515).
+// semantic-model registry (projection.rs).
 func (m *ProjectionReportMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*ProjectionReportMessage, error) {
 	fields, err := schemaFields(value, "core.projection-report@1", []string{"schema", "events"}, "$")
@@ -519,7 +519,7 @@ func (m *ProjectionReportMessage) FromValueWithRegistry(value core.Value,
 }
 
 // ProjectionResultMessage is the complete or explicitly failed
-// `core.projection-result@1` record (projection.rs:517-527).
+// `core.projection-result@1` record (projection.rs).
 type ProjectionResultMessage struct {
 	completion  *Completion
 	value       core.Value
@@ -531,7 +531,7 @@ type ProjectionResultMessage struct {
 }
 
 // NewProjectionResultMessage validates success/value/fidelity and
-// loss-report invariants (projection.rs:528-570).
+// loss-report invariants (projection.rs).
 func NewProjectionResultMessage(completion *Completion, value core.Value, hasValue bool,
 	fidelity *ProjectionFidelity, report *ProjectionReportMessage, provenance *ProvenanceMapMessage,
 	diagnostics []*Diagnostic) (*ProjectionResultMessage, error) {
@@ -583,7 +583,7 @@ func (m *ProjectionResultMessage) Provenance() *ProvenanceMapMessage { return m.
 // Diagnostics returns the ordered diagnostics.
 func (m *ProjectionResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.projection-result@1` (projection.rs:608-636).
+// ToValue encodes `core.projection-result@1` (projection.rs).
 func (m *ProjectionResultMessage) ToValue() (core.Value, error) {
 	var value core.Value = core.NullValue()
 	if m.hasValue {
@@ -625,7 +625,7 @@ func (m *ProjectionResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes terminal facts under one explicit
-// semantic-model registry (projection.rs:641-678).
+// semantic-model registry (projection.rs).
 func (m *ProjectionResultMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*ProjectionResultMessage, error) {
 	fields, err := schemaFields(value, "core.projection-result@1",
@@ -699,7 +699,7 @@ func (m *ProjectionResultMessage) FromValue(value core.Value) (*ProjectionResult
 // ---------------------------------------------------------------------------
 
 // parseReference strictly decodes one id/version contract reference
-// (projection.rs:718-725).
+// (projection.rs).
 func parseReference(value core.Value, path string) (*ContractId, error) {
 	fields, err := exactFields(value, []string{"id", "version"}, path)
 	if err != nil {

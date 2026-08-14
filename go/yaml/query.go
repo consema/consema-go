@@ -37,7 +37,7 @@ const (
 )
 
 // YamlMatch is one snapshot-bound YAML native semantic query match
-// (query.rs:9-41).
+// (query.rs).
 type YamlMatch struct {
 	// Kind is the match variant.
 	Kind YamlMatchKind
@@ -96,7 +96,7 @@ type YamlMatch struct {
 func (m *YamlMatch) NodeRef() document.NodeRef { return m.identity }
 
 // YamlSyntaxMatch is one snapshot-bound YAML lossless syntax query match
-// (query.rs:53-86).
+// (query.rs).
 type YamlSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -117,7 +117,7 @@ func (m YamlSyntaxMatch) Kind() YamlSyntaxKind { return m.kind }
 func (m YamlSyntaxMatch) Ordinal() int { return m.ordinal }
 
 // ExecuteYamlQuery executes a validated YAML native semantic query against
-// one immutable snapshot (query.rs:88-127). The context is used for
+// one immutable snapshot (query.rs). The context is used for
 // cancellation and deadlines only. Steps and result counts are bounded by
 // limits; exceeding either is core.query.resource-limit@1.
 func ExecuteYamlQuery(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -147,7 +147,7 @@ func ExecuteYamlQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 }
 
 // ExecuteYamlSyntaxQuery executes a validated YAML lossless syntax query
-// against every source piece in raw order (query.rs:129-169).
+// against every source piece in raw order (query.rs).
 func ExecuteYamlSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]YamlSyntaxMatch, *protocol.QueryFailure) {
 	domain := executable.Definition().Domain()
@@ -210,7 +210,7 @@ func checkCancelled(ctx context.Context) *protocol.QueryFailure {
 }
 
 // executeQueryExpression evaluates one native expression against the input
-// matches (query.rs:213-254).
+// matches (query.rs).
 func executeQueryExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []YamlMatch, context *yamlQueryContext) ([]YamlMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -288,7 +288,7 @@ func roleOrder(role document.NodeRole) uint8 {
 	return 6
 }
 
-// applyQueryOperator evaluates one native operator (query.rs:341-469).
+// applyQueryOperator evaluates one native operator (query.rs).
 func applyQueryOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []YamlMatch, context *yamlQueryContext) ([]YamlMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -537,7 +537,7 @@ func (n *nativeNode) kindName() YamlNodeKind {
 }
 
 // executeSyntaxExpression evaluates one lossless-syntax expression
-// (query.rs:256-288).
+// (query.rs).
 func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []YamlSyntaxMatch, context *yamlQueryContext) ([]YamlSyntaxMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -583,7 +583,7 @@ func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpr
 }
 
 // applySyntaxOperator evaluates one lossless-syntax operator
-// (query.rs:290-339).
+// (query.rs).
 func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []YamlSyntaxMatch, context *yamlQueryContext) ([]YamlSyntaxMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -717,7 +717,7 @@ func integerArgument(operator *protocol.OperatorCall, name string) (int, bool) {
 	return int(host), true
 }
 
-// applyYamlSelection applies the definition selection (query.rs:471-488).
+// applyYamlSelection applies the definition selection (query.rs).
 func applyYamlSelection(matches []YamlMatch,
 	selection protocol.QuerySelection) ([]YamlMatch, *protocol.QueryFailure) {
 	switch selection {

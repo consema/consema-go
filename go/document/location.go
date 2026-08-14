@@ -6,11 +6,11 @@ import (
 )
 
 // snapshotIdentityCounter allocates process-local snapshot identities; 0
-// is never assigned (document lib.rs:39, 62-65).
+// is never assigned (document lib.rs).
 var snapshotIdentityCounter uint64
 
 // SnapshotIdentity is the opaque identity of exactly one immutable
-// document snapshot (document lib.rs:41-51). Identities are process-local
+// document snapshot (document lib.rs). Identities are process-local
 // and stable for the lifetime of the process.
 type SnapshotIdentity uint64
 
@@ -24,7 +24,7 @@ func allocateSnapshotIdentity() SnapshotIdentity {
 }
 
 // NodeRole is the semantic role of one document structural identity
-// (document lib.rs:112-251).
+// (document lib.rs).
 type NodeRole string
 
 // The closed structural role set, mirroring consema-document's roles.
@@ -170,7 +170,7 @@ const (
 )
 
 // NodeRef is an opaque handle to one structural identity in exactly one
-// snapshot (document lib.rs:253-292).
+// snapshot (document lib.rs).
 type NodeRef struct {
 	snapshot SnapshotIdentity
 	index    uint64
@@ -187,7 +187,7 @@ func (n NodeRef) Role() NodeRole { return n.role }
 func (n NodeRef) Index() uint64 { return n.index }
 
 // Span is a half-open byte range bound to one snapshot (document
-// lib.rs:294-342). Start is inclusive; end is exclusive.
+// lib.rs). Start is inclusive; end is exclusive.
 type Span struct {
 	snapshot  SnapshotIdentity
 	startByte int
@@ -210,7 +210,7 @@ func (s Span) Len() int { return s.endByte - s.startByte }
 func (s Span) IsEmpty() bool { return s.startByte == s.endByte }
 
 // DocumentAuthority owns the snapshot-bound handle issuance of one
-// document implementation (document lib.rs:53-110).
+// document implementation (document lib.rs).
 type DocumentAuthority struct {
 	identity SnapshotIdentity
 }
@@ -255,7 +255,7 @@ func (a DocumentAuthority) ResolveIndex(node NodeRef) (uint64, error) {
 }
 
 // LocationErrorKind classifies a span, identity, or coverage failure
-// (document lib.rs:581-612).
+// (document lib.rs).
 type LocationErrorKind uint8
 
 // The stable location failure classes.

@@ -10,7 +10,7 @@ import (
 )
 
 // JavaUnicodeStatus reports whether an exact Java string is also
-// well-formed Unicode (java_utf16.rs:17-24).
+// well-formed Unicode (java_utf16.rs).
 type JavaUnicodeStatus string
 
 // The two frozen statuses.
@@ -23,7 +23,7 @@ const (
 func (s JavaUnicodeStatus) String() string { return string(s) }
 
 // JavaUtf16String is the exact Java string content transported as canonical
-// big-endian UTF-16 units (java_utf16.rs:27-36).
+// big-endian UTF-16 units (java_utf16.rs).
 type JavaUtf16String struct {
 	codeUnits     []uint16
 	bytes         []byte
@@ -31,7 +31,7 @@ type JavaUtf16String struct {
 }
 
 // NewJavaUtf16String builds an exact string while enforcing the same limits
-// as wire decoding (java_utf16.rs:41-66).
+// as wire decoding (java_utf16.rs).
 func NewJavaUtf16String(codeUnits []uint16, limits ProtocolLimits) (*JavaUtf16String, error) {
 	if len(codeUnits) > int(limits.MaxContainerEntries) {
 		return nil, resource("$.code_units", "code-unit count exceeds the configured container limit")
@@ -61,7 +61,7 @@ func (s *JavaUtf16String) Bytes() []byte { return append([]byte(nil), s.bytes...
 func (s *JavaUtf16String) UnicodeStatus() JavaUnicodeStatus { return s.unicodeStatus }
 
 // ToValue encodes `core.java-utf16-string@1` in canonical field order
-// (java_utf16.rs:64-82).
+// (java_utf16.rs).
 func (s *JavaUtf16String) ToValue() (core.Value, error) {
 	units := make([]core.Value, 0, len(s.codeUnits))
 	for _, unit := range s.codeUnits {
@@ -78,7 +78,7 @@ func (s *JavaUtf16String) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes and canonically re-verifies one exact Java
-// string (java_utf16.rs:84-146).
+// string (java_utf16.rs).
 func (s *JavaUtf16String) FromValue(value core.Value, limits ProtocolLimits) (*JavaUtf16String, error) {
 	fields, err := schemaFields(value, "core.java-utf16-string@1",
 		[]string{"schema", "encoding", "code_units", "bytes", "unicode_status"}, "$")
@@ -159,7 +159,7 @@ func (s *JavaUtf16String) FromValue(value core.Value, limits ProtocolLimits) (*J
 }
 
 // parseJavaUnit accepts exactly four uppercase hexadecimal digits
-// (java_utf16.rs:152-162).
+// (java_utf16.rs).
 func parseJavaUnit(value string) (uint16, bool) {
 	if len(value) != 4 {
 		return 0, false
@@ -190,7 +190,7 @@ func uppercaseHex4(unit uint16) string {
 }
 
 // classifyJavaUTF16 recomputes the surrogate-pair classification
-// (java_utf16.rs:164-176).
+// (java_utf16.rs).
 func classifyJavaUTF16(units []uint16) JavaUnicodeStatus {
 	for index := 0; index < len(units); {
 		unit := units[index]

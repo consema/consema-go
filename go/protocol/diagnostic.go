@@ -66,7 +66,7 @@ func ParseFixApplicability(name string) (FixApplicability, error) {
 func (a FixApplicability) String() string { return string(a) }
 
 // SourceLocation is a transferable source location bound to a
-// caller-assigned stable source ID (diagnostic.rs:13-59).
+// caller-assigned stable source ID (diagnostic.rs).
 type SourceLocation struct {
 	// SourceID is the caller-assigned stable source identity.
 	SourceID string
@@ -135,7 +135,7 @@ type Diagnostic struct {
 // NewDiagnostic validates the code/category consistency against the error
 // registry and constructs the diagnostic (the Rust
 // DiagnosticMessage::from_core_with_registry validation,
-// diagnostic.rs:336-351).
+// diagnostic.rs).
 func NewDiagnostic(code string, category DiagnosticCategory, severity Severity,
 	primary *SourceLocation, related []RelatedSourceLocation,
 	arguments map[string]string, notes []string, fixes []FixProposal,
@@ -160,7 +160,7 @@ func NewDiagnostic(code string, category DiagnosticCategory, severity Severity,
 	return diagnostic, nil
 }
 
-// ToValue encodes `core.diagnostic@1` (diagnostic.rs:187-250).
+// ToValue encodes `core.diagnostic@1` (diagnostic.rs).
 func (d *Diagnostic) ToValue() (core.Value, error) {
 	related := make([]core.Value, 0, len(d.Related))
 	for _, item := range d.Related {
@@ -188,7 +188,7 @@ func (d *Diagnostic) ToValue() (core.Value, error) {
 	fixes := make([]core.Value, 0, len(d.Fixes))
 	for _, fix := range d.Fixes {
 		// The wire replacement field is a Bytes leaf carried with full byte
-		// fidelity (diagnostic.rs:222-223); an empty replacement encodes as
+		// fidelity (diagnostic.rs); an empty replacement encodes as
 		// empty Bytes, never Null.
 		var location core.Value = core.NullValue()
 		if fix.Location != nil {
@@ -230,7 +230,7 @@ func (d *Diagnostic) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.diagnostic@1` under one explicit error
-// registry (diagnostic.rs:252-333).
+// registry (diagnostic.rs).
 func (d *Diagnostic) FromValue(value core.Value, registry ErrorCodeRegistry) (*Diagnostic, error) {
 	fields, err := schemaFields(value, "core.diagnostic@1",
 		[]string{"schema", "code", "category", "severity", "primary", "related",
@@ -323,7 +323,7 @@ func (d *Diagnostic) FromValue(value core.Value, registry ErrorCodeRegistry) (*D
 }
 
 // validateDiagnosticCode requires the code to be registered and its category
-// to match the registry record (diagnostic.rs:336-351).
+// to match the registry record (diagnostic.rs).
 func validateDiagnosticCode(code string, category DiagnosticCategory, registry ErrorCodeRegistry) *ProtocolError {
 	descriptor := registry.Descriptor(code)
 	if descriptor == nil {
@@ -344,7 +344,7 @@ func locationValue(location *SourceLocation) (core.Value, error) {
 	)
 }
 
-// parseLocation strictly decodes one source location (diagnostic.rs:386-393).
+// parseLocation strictly decodes one source location (diagnostic.rs).
 func parseLocation(value core.Value, path string) (*SourceLocation, error) {
 	fields, err := exactFields(value, []string{"source_id", "start_byte", "end_byte"}, path)
 	if err != nil {
@@ -365,10 +365,10 @@ func parseLocation(value core.Value, path string) (*SourceLocation, error) {
 	return NewSourceLocation(sourceID, startByte, endByte)
 }
 
-// decodeFix strictly decodes one fix proposal (diagnostic.rs:395-431). The
+// decodeFix strictly decodes one fix proposal (diagnostic.rs). The
 // wire replacement field is a Bytes leaf accepted at the value level with
 // full byte fidelity; any other shape (including Null) is a wrong-type
-// error (diagnostic.rs:424-429).
+// error (diagnostic.rs).
 func decodeFix(value core.Value, path string) (*FixProposal, error) {
 	fields, err := exactFields(value, []string{"id", "applicability", "location", "replacement"}, path)
 	if err != nil {

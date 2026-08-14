@@ -57,7 +57,7 @@ type GraphMatch struct {
 }
 
 // graphMatchIdentity is the distinct-by-identity key of one graph match
-// (the Rust GraphMatchIdentity, consema-rs/consema-graph/src/query.rs:78-83):
+// (the Rust GraphMatchIdentity, consema-rs/consema-graph/src/query.rs):
 // Node matches key by node ID; SequenceElement and MappingEntry matches key
 // by the (parent, ordinal) association location.
 type graphMatchIdentity struct {
@@ -204,7 +204,7 @@ func coreIntegerOf(value core.Value) uint64 {
 func identityOfPortable(match PortableMatch) string {
 	// The distinct-by-identity key of one portable match is its full value
 	// path (the Rust PortableIdentity::Value(path),
-	// consema-rs/consema-core/src/query.rs:2248-2262), not a structural proxy:
+	// consema-rs/consema-core/src/query.rs), not a structural proxy:
 	// every segment contributes its kind and its key or ordinal, so two
 	// matches dedupe exactly when their paths are identical.
 	var key strings.Builder

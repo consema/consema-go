@@ -46,8 +46,8 @@ func TestNewlinePolicies(t *testing.T) {
 }
 
 // TestLimitsDefaults pin the frozen limit defaults against the Rust
-// document crate (lib.rs:629-639, materialization.rs:95-105, source.rs:
-// 401-409, source_patch.rs:23-27).
+// document crate (lib.rs, materialization.rs, source.rs:
+// 401-409, source_patch.rs).
 func TestLimitsDefaults(t *testing.T) {
 	parse := DefaultParseLimits()
 	if parse.MaxSourceBytes != 64<<20 || parse.MaxNestingDepth != 256 ||

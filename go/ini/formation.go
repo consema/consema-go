@@ -8,7 +8,7 @@ import (
 )
 
 // FormationFailure is the fatal formation failure before any complete
-// Document exists (consema-document lib.rs:643-652). It implements error
+// Document exists (consema-document lib.rs). It implements error
 // and the RFC 0016 §6 Code() contract with the first diagnostic's
 // registered code.
 type FormationFailure struct {
@@ -55,13 +55,13 @@ func newFormationFailure(code string, category protocol.DiagnosticCategory,
 }
 
 // profileFailure builds the frozen ini.profile.encoding@1 diagnostic
-// (parser.rs:96-99).
+// (parser.rs).
 func profileFailure() *FormationFailure {
 	return newFormationFailure("ini.profile.encoding@1", protocol.CategoryEncoding, -1, -1, nil)
 }
 
 // resourceLimitFailure builds the frozen core.parse.resource-limit@1
-// diagnostic (consema-document lib.rs:770-789).
+// diagnostic (consema-document lib.rs).
 func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 	return newFormationFailure("core.parse.resource-limit@1", protocol.CategoryResource,
 		-1, -1, map[string]string{
@@ -95,7 +95,7 @@ func sourceFailure(err error) *FormationFailure {
 }
 
 // Parse forms one immutable INI snapshot under exactly one selected profile
-// (consema-ini lib.rs:664-671; parser.rs:16-35). The encoding selection is
+// (consema-ini lib.rs; parser.rs). The encoding selection is
 // explicit: portable applies its frozen ASCII UTF-8 contract, Windows
 // accepts BOM-detected UTF-16LE or one caller-selected code page, and
 // Python accepts any complete text source selected unambiguously by the
@@ -124,7 +124,7 @@ func Parse(source []byte, profile IniProfile, selection IniEncodingSelection,
 }
 
 // encodingRequest builds the frozen source encoding request for one
-// profile and selection (parser.rs:37-59).
+// profile and selection (parser.rs).
 func encodingRequest(profile IniProfile,
 	selection IniEncodingSelection) (document.EncodingRequest, *FormationFailure) {
 	encoding := document.Utf8Encoding()
@@ -148,7 +148,7 @@ func encodingRequest(profile IniProfile,
 }
 
 // validateProfileEncoding enforces the frozen profile encoding contract
-// (parser.rs:61-94).
+// (parser.rs).
 func validateProfileEncoding(snapshot *document.SourceSnapshot, profile IniProfile,
 	selection IniEncodingSelection) *FormationFailure {
 	facts := snapshot.EncodingFacts()

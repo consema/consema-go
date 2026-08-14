@@ -16,7 +16,7 @@ import (
 // byte-exact Latin-1).
 
 // PropertiesProfile is the frozen Java Properties formation profile
-// (lib.rs:33-50). The unexported field makes the set closed.
+// (lib.rs). The unexported field makes the set closed.
 type PropertiesProfile struct {
 	name string
 }
@@ -38,7 +38,7 @@ func (p PropertiesProfile) ID() document.ProfileId {
 func (p PropertiesProfile) String() string { return p.name }
 
 // PropertiesEncodingSelection is the explicit source contract; no
-// extension, locale, or platform default is consulted (lib.rs:52-59;
+// extension, locale, or platform default is consulted (lib.rs;
 // RFC 0010 §3).
 type PropertiesEncodingSelection struct {
 	reader *document.SourceEncoding
@@ -70,7 +70,7 @@ func (s PropertiesEncodingSelection) ReaderEncoding() (document.SourceEncoding, 
 }
 
 // JavaStringStatus is the surrogate well-formedness classification of one
-// exact Java string (lib.rs:124-131).
+// exact Java string (lib.rs).
 type JavaStringStatus string
 
 // The two frozen statuses.
@@ -83,7 +83,7 @@ const (
 )
 
 // JavaString is exact Java string content represented as immutable UTF-16
-// code units (lib.rs:133-194; RFC 0010 §4). An unpaired surrogate is
+// code units (lib.rs; RFC 0010 §4). An unpaired surrogate is
 // valid native content and is never replaced or rejected silently.
 type JavaString struct {
 	units  []uint16
@@ -144,7 +144,7 @@ func (s JavaString) Equal(other JavaString) bool {
 }
 
 // classifyJavaString computes the surrogate well-formedness status
-// (lib.rs:814-830).
+// (lib.rs).
 func classifyJavaString(units []uint16) JavaStringStatus {
 	for index := 0; index < len(units); index++ {
 		unit := units[index]
@@ -167,7 +167,7 @@ func classifyJavaString(units []uint16) JavaStringStatus {
 
 // JavaStringConversionError reports that an exact Java string contains an
 // unpaired surrogate and cannot enter a Unicode-only host string
-// (lib.rs:196-206). It implements error.
+// (lib.rs). It implements error.
 type JavaStringConversionError struct{}
 
 // Error implements error.
@@ -181,7 +181,7 @@ func (JavaStringConversionError) Code() string {
 }
 
 // PropertiesSyntaxKind is the closed lossless Properties syntax category
-// (lib.rs:209-274). The stable query and protocol spellings are the exact
+// (lib.rs). The stable query and protocol spellings are the exact
 // `as_str` names.
 type PropertiesSyntaxKind string
 
@@ -253,7 +253,7 @@ func PropertiesSyntaxKindFromName(name string) (PropertiesSyntaxKind, bool) {
 }
 
 // IsTrivia reports whether the kind is a trivia piece class (the
-// structural_kind mapping, parser.rs:1002-1017).
+// structural_kind mapping, parser.rs).
 func (k PropertiesSyntaxKind) IsTrivia() bool {
 	switch k {
 	case SyntaxKindWhitespace, SyntaxKindLineBreak, SyntaxKindCommentMarker,
@@ -264,7 +264,7 @@ func (k PropertiesSyntaxKind) IsTrivia() bool {
 }
 
 // PropertiesValueState is the semantic empty/present state with exact
-// separator provenance (lib.rs:276-285; RFC 0010 §6).
+// separator provenance (lib.rs; RFC 0010 §6).
 type PropertiesValueState string
 
 // The three frozen value states.
@@ -280,7 +280,7 @@ const (
 )
 
 // PropertiesLogicalLineKind is the kind of one logical Properties record
-// (lib.rs:287-294).
+// (lib.rs).
 type PropertiesLogicalLineKind string
 
 // The two frozen logical-line kinds.
@@ -292,7 +292,7 @@ const (
 )
 
 // PropertiesEscapeKind is the kind of one retained escape occurrence
-// (lib.rs:295-307; RFC 0010 §7).
+// (lib.rs; RFC 0010 §7).
 type PropertiesEscapeKind string
 
 // The four frozen escape kinds.
@@ -309,7 +309,7 @@ const (
 )
 
 // PropertiesParseLimits are the Java Properties parse and recovery limits
-// (lib.rs:61-122; RFC 0010 §14).
+// (lib.rs; RFC 0010 §14).
 type PropertiesParseLimits struct {
 	// Common source, node, piece, and diagnostic limits.
 	Common document.ParseLimits
@@ -355,7 +355,7 @@ type PropertiesParseLimits struct {
 	MaxRecoveryRegions int
 }
 
-// DefaultPropertiesParseLimits returns the frozen defaults (lib.rs:100-122).
+// DefaultPropertiesParseLimits returns the frozen defaults (lib.rs).
 func DefaultPropertiesParseLimits() PropertiesParseLimits {
 	return PropertiesParseLimits{
 		Common:                     document.DefaultParseLimits(),
@@ -437,7 +437,7 @@ func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 }
 
 // profileEncodingFailure builds the frozen
-// java-properties.source.profile-encoding@1 fatal failure (parser.rs:83-91).
+// java-properties.source.profile-encoding@1 fatal failure (parser.rs).
 func profileEncodingFailure() *FormationFailure {
 	return newFormationFailure("java-properties.source.profile-encoding@1",
 		protocol.CategoryEncoding, -1, -1, nil)
@@ -465,7 +465,7 @@ func sourceFailure(err error) *FormationFailure {
 }
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (document.StructuralPieceKind; consema-document lib.rs:415-422).
+// (document.StructuralPieceKind; consema-document lib.rs).
 type StructuralPieceKind = document.StructuralPieceKind
 
 // The three frozen piece classes.

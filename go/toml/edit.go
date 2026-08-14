@@ -34,7 +34,7 @@ func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
 }
 
 // RepresentationPolicy is the explicit semantic scalar representation
-// policy (consema-toml edit.rs:15-26).
+// policy (consema-toml edit.rs).
 type RepresentationPolicy uint8
 
 // The four frozen representation policies.
@@ -53,7 +53,7 @@ const (
 )
 
 // ScalarReplacement is one scalar operation bound to a transaction base
-// snapshot (consema-toml edit.rs:28-55).
+// snapshot (consema-toml edit.rs).
 type ScalarReplacement struct {
 	// Target is the exact TOML item target.
 	Target document.NodeRef
@@ -69,7 +69,7 @@ type ScalarReplacement struct {
 }
 
 // EditOperation is one typed TOML edit operation bound to an immutable
-// base snapshot (consema-toml edit.rs:57-99).
+// base snapshot (consema-toml edit.rs).
 type EditOperation struct {
 	// Kind is the operation variant name.
 	Kind string
@@ -95,7 +95,7 @@ type EditOperation struct {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (consema-toml edit.rs:101-120).
+// against one base snapshot (consema-toml edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -110,7 +110,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder incrementally binds operations to one immutable
-// base document (consema-toml edit.rs:122-227).
+// base document (consema-toml edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -186,7 +186,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	return &EditTransaction{base: b.base, operations: append([]EditOperation(nil), b.operations...)}
 }
 
-// EditCommit is the atomic edit success (consema-toml edit.rs:230-240).
+// EditCommit is the atomic edit success (consema-toml edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -226,7 +226,7 @@ const (
 type NodeMapping = document.NodeMapping
 
 // EditFailureKind classifies a stable edit validation or commit failure
-// (consema-toml edit.rs:242-279).
+// (consema-toml edit.rs).
 type EditFailureKind uint8
 
 // The stable edit failure classes.
@@ -262,7 +262,7 @@ type EditFailure struct {
 	LimitName string
 }
 
-// Code returns the frozen registered code (consema-toml edit.rs:1308-1331).
+// Code returns the frozen registered code (consema-toml edit.rs).
 func (f *EditFailure) Code() string {
 	switch f.Kind {
 	case EditFailureWrongSnapshot:
@@ -343,7 +343,7 @@ func (f *EditFailure) Name() string {
 }
 
 // Commit atomically commits scalar and structural operations; a failure
-// never changes the base snapshot (consema-toml edit.rs:281-430).
+// never changes the base snapshot (consema-toml edit.rs).
 func (d *Document) Commit(transaction *EditTransaction) (*EditCommit, *EditFailure) {
 	if transaction.base != d.SnapshotIdentity() {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -472,7 +472,7 @@ func sourcePatchReplacements(source []byte, edits []SourceEdit) []document.Sourc
 }
 
 // DryRun fully validates and plans an edit without returning a new
-// Document (consema-toml edit.rs:432-447).
+// Document (consema-toml edit.rs).
 func (d *Document) DryRun(transaction *EditTransaction,
 	sourceID EditPlanSourceId) (*EditPlan, *EditFailure) {
 	commit, failure := d.Commit(transaction)
@@ -660,7 +660,7 @@ type delimitedSyntax struct {
 }
 
 // prepareDelimitedInsertion computes the insertion position and comma
-// framing for inline containers (consema-toml edit.rs:585-656).
+// framing for inline containers (consema-toml edit.rs).
 func (d *Document) prepareDelimitedInsertion(containerIndex int,
 	containerSpan document.Span, associations []int, syntax delimitedSyntax,
 	placement AssociationPlacement, fragment []byte) (preparedEdit, *EditFailure) {
@@ -729,7 +729,7 @@ func (d *Document) prepareDelimitedInsertion(containerIndex int,
 }
 
 // prepareTableLineInsertion computes the line-oriented insertion position
-// for root and standard tables (consema-toml edit.rs:658-699).
+// for root and standard tables (consema-toml edit.rs).
 func (d *Document) prepareTableLineInsertion(tableIndex int, entries []int,
 	placement AssociationPlacement, fragment []byte) (preparedEdit, *EditFailure) {
 	kind := d.itemEntity(tableIndex).publicKind()
@@ -813,7 +813,7 @@ func (d *Document) prepareRemoveArrayElement(target document.NodeRef) ([]prepare
 }
 
 // prepareDelimitedRemoval removes one element and its adjacent comma
-// (consema-toml edit.rs:743-791).
+// (consema-toml edit.rs).
 func (d *Document) prepareDelimitedRemoval(index int, associations []int,
 	ordinal int, containerEnd int, target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	targetSpan := d.entities[index].span
@@ -989,7 +989,7 @@ func (d *Document) entryItemKind(entry int) TomlItemKind {
 }
 
 // tableEndInsertion computes the End position of a root or standard table
-// (consema-toml edit.rs:930-944).
+// (consema-toml edit.rs).
 func (d *Document) tableEndInsertion(entries []int, tableIndex int) int {
 	for _, entry := range entries {
 		if isTableKind(d.entryItemKind(entry)) {
@@ -1030,7 +1030,7 @@ func (d *Document) lineAfter(position int) int {
 }
 
 // lineFragment wraps one line fragment with the document's newline bytes
-// (consema-toml edit.rs:964-983).
+// (consema-toml edit.rs).
 func (d *Document) lineFragment(position int, fragment []byte) ([]byte, *EditFailure) {
 	newline := d.newlineBytes()
 	needsPrefix := position > 0 && d.source.Bytes()[position-1] != '\n'
@@ -1051,7 +1051,7 @@ func (d *Document) lineFragment(position int, fragment []byte) ([]byte, *EditFai
 }
 
 // newlineBytes returns the first newline piece's bytes, or LF
-// (consema-toml edit.rs:985-994).
+// (consema-toml edit.rs).
 func (d *Document) newlineBytes() []byte {
 	source := d.source.Bytes()
 	for index, piece := range d.index.Pieces() {
@@ -1063,7 +1063,7 @@ func (d *Document) newlineBytes() []byte {
 }
 
 // removalComma finds the comma adjacent to the removed association
-// (consema-toml edit.rs:996-1026).
+// (consema-toml edit.rs).
 func (d *Document) removalComma(associations []int, ordinal, containerEnd int) (document.Span, bool, *EditFailure) {
 	current := d.entities[associations[ordinal]].span
 	followingEnd := containerEnd
@@ -1134,7 +1134,7 @@ func isTableKind(kind TomlItemKind) bool {
 }
 
 // validateDependencies rejects duplicate destructive targets and removed
-// placement anchors (consema-toml edit.rs:1064-1100).
+// placement anchors (consema-toml edit.rs).
 func validateDependencies(transaction *EditTransaction) *EditFailure {
 	destructive := make(map[document.NodeRef]bool, len(transaction.operations))
 	removed := make(map[document.NodeRef]bool)
@@ -1173,7 +1173,7 @@ func validateDependencies(transaction *EditTransaction) *EditFailure {
 }
 
 // validateExactScalar validates that the literal is exactly one complete
-// TOML 1.0 scalar (consema-toml edit.rs:1379-1413).
+// TOML 1.0 scalar (consema-toml edit.rs).
 func validateExactScalar(literal []byte) *EditFailure {
 	if !isValidUTF8(literal) {
 		return &EditFailure{Kind: EditFailureInvalidLiteral}
@@ -1231,7 +1231,7 @@ func isValidUTF8(bytes []byte) bool {
 }
 
 // semanticLiteral renders the canonical literal under the representation
-// policy (consema-toml edit.rs:1415-1456).
+// policy (consema-toml edit.rs).
 func semanticLiteral(value core.Value, oldKind TomlItemKind, policy RepresentationPolicy,
 	targetSpan document.Span, diagnostics *[]*protocol.Diagnostic) ([]byte, *EditFailure) {
 	if policy == RepresentationExactLiteral {
@@ -1315,7 +1315,7 @@ func portableTomlKind(value core.Value) (TomlItemKind, bool) {
 }
 
 // canonicalLiteral renders the frozen canonical TOML scalar literal
-// (consema-toml edit.rs:1472-1514).
+// (consema-toml edit.rs).
 func canonicalLiteral(value core.Value) (string, *EditFailure) {
 	unrepresentable := func() (string, *EditFailure) {
 		return "", &EditFailure{Kind: EditFailureUnsupportedSemanticValue, ValueKind: kindNameOf(value)}
@@ -1389,7 +1389,7 @@ func canonicalLocalDateTime(value core.LocalDateTime) (string, *EditFailure) {
 }
 
 // canonicalString renders the canonical quoted string (consema-toml
-// edit.rs:1516-1537).
+// edit.rs).
 func canonicalString(value string) string {
 	var output strings.Builder
 	output.WriteByte('"')
@@ -1425,7 +1425,7 @@ func canonicalStringBytes(value string) []byte {
 	return []byte(canonicalString(value))
 }
 
-// canonicalFloat renders the canonical float (consema-toml edit.rs:1539-1560).
+// canonicalFloat renders the canonical float (consema-toml edit.rs).
 func canonicalFloat(bits uint64) (string, *EditFailure) {
 	float := math.Float64frombits(bits)
 	if math.IsNaN(float) {
@@ -1451,7 +1451,7 @@ func canonicalFloat(bits uint64) (string, *EditFailure) {
 }
 
 // canonicalDate renders the canonical local date (consema-toml
-// edit.rs:1562-1568).
+// edit.rs).
 func canonicalDate(value core.Date) (string, *EditFailure) {
 	year := value.Year().Int()
 	if !year.IsInt64() {
@@ -1465,7 +1465,7 @@ func canonicalDate(value core.Date) (string, *EditFailure) {
 }
 
 // canonicalTime renders the canonical local time (consema-toml
-// edit.rs:1570-1587).
+// edit.rs).
 func canonicalTime(value core.Time) (string, *EditFailure) {
 	nanoseconds, ok := exactNanoseconds(value.FractionalSecond())
 	if !ok {
@@ -1481,7 +1481,7 @@ func canonicalTime(value core.Time) (string, *EditFailure) {
 }
 
 // findItemBySpan locates the unique item with the exact span
-// (consema-toml edit.rs:1638-1651).
+// (consema-toml edit.rs).
 func findItemBySpan(document *Document, start, end int) (int, bool) {
 	var matches []int
 	for index := range document.entities {
@@ -1540,7 +1540,7 @@ func operationMetadata(transaction *EditTransaction) map[string]string {
 }
 
 // operationSummaries builds the safe content-free operation summaries
-// (consema-toml edit.rs:1156-1240).
+// (consema-toml edit.rs).
 func operationSummaries(transaction *EditTransaction) ([]*protocol.EditOperationSummary, *EditFailure) {
 	summaries := make([]*protocol.EditOperationSummary, 0, len(transaction.operations))
 	for index := range transaction.operations {
@@ -1633,7 +1633,7 @@ func boolToInt(value bool) int {
 }
 
 // EditPlanSourceId is the caller-stable source identity of a transferable
-// edit plan (document.EditPlanSourceId; consema-document edit_plan.rs:14-26).
+// edit plan (document.EditPlanSourceId; consema-document edit_plan.rs).
 type EditPlanSourceId = document.EditPlanSourceId
 
 // NewEditPlanSourceId validates one non-empty bounded external source
@@ -1643,7 +1643,7 @@ func NewEditPlanSourceId(value string) (*EditPlanSourceId, error) {
 }
 
 // EditPlan is the fully validated dry-run plan; possessing it does not
-// authorize a write (document.EditPlan; consema-document edit_plan.rs:47-97).
+// authorize a write (document.EditPlan; consema-document edit_plan.rs).
 type EditPlan = document.EditPlan
 
 // NewEditPlan closes a plan only when its ordered operation metadata
@@ -1656,7 +1656,7 @@ func NewEditPlan(sourceID EditPlanSourceId, profile document.ProfileId,
 
 // UntouchedByteRegion is one maximal unchanged raw-byte interval mapped
 // across two source snapshots (document.UntouchedByteRegion;
-// untouched_proof.rs:7-59).
+// untouched_proof.rs).
 type UntouchedByteRegion = document.UntouchedByteRegion
 
 // NewUntouchedByteRegion creates one region fact; the enclosing proof
@@ -1667,7 +1667,7 @@ func NewUntouchedByteRegion(oldStart, oldEnd, newStart, newEnd int) UntouchedByt
 
 // UntouchedByteProofErrorKind classifies a proof construction or
 // verification failure (document.UntouchedByteProofErrorKind;
-// untouched_proof.rs:135-178).
+// untouched_proof.rs).
 type UntouchedByteProofErrorKind = document.UntouchedByteProofErrorKind
 
 // The stable proof failure classes.
@@ -1690,7 +1690,7 @@ type UntouchedByteProofError = document.UntouchedByteProofError
 
 // UntouchedByteProof is the immutable evidence for every byte outside one
 // exact replacement plan (document.UntouchedByteProof;
-// untouched_proof.rs:61-132).
+// untouched_proof.rs).
 type UntouchedByteProof = document.UntouchedByteProof
 
 // CreateUntouchedByteProof creates a proof only when the replacements

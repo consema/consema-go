@@ -14,7 +14,7 @@ import (
 // disguised as a replacement character or Bytes.
 
 // ProjectionTarget is the versioned Java Properties projection target
-// (projection.rs:10-16).
+// (projection.rs).
 type ProjectionTarget uint8
 
 // The two frozen targets.
@@ -28,7 +28,7 @@ const (
 )
 
 // DuplicatePolicy is the explicit duplicate behavior of RequireObject
-// (projection.rs:19-27).
+// (projection.rs).
 type DuplicatePolicy uint8
 
 // The three frozen duplicate policies.
@@ -44,7 +44,7 @@ const (
 )
 
 // ProjectionLimits are the Java Properties projection limits
-// (projection.rs:84-106).
+// (projection.rs).
 type ProjectionLimits struct {
 	// MaxSourceAssociations is the maximum source property associations
 	// inspected.
@@ -70,7 +70,7 @@ func DefaultProjectionLimits() ProjectionLimits {
 }
 
 // ProjectionRequest is the immutable explicit Properties projection
-// request (projection.rs:29-82).
+// request (projection.rs).
 type ProjectionRequest struct {
 	target          ProjectionTarget
 	duplicatePolicy DuplicatePolicy
@@ -113,7 +113,7 @@ func (r ProjectionRequest) DuplicatePolicy() DuplicatePolicy { return r.duplicat
 func (r ProjectionRequest) Limits() ProjectionLimits { return r.limits }
 
 // Fidelity is the projection fidelity classification
-// (projection.rs:108-117). Exact < Transformed < Lossy.
+// (projection.rs). Exact < Transformed < Lossy.
 type Fidelity uint8
 
 // The three frozen fidelity classes.
@@ -143,7 +143,7 @@ func (f Fidelity) String() string {
 }
 
 // ProjectedLocation is one projected value or association location
-// (projection.rs:119-127).
+// (projection.rs).
 type ProjectedLocation struct {
 	// Kind is "Value" or "Association".
 	Kind string
@@ -154,7 +154,7 @@ type ProjectedLocation struct {
 }
 
 // ProvenanceRelation is the source-to-projection relation
-// (projection.rs:128-144).
+// (projection.rs).
 type ProvenanceRelation uint8
 
 // The six frozen provenance relations.
@@ -195,7 +195,7 @@ func (r ProvenanceRelation) String() string {
 	return "ProvenanceRelation"
 }
 
-// SourceOrigin is one exact source origin (projection.rs:146-156).
+// SourceOrigin is one exact source origin (projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source document snapshot.
 	Snapshot document.SnapshotIdentity
@@ -217,7 +217,7 @@ type ProvenanceEntry struct {
 }
 
 // ProvenanceMap is the immutable many-valued provenance mapping
-// (projection.rs:167-179).
+// (projection.rs).
 type ProvenanceMap struct {
 	entries []ProvenanceEntry
 }
@@ -229,7 +229,7 @@ func (m ProvenanceMap) Entries() []ProvenanceEntry {
 }
 
 // ProjectionEvent is one explicit duplicate-collapse event
-// (projection.rs:181-196).
+// (projection.rs).
 type ProjectionEvent struct {
 	// Code is the stable event code.
 	Code string
@@ -246,7 +246,7 @@ type ProjectionEvent struct {
 }
 
 // ProjectionReport is the complete ordered projection report
-// (projection.rs:198-210).
+// (projection.rs).
 type ProjectionReport struct {
 	events []ProjectionEvent
 }
@@ -258,7 +258,7 @@ func (r ProjectionReport) Events() []ProjectionEvent {
 }
 
 // CompleteProjection is the complete successful projection
-// (projection.rs:212-223).
+// (projection.rs).
 type CompleteProjection struct {
 	// Value is the complete immutable mapping.
 	Value core.Value
@@ -272,7 +272,7 @@ type CompleteProjection struct {
 }
 
 // FailedProjectionAttempt is the failed projection attempt without a
-// partial value (projection.rs:225-232).
+// partial value (projection.rs).
 type FailedProjectionAttempt struct {
 	// Diagnostics are the stable ordered diagnostics.
 	Diagnostics []*protocol.Diagnostic
@@ -319,7 +319,7 @@ const (
 )
 
 // Project projects this snapshot under one explicit target and duplicate
-// contract (projection.rs:264-306; RFC 0010 §11). An unpaired surrogate
+// contract (projection.rs; RFC 0010 §11). An unpaired surrogate
 // or a recovered document fails atomically with a stable diagnostic and
 // no partial mapping; the native Document remains Complete and queryable.
 func (d *Document) Project(request ProjectionRequest) ProjectionResult {
@@ -377,7 +377,7 @@ func newProjectionContext(document *Document, request ProjectionRequest) *projec
 }
 
 // addOrigin charges one provenance unit and appends an origin
-// (projection.rs:318-362).
+// (projection.rs).
 func (c *projectionContext) addOrigin(projected ProjectedLocation, node document.NodeRef,
 	span document.Span, relation ProvenanceRelation) *projectionFailure {
 	key := projectedLocationKey(projected)
@@ -410,7 +410,7 @@ func (c *projectionContext) addOrigin(projected ProjectedLocation, node document
 }
 
 // addStringOrigins records the fragment and escape origins of one key or
-// value (projection.rs:364-404).
+// value (projection.rs).
 func (c *projectionContext) addStringOrigins(projected ProjectedLocation, propertyIndex int,
 	component stringComponent) *projectionFailure {
 	property := &c.document.properties[propertyIndex]
@@ -450,7 +450,7 @@ func (c *projectionContext) addStringOrigins(projected ProjectedLocation, proper
 }
 
 // pushEvent records one collapse event and tracks the worst fidelity
-// (projection.rs:406-413).
+// (projection.rs).
 func (c *projectionContext) pushEvent(event ProjectionEvent) *projectionFailure {
 	if len(c.report) >= c.request.limits.MaxReportEntries {
 		return &projectionFailure{kind: failureResourceLimit, limitName: "max_report_entries"}
@@ -605,7 +605,7 @@ func projectObject(document *Document,
 }
 
 // selectIndices computes the retained property ordinals under one
-// duplicate policy (projection.rs:613-648).
+// duplicate policy (projection.rs).
 func selectIndices(document *Document, keys []string,
 	policy DuplicatePolicy) ([]int, *projectionFailure) {
 	firstByKey := make(map[string]int, len(keys))

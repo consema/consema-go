@@ -7,7 +7,7 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// TomlProfile is the frozen TOML language profile (consema-toml lib.rs:35-39).
+// TomlProfile is the frozen TOML language profile (consema-toml lib.rs).
 // The unexported field makes the set closed.
 type TomlProfile struct {
 	name string
@@ -25,7 +25,7 @@ func (p TomlProfile) ID() document.ProfileId {
 func (p TomlProfile) String() string { return p.name }
 
 // TomlSyntaxKind is the closed TOML lossless syntax-piece classification
-// (consema-toml lib.rs:41-68). The stable query and protocol spellings are
+// (consema-toml lib.rs). The stable query and protocol spellings are
 // the exact `as_str` names.
 type TomlSyntaxKind string
 
@@ -94,7 +94,7 @@ func TomlSyntaxKindFromName(name string) (TomlSyntaxKind, bool) {
 }
 
 // TomlItemKind is the closed native TOML item category (RFC 0001 §2;
-// consema-toml lib.rs:273-305). Tables are native TOML items, never JSON
+// consema-toml lib.rs). Tables are native TOML items, never JSON
 // object/member types.
 type TomlItemKind string
 
@@ -135,7 +135,7 @@ const (
 // String returns the stable category name.
 func (k TomlItemKind) String() string { return string(k) }
 
-// TomlDate is the parsed TOML date field set (consema-toml lib.rs:308-317).
+// TomlDate is the parsed TOML date field set (consema-toml lib.rs).
 type TomlDate struct {
 	// Year is the four-digit year.
 	Year uint16
@@ -145,7 +145,7 @@ type TomlDate struct {
 	Day uint8
 }
 
-// TomlTime is the parsed TOML time field set (consema-toml lib.rs:319-329).
+// TomlTime is the parsed TOML time field set (consema-toml lib.rs).
 type TomlTime struct {
 	// Hour is in 0..=23.
 	Hour uint8
@@ -158,7 +158,7 @@ type TomlTime struct {
 	Nanosecond uint32
 }
 
-// TomlOffset is the parsed TOML UTC offset (consema-toml lib.rs:331-338).
+// TomlOffset is the parsed TOML UTC offset (consema-toml lib.rs).
 type TomlOffset struct {
 	// Z reports the literal UTC `Z` offset.
 	Z bool
@@ -167,7 +167,7 @@ type TomlOffset struct {
 }
 
 // TomlDateTime is the complete native TOML date/time datum
-// (consema-toml lib.rs:341-349).
+// (consema-toml lib.rs).
 type TomlDateTime struct {
 	// Date is the optional date component.
 	Date *TomlDate
@@ -178,7 +178,7 @@ type TomlDateTime struct {
 }
 
 // FormationFailure is the fatal formation failure before any complete
-// Document exists (consema-document lib.rs:643-652; RFC 0001 §3). It
+// Document exists (consema-document lib.rs; RFC 0001 §3). It
 // implements error and the RFC 0016 §6 Code() contract with the first
 // diagnostic's registered code.
 type FormationFailure struct {
@@ -225,7 +225,7 @@ func newFormationFailure(code string, category protocol.DiagnosticCategory,
 }
 
 // resourceLimitFailure builds the frozen core.parse.resource-limit@1
-// diagnostic (consema-document lib.rs:770-789).
+// diagnostic (consema-document lib.rs).
 func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 	return newFormationFailure("core.parse.resource-limit@1", protocol.CategoryResource,
 		-1, -1, map[string]string{
@@ -236,7 +236,7 @@ func resourceLimitFailure(name string, observed, limit int) *FormationFailure {
 }
 
 // StructuralPieceKind is the lossless class of one structural piece
-// (document.StructuralPieceKind; consema-document lib.rs:415-422).
+// (document.StructuralPieceKind; consema-document lib.rs).
 type StructuralPieceKind = document.StructuralPieceKind
 
 // The three frozen piece classes.
@@ -250,17 +250,17 @@ const (
 )
 
 // StructuralPiece is one source byte interval and its lossless class
-// (document.StructuralPiece; consema-document lib.rs:425-447).
+// (document.StructuralPiece; consema-document lib.rs).
 type StructuralPiece = document.StructuralPiece
 
 // LosslessStructuralIndex is the exhaustive ordered token/trivia coverage
 // of one source (document.LosslessStructuralIndex; consema-document
-// lib.rs:449-492). The index validates exact byte coverage and snapshot
+// lib.rs). The index validates exact byte coverage and snapshot
 // binding at construction.
 type LosslessStructuralIndex = document.LosslessStructuralIndex
 
 // NewLosslessStructuralIndex validates exact raw-byte coverage of the
-// source and snapshot binding (consema-document lib.rs:449-492; the syntax
+// source and snapshot binding (consema-document lib.rs; the syntax
 // piece identities are the source ordinals, so no duplicate-identity check
 // applies).
 func NewLosslessStructuralIndex(identity document.SnapshotIdentity, sourceLen int,
@@ -269,7 +269,7 @@ func NewLosslessStructuralIndex(identity document.SnapshotIdentity, sourceLen in
 }
 
 // Document is the opaque immutable TOML document snapshot (consema-toml
-// lib.rs:131-259). Completed documents are logically immutable; concurrent
+// lib.rs). Completed documents are logically immutable; concurrent
 // reads are safe.
 type Document struct {
 	authority document.DocumentAuthority
@@ -347,7 +347,7 @@ func (d *Document) Item(node document.NodeRef) (TomlItem, error) {
 }
 
 // TomlAccessErrorKind classifies a stable native handle failure
-// (consema-toml lib.rs:261-270).
+// (consema-toml lib.rs).
 type TomlAccessErrorKind uint8
 
 // The stable handle failure classes.
@@ -400,7 +400,7 @@ func (e *TomlAccessError) Name() string {
 }
 
 // TomlItem is the borrowed native TOML item bound to one document snapshot
-// (consema-toml lib.rs:352-459).
+// (consema-toml lib.rs).
 type TomlItem struct {
 	document *Document
 	index    int
@@ -506,7 +506,7 @@ func (i TomlItem) ArrayElements() ([]TomlArrayElement, bool) {
 }
 
 // TomlEntry is the borrowed direct table entry association (consema-toml
-// lib.rs:461-524).
+// lib.rs).
 type TomlEntry struct {
 	document *Document
 	index    int
@@ -545,7 +545,7 @@ func (e TomlEntry) Item() TomlItem {
 }
 
 // TomlArrayElement is the borrowed array or array-of-tables element
-// association (consema-toml lib.rs:526-575).
+// association (consema-toml lib.rs).
 type TomlArrayElement struct {
 	document *Document
 	index    int
@@ -573,7 +573,7 @@ func (e TomlArrayElement) Item() TomlItem {
 }
 
 // entity and its internal variants mirror the Rust entity model
-// (consema-toml lib.rs:577-663).
+// (consema-toml lib.rs).
 type entity struct {
 	span    document.Span
 	kind    entityKind

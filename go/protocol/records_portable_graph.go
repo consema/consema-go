@@ -12,14 +12,14 @@ import (
 )
 
 // PortableGraphMessage is the validated readable graph and exact PGCE/1
-// bytes of `core.portable-graph@1` (portable_graph.rs:12-20).
+// bytes of `core.portable-graph@1` (portable_graph.rs).
 type PortableGraphMessage struct {
 	graph *graph.Graph
 	pgce  []byte
 }
 
 // NewPortableGraphMessageFromGraph canonically encodes one complete graph
-// under explicit PGCE limits (portable_graph.rs:23-31).
+// under explicit PGCE limits (portable_graph.rs).
 func NewPortableGraphMessageFromGraph(g *graph.Graph, limits graph.PGCELimits) (*PortableGraphMessage, error) {
 	pgce, err := graph.EncodePGCEBounded(g, limits)
 	if err != nil {
@@ -35,7 +35,7 @@ func (m *PortableGraphMessage) Graph() *graph.Graph { return m.graph }
 func (m *PortableGraphMessage) PGCE() []byte { return append([]byte(nil), m.pgce...) }
 
 // ToValue encodes the fixed readable graph plus PGCE schema
-// (portable_graph.rs:44-126).
+// (portable_graph.rs).
 func (m *PortableGraphMessage) ToValue() (core.Value, error) {
 	order, ids := canonicalLayout(m.graph)
 	roots := make([]core.Value, 0, len(m.graph.Roots()))
@@ -109,7 +109,7 @@ func (m *PortableGraphMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes and cross-validates the readable graph and
-// PGCE/1 forms (portable_graph.rs:127-203).
+// PGCE/1 forms (portable_graph.rs).
 func (m *PortableGraphMessage) FromValue(value core.Value, limits graph.PGCELimits) (*PortableGraphMessage, error) {
 	fields, err := schemaFields(value, "core.portable-graph@1",
 		[]string{"schema", "encoding", "roots", "nodes", "pgce"}, "$")
@@ -196,7 +196,7 @@ func (m *PortableGraphMessage) FromValue(value core.Value, limits graph.PGCELimi
 }
 
 // CanonicalNodeID resolves a graph-local handle to its stable canonical
-// wire ID (portable_graph.rs:205-212).
+// wire ID (portable_graph.rs).
 func (m *PortableGraphMessage) CanonicalNodeID(node graph.NodeID) (uint64, bool) {
 	_, ids := canonicalLayout(m.graph)
 	id, ok := ids[node]
@@ -204,7 +204,7 @@ func (m *PortableGraphMessage) CanonicalNodeID(node graph.NodeID) (uint64, bool)
 }
 
 // GraphNodeID resolves a canonical wire ID to the message's graph-local
-// handle (portable_graph.rs:214-224).
+// handle (portable_graph.rs).
 func (m *PortableGraphMessage) GraphNodeID(canonical uint64) (graph.NodeID, bool) {
 	order, _ := canonicalLayout(m.graph)
 	if canonical >= uint64(len(order)) {
@@ -224,7 +224,7 @@ func CanonicalLayout(g *graph.Graph) ([]graph.NodeID, map[graph.NodeID]uint64) {
 }
 
 // canonicalLayout computes the canonical first-discovery node order of one
-// graph (portable_graph.rs:232-...): roots first in root order, then every
+// graph (portable_graph.rs...): roots first in root order, then every
 // edge target in edge order.
 func canonicalLayout(g *graph.Graph) (order []graph.NodeID, ids map[graph.NodeID]uint64) {
 	order = make([]graph.NodeID, 0, g.NodeCount())
@@ -335,7 +335,7 @@ func checkGraphCount(name string, observed, limit int) error {
 }
 
 // graphLimitsOf maps PGCE limits to graph construction limits
-// (portable_graph.rs:147-157).
+// (portable_graph.rs).
 func graphLimitsOf(limits graph.PGCELimits) graph.Limits {
 	return graph.Limits{
 		MaxRoots:            limits.MaxRoots,
@@ -349,7 +349,7 @@ func graphLimitsOf(limits graph.PGCELimits) graph.Limits {
 }
 
 // defineGraphRecord builds one readable node record into the builder
-// (portable_graph.rs:159-...).
+// (portable_graph.rs...).
 func defineGraphRecord(builder *graph.Builder, ids []graph.NodeID, index int,
 	record core.Value, limits graph.PGCELimits) error {
 	path := "$.nodes[" + uint32String(uint32(index)) + "]"

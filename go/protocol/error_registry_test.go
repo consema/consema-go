@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// The frozen per-version error-code counts (error_registry.rs:1717-1723).
+// The frozen per-version error-code counts (error_registry.rs).
 var errorVersionCounts = map[ErrorRegistryVersion]int{
 	ErrorRegistryV1: 55,
 	ErrorRegistryV2: 62,
@@ -36,7 +36,7 @@ func TestErrorRegistryCountsAndSortedness(t *testing.T) {
 }
 
 func TestErrorRegistrySupersetsAndBoundaries(t *testing.T) {
-	// v5 ⊂ v6 ⊂ v7 (error_registry.rs:1726-1774).
+	// v5 ⊂ v6 ⊂ v7 (error_registry.rs).
 	for _, descriptor := range NewErrorCodeRegistry(ErrorRegistryV5).Codes() {
 		if !NewErrorCodeRegistry(ErrorRegistryV6).Contains(descriptor.Code) {
 			t.Errorf("v6 lost %s", descriptor.Code)
@@ -50,7 +50,7 @@ func TestErrorRegistrySupersetsAndBoundaries(t *testing.T) {
 	// The 0.13.0 registration is pinned to v7 (audit finding F3):
 	// json.projection.incomplete-document@1 is absent from v6 and present in
 	// v7 with the Projection category and 0.13.0 introduction
-	// (error_registry.rs:1795-1822).
+	// (error_registry.rs).
 	if NewErrorCodeRegistry(ErrorRegistryV6).Contains("json.projection.incomplete-document@1") {
 		t.Error("v6 contains json.projection.incomplete-document@1")
 	}
@@ -70,7 +70,7 @@ func TestErrorRegistrySupersetsAndBoundaries(t *testing.T) {
 			t.Errorf("v7 lost %s", code)
 		}
 	}
-	// Version boundaries (error_registry.rs:1757-1774).
+	// Version boundaries (error_registry.rs).
 	checks := []struct {
 		version ErrorRegistryVersion
 		code    string
@@ -101,7 +101,7 @@ func TestErrorRegistrySupersetsAndBoundaries(t *testing.T) {
 
 func TestEveryProtocolKindCodeIsRegisteredInV1(t *testing.T) {
 	// The ProtocolErrorKind codes are all v1 registrations
-	// (error_registry.rs:1775-1793).
+	// (error_registry.rs).
 	registry := NewErrorCodeRegistry(ErrorRegistryV1)
 	for _, kind := range []ProtocolErrorKind{
 		KindInvalidJson, KindNonCanonicalJson, KindInvalidPvce, KindUnknownContract,
@@ -153,7 +153,7 @@ func TestErrorCodeManifestIsStrictlyValid(t *testing.T) {
 
 func TestEveryCLICodeHasExactRegistryFacts(t *testing.T) {
 	// The 21 v7 registrations: 20 CLI family codes plus the 0.13.0 JSON
-	// code, with the exact categories of error_registry.rs:1205-1337.
+	// code, with the exact categories of error_registry.rs.
 	expected := map[string]DiagnosticCategory{
 		"cli.data.invalid-request@1":            CategoryEncoding,
 		"cli.data.io@1":                         CategoryEncoding,

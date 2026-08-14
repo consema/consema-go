@@ -13,7 +13,7 @@ import (
 )
 
 // CompletionStatus is the closed language-neutral completion state
-// (execution.rs:12-25).
+// (execution.rs).
 type CompletionStatus string
 
 // The six frozen completion statuses.
@@ -30,7 +30,7 @@ const (
 func (s CompletionStatus) String() string { return string(s) }
 
 // Completion is the `core.completion@1` control-flow facts record
-// (execution.rs:40-49).
+// (execution.rs).
 type Completion struct {
 	status      CompletionStatus
 	processed   uint64
@@ -40,7 +40,7 @@ type Completion struct {
 }
 
 // NewCompletion validates the state-specific completion invariants against
-// the semantic-model v1 error registry (execution.rs:51-67).
+// the semantic-model v1 error registry (execution.rs).
 func NewCompletion(status CompletionStatus, processed, produced uint64,
 	limitName, failureCode *string) (*Completion, error) {
 	return NewCompletionWithRegistry(status, processed, produced, limitName, failureCode,
@@ -48,7 +48,7 @@ func NewCompletion(status CompletionStatus, processed, produced uint64,
 }
 
 // NewCompletionWithRegistry validates completion facts against one explicit
-// semantic-model error registry (execution.rs:69-107): a failure code must
+// semantic-model error registry (execution.rs): a failure code must
 // be registered, Success/Cancelled carry no limit or failure facts,
 // ResourceLimited requires a non-empty limit name, and
 // Failed/Unsupported/NotApplicable require a non-empty registered failure
@@ -96,7 +96,7 @@ func (c *Completion) LimitName() *string { return c.limitName }
 // FailureCode returns the stable terminal failure code, when failed.
 func (c *Completion) FailureCode() *string { return c.failureCode }
 
-// ToValue encodes `core.completion@1` (execution.rs:140-153).
+// ToValue encodes `core.completion@1` (execution.rs).
 func (c *Completion) ToValue() (core.Value, error) {
 	return core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.completion@1")},
@@ -109,13 +109,13 @@ func (c *Completion) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.completion@1` under the v1 registry
-// (execution.rs:155-158).
+// (execution.rs).
 func (c *Completion) FromValue(value core.Value) (*Completion, error) {
 	return c.FromValueWithRegistry(value, DefaultErrorCodeRegistry())
 }
 
 // FromValueWithRegistry strictly decodes `core.completion@1` under one
-// explicit semantic-model registry (execution.rs:160-186).
+// explicit semantic-model registry (execution.rs).
 func (c *Completion) FromValueWithRegistry(value core.Value, registry ErrorCodeRegistry) (*Completion, error) {
 	fields, err := schemaFields(value, "core.completion@1",
 		[]string{"schema", "status", "processed", "produced", "limit_name", "failure_code"}, "$")
@@ -149,14 +149,14 @@ func (c *Completion) FromValueWithRegistry(value core.Value, registry ErrorCodeR
 // process-local handles: the Go records are wire-externalized by
 // construction, so any attempted externalization of a raw process-local
 // node handle is rejected with core.protocol.process-local-handle@1
-// (diagnostic.rs:353-381; query.rs:92-97; projection.rs:66-74).
+// (diagnostic.rs; query.rs; projection.rs).
 func ProcessLocalHandleError(path string) error {
 	return protocolError(KindProcessLocalHandle, path,
 		"process-local handle must be externalized to a stable caller identity")
 }
 
 // validLimitName reports whether a name is a stable lowercase identifier
-// (execution.rs:368-374): 1-255 characters of lowercase ASCII letters,
+// (execution.rs): 1-255 characters of lowercase ASCII letters,
 // digits, underscores, and dashes.
 func validLimitName(name string) bool {
 	if name == "" || len(name) > 255 {
@@ -186,14 +186,14 @@ func parseCompletionStatus(value core.Value, path string) (CompletionStatus, err
 }
 
 // ExecutionPolicy is the transferable `core.execution-policy@1` record;
-// cancellation tokens remain process-local (execution.rs:189-195).
+// cancellation tokens remain process-local (execution.rs).
 type ExecutionPolicy struct {
 	limits                map[string]uint64
 	cancellationRequestID *string
 }
 
 // NewExecutionPolicy creates a policy with deterministically sorted unique
-// limit names (execution.rs:196-221).
+// limit names (execution.rs).
 func NewExecutionPolicy(limits map[string]uint64, cancellationRequestID *string) (*ExecutionPolicy, error) {
 	for name := range limits {
 		if !validLimitName(name) {
@@ -220,7 +220,7 @@ func (p *ExecutionPolicy) Limits() map[string]uint64 {
 // request ID.
 func (p *ExecutionPolicy) CancellationRequestID() *string { return p.cancellationRequestID }
 
-// ToValue encodes `core.execution-policy@1` (execution.rs:235-252).
+// ToValue encodes `core.execution-policy@1` (execution.rs).
 func (p *ExecutionPolicy) ToValue() (core.Value, error) {
 	names := make([]string, 0, len(p.limits))
 	for name := range p.limits {
@@ -243,7 +243,7 @@ func (p *ExecutionPolicy) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.execution-policy@1`
-// (execution.rs:254-277).
+// (execution.rs).
 func (p *ExecutionPolicy) FromValue(value core.Value) (*ExecutionPolicy, error) {
 	fields, err := schemaFields(value, "core.execution-policy@1",
 		[]string{"schema", "limits", "cancellation_request_id"}, "$")
@@ -271,14 +271,14 @@ func (p *ExecutionPolicy) FromValue(value core.Value) (*ExecutionPolicy, error) 
 
 // CancellationRequest is the idempotent outer-transport
 // `core.cancellation-request@1` record; it is not a serialized
-// CancellationToken (execution.rs:279-290).
+// CancellationToken (execution.rs).
 type CancellationRequest struct {
 	requestID string
 	reason    *string
 }
 
 // NewCancellationRequest creates a request with a bounded stable ID
-// (execution.rs:291-302).
+// (execution.rs).
 func NewCancellationRequest(requestID string, reason *string) (*CancellationRequest, error) {
 	if requestID == "" || len(requestID) > 1024 {
 		return nil, invalid("$.request_id", "invalid request ID")
@@ -292,7 +292,7 @@ func (r *CancellationRequest) RequestID() string { return r.requestID }
 // Reason returns the optional stable reason or operator note.
 func (r *CancellationRequest) Reason() *string { return r.reason }
 
-// ToValue encodes `core.cancellation-request@1` (execution.rs:312-325).
+// ToValue encodes `core.cancellation-request@1` (execution.rs).
 func (r *CancellationRequest) ToValue() (core.Value, error) {
 	return core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.cancellation-request@1")},
@@ -302,7 +302,7 @@ func (r *CancellationRequest) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes `core.cancellation-request@1`
-// (execution.rs:327-340).
+// (execution.rs).
 func (r *CancellationRequest) FromValue(value core.Value) (*CancellationRequest, error) {
 	fields, err := schemaFields(value, "core.cancellation-request@1",
 		[]string{"schema", "request_id", "reason"}, "$")

@@ -140,7 +140,7 @@ func (r ErrorCodeRegistry) Descriptor(candidate string) *ErrorCodeDescriptor {
 }
 
 // Validate rejects an unregistered public code
-// (error_registry.rs:1495-1510).
+// (error_registry.rs).
 func (r ErrorCodeRegistry) Validate(candidate string) error {
 	return r.validateAt(candidate, "$.code")
 }
@@ -159,7 +159,7 @@ func errorCode(id string, category DiagnosticCategory, introduced, description s
 // codesForVersion returns the frozen records of one semantic-model version.
 // Versions v2..v7 are built as sorted merges of the previous version plus
 // the version's new codes, mirroring the Rust const-merge builders
-// (error_registry.rs:412-1367); the test battery re-pins the counts,
+// (error_registry.rs); the test battery re-pins the counts,
 // sortedness, and superset relationships.
 func codesForVersion(version ErrorRegistryVersion) []ErrorCodeDescriptor {
 	switch version {
@@ -202,7 +202,7 @@ func mergeErrorCodes(old, added []ErrorCodeDescriptor) []ErrorCodeDescriptor {
 
 // The semantic-model v1 records (ERROR_CODES_V1, 55 codes). Strictly sorted
 // by code; introduced versions and descriptions transcribed verbatim from
-// consema-rs/consema-protocol/src/error_registry.rs:31-362.
+// consema-rs/consema-protocol/src/error_registry.rs.
 var errorCodesV1 = []ErrorCodeDescriptor{
 	errorCode("core.diagnostic.truncated@1", CategoryResource, "0.1.0", "Diagnostic limit truncated a sequence"),
 	errorCode("core.parse.resource-limit@1", CategoryResource, "0.1.0", "Parser resource limit was reached"),
@@ -418,14 +418,14 @@ var newCodesV7 = []ErrorCodeDescriptor{
 	errorCode("cli.write.symlink-policy@1", CategoryEdit, "0.12.0", "Write path rejected by the symlink policy"),
 	errorCode("cli.write.target-is-directory@1", CategoryEdit, "0.12.0", "Write target is a directory"),
 	// Registered in 0.13.0 (audit finding F3): the 0.13.0 json
-	// Recovered-document gate emits this code (consema-json projection.rs:756)
+	// Recovered-document gate emits this code (consema-json projection.rs)
 	// and the CLI's failed projection record requires it to be
 	// registry-validated; without the entry the CLI panicked on `.expect`.
 	errorCode("json.projection.incomplete-document@1", CategoryProjection, "0.13.0", "Recovered JSON syntax cannot enter a complete semantic projection"),
 }
 
 // errorCodeManifestValueFor encodes one `core.error-code-registry@1`
-// payload (error_registry.rs:1573-1594).
+// payload (error_registry.rs).
 func errorCodeManifestValueFor(registry ErrorCodeRegistry) (core.Value, error) {
 	items := make([]core.Value, 0, len(codesForVersion(registry.version)))
 	for _, descriptor := range codesForVersion(registry.version) {
@@ -460,7 +460,7 @@ func ErrorCodeManifestValueForVersion(version ErrorRegistryVersion) (core.Value,
 }
 
 // ValidateErrorCodeManifestValue strictly validates one transferable
-// `core.error-code-registry@1` value (error_registry.rs:1596-1645). Identity,
+// `core.error-code-registry@1` value (error_registry.rs). Identity,
 // ordering, category, and stability are normative; the description wording is
 // presentation metadata and is not re-checked for equality.
 func ValidateErrorCodeManifestValue(value core.Value) error {
@@ -520,7 +520,7 @@ func ValidateErrorCodeManifestValue(value core.Value) error {
 }
 
 // validateVersionedCode requires the `id@version` shape of a registered code
-// (error_registry.rs:1647-1655).
+// (error_registry.rs).
 func validateVersionedCode(code, path string) error {
 	at := strings.LastIndexByte(code, '@')
 	if at < 0 {

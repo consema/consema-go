@@ -3,7 +3,7 @@ package document
 import "fmt"
 
 // SourcePatchLimits are the resource bounds for constructing or applying
-// one source patch (source_patch.rs:8-27).
+// one source patch (source_patch.rs).
 type SourcePatchLimits struct {
 	// Source are the limits for the resulting source snapshot.
 	Source SourceLimits
@@ -25,7 +25,7 @@ func DefaultSourcePatchLimits() SourcePatchLimits {
 }
 
 // SourceReplacement is one raw-byte precondition and replacement in a
-// source patch (source_patch.rs:29-131). The original bytes must appear
+// source patch (source_patch.rs). The original bytes must appear
 // byte-for-byte at the old range of the base source; after application the
 // target bytes are exactly the replacement bytes.
 type SourceReplacement struct {
@@ -82,7 +82,7 @@ func (r SourceReplacement) RedactOriginal() bool { return r.redactOriginal }
 func (r SourceReplacement) RedactReplacement() bool { return r.redactReplacement }
 
 // SourcePatchErrorKind classifies a stable source patch construction or
-// application failure (source_patch.rs:387-432).
+// application failure (source_patch.rs).
 type SourcePatchErrorKind uint8
 
 // The stable source patch failure classes.
@@ -192,7 +192,7 @@ func (e *SourcePatchError) Unwrap() error {
 }
 
 // SourcePatchRedactionError is a review-redaction selection failure; patch
-// bytes and application facts are unchanged (source_patch.rs:367-385).
+// bytes and application facts are unchanged (source_patch.rs).
 type SourcePatchRedactionErrorKind uint8
 
 // The redaction failure classes.
@@ -225,7 +225,7 @@ func (e *SourcePatchRedactionError) Error() string {
 func (e *SourcePatchRedactionError) Code() string { return "core.protocol.invalid-value@1" }
 
 // SourcePatch is the immutable, transferable set of facts needed to verify
-// one raw source transition (source_patch.rs:133-365). Applying the patch
+// one raw source transition (source_patch.rs). Applying the patch
 // is atomic: either every original-byte precondition holds, the result
 // reproduces the patch's encoding facts and target digest, and a new
 // immutable snapshot exists, or nothing is returned.
@@ -238,7 +238,7 @@ type SourcePatch struct {
 }
 
 // NewSourcePatch builds a self-consistent patch against one immutable base
-// snapshot (source_patch.rs:227-251).
+// snapshot (source_patch.rs).
 func NewSourcePatch(base *SourceSnapshot, replacements []SourceReplacement,
 	metadata map[string]string, limits SourcePatchLimits) (*SourcePatch, error) {
 	if err := validatePatchReplacements(replacements, limits); err != nil {
@@ -265,7 +265,7 @@ func NewSourcePatch(base *SourceSnapshot, replacements []SourceReplacement,
 }
 
 // NewSourcePatchFromFacts creates a patch from externally supplied facts
-// after structural and resource validation (source_patch.rs:208-225). The
+// after structural and resource validation (source_patch.rs). The
 // application still verifies every digest, encoding, and original-byte
 // precondition.
 func NewSourcePatchFromFacts(baseDigest, targetDigest ContentDigest, encoding EncodingFacts,
@@ -284,7 +284,7 @@ func NewSourcePatchFromFacts(baseDigest, targetDigest ContentDigest, encoding En
 }
 
 // Apply applies all facts atomically and returns a new immutable snapshot
-// only on complete success (source_patch.rs:254-280).
+// only on complete success (source_patch.rs).
 func (p *SourcePatch) Apply(base *SourceSnapshot, limits SourcePatchLimits) (*SourceSnapshot, error) {
 	if err := validatePatchReplacements(p.replacements, limits); err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func (p *SourcePatch) Metadata() map[string]string { return cloneMetadata(p.meta
 
 // WithAllReplacementsRedacted marks every replacement payload for redacted
 // review/debug presentation. Exact bytes remain present for digest and
-// original-byte precondition checks (source_patch.rs:313-336).
+// original-byte precondition checks (source_patch.rs).
 func (p *SourcePatch) WithAllReplacementsRedacted(redactOriginal, redactReplacement bool) (*SourcePatch, error) {
 	replacements := make([]SourceReplacement, 0, len(p.replacements))
 	for _, replacement := range p.replacements {
@@ -351,7 +351,7 @@ func (p *SourcePatch) WithAllReplacementsRedacted(redactOriginal, redactReplacem
 }
 
 // WithReplacementRedacted marks one exact replacement payload for redacted
-// review/debug presentation (source_patch.rs:339-364).
+// review/debug presentation (source_patch.rs).
 func (p *SourcePatch) WithReplacementRedacted(index int, redactOriginal, redactReplacement bool) (*SourcePatch, error) {
 	if index < 0 || index >= len(p.replacements) {
 		return nil, &SourcePatchRedactionError{Kind: PatchRedactionUnknownReplacement, Index: index}
@@ -369,7 +369,7 @@ func (p *SourcePatch) WithReplacementRedacted(index int, redactOriginal, redactR
 }
 
 // validatePatchReplacements enforces the replacement ordering, range, and
-// budget rules (source_patch.rs:469-512).
+// budget rules (source_patch.rs).
 func validatePatchReplacements(replacements []SourceReplacement, limits SourcePatchLimits) error {
 	if len(replacements) > limits.MaxReplacements {
 		return &SourcePatchError{Kind: PatchErrorResourceLimit, Name: "patch-replacements",
@@ -408,7 +408,7 @@ func validatePatchReplacements(replacements []SourceReplacement, limits SourcePa
 
 // applyPatchReplacements splices the ordered replacements into the base
 // bytes, verifying each original precondition and the target byte budget
-// (source_patch.rs:514-554).
+// (source_patch.rs).
 func applyPatchReplacements(base []byte, replacements []SourceReplacement, limits SourcePatchLimits) ([]byte, error) {
 	targetLen := len(base)
 	for index := range replacements {

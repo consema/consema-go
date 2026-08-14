@@ -3,7 +3,7 @@ package protocol
 // Portable value-path and association-location wire records. These are the
 // language-neutral portable-location facts of `core.query-result@1`,
 // `core.provenance-map@1`, and `core.materialization-*` records
-// (consema-rs/consema-core value_path.rs; query.rs:441-560).
+// (consema-rs/consema-core value_path.rs; query.rs).
 
 import (
 	"consema.dev/consema/core"
@@ -92,7 +92,7 @@ func (p ValuePath) Less(other ValuePath) bool {
 }
 
 // AssociationRole is the closed association role of an association
-// location (query.rs:526-537).
+// location (query.rs).
 type AssociationRole string
 
 // The three frozen association roles.
@@ -103,7 +103,7 @@ const (
 )
 
 // AssociationLocation is one portable association location: a container
-// path, a zero-based ordinal, and a role (query.rs:514-523).
+// path, a zero-based ordinal, and a role (query.rs).
 type AssociationLocation struct {
 	container ValuePath
 	ordinal   uint64
@@ -141,7 +141,7 @@ func (l AssociationLocation) Less(other AssociationLocation) bool {
 	return l.role < other.role
 }
 
-// pathValue encodes a ValuePath (query.rs:441-465).
+// pathValue encodes a ValuePath (query.rs).
 func pathValue(path ValuePath) (core.Value, error) {
 	segments := make([]core.Value, 0, len(path.segments))
 	for _, segment := range path.segments {
@@ -172,7 +172,7 @@ func pathValue(path ValuePath) (core.Value, error) {
 	return core.NewObject(core.Entry{Key: "segments", Value: array})
 }
 
-// parsePath strictly decodes a ValuePath (query.rs:466-513).
+// parsePath strictly decodes a ValuePath (query.rs).
 func parsePath(value core.Value, path string) (ValuePath, error) {
 	fields, err := exactFields(value, []string{"segments"}, path)
 	if err != nil {
@@ -224,7 +224,7 @@ func parsePath(value core.Value, path string) (ValuePath, error) {
 	return result, nil
 }
 
-// associationValue encodes an AssociationLocation (query.rs:514-523).
+// associationValue encodes an AssociationLocation (query.rs).
 func associationValue(location AssociationLocation) (core.Value, error) {
 	container, err := pathValue(location.container)
 	if err != nil {
@@ -238,7 +238,7 @@ func associationValue(location AssociationLocation) (core.Value, error) {
 }
 
 // parseAssociation strictly decodes an AssociationLocation
-// (query.rs:525-553).
+// (query.rs).
 func parseAssociation(value core.Value, path string) (AssociationLocation, error) {
 	fields, err := exactFields(value, []string{"container", "ordinal", "role"}, path)
 	if err != nil {

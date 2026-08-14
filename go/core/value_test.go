@@ -226,7 +226,7 @@ func TestIntegerCanonicalForm(t *testing.T) {
 }
 
 // TestDecimalCanonicalization pins the Decimal normalization (RFC 0016 §4.1;
-// mirroring the Rust Decimal::new, consema-rs/consema-core/src/value.rs:277-292).
+// mirroring the Rust Decimal::new, consema-rs/consema-core/src/value.rs).
 func TestDecimalCanonicalization(t *testing.T) {
 	cases := []struct {
 		coefficient, exponent int64

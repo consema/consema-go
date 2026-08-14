@@ -32,7 +32,7 @@ type tokenized struct {
 	aliases []namedOccurrence
 }
 
-// syntaxScanner replicates the Rust Scanner (syntax.rs:86-421) dispatch
+// syntaxScanner replicates the Rust Scanner (syntax.rs) dispatch
 // exactly; every lexeme boundary must agree so the published piece layout
 // is byte-identical across languages.
 type syntaxScanner struct {
@@ -267,7 +267,7 @@ func (s *syntaxScanner) endPlainScalar() {
 	s.plainParentIndent = nil
 }
 
-// startsIndentedStructure replicates syntax.rs:257-282.
+// startsIndentedStructure replicates syntax.rs.
 func (s *syntaxScanner) startsIndentedStructure() bool {
 	if (s.chars[s.offset] == '-' || s.chars[s.offset] == '?') &&
 		(s.offset+1 >= len(s.chars) || isSeparation(s.chars[s.offset+1])) {
@@ -285,7 +285,7 @@ func (s *syntaxScanner) startsIndentedStructure() bool {
 	return false
 }
 
-// scanQuoted replicates syntax.rs:284-317.
+// scanQuoted replicates syntax.rs.
 func (s *syntaxScanner) scanQuoted(quote rune) {
 	s.offset++
 	for s.offset < len(s.chars) {
@@ -321,7 +321,7 @@ func (s *syntaxScanner) scanQuoted(quote rune) {
 	}
 }
 
-// scanPlain replicates syntax.rs:319-333.
+// scanPlain replicates syntax.rs.
 func (s *syntaxScanner) scanPlain() {
 	s.offset++
 	for s.offset < len(s.chars) {
@@ -339,7 +339,7 @@ func (s *syntaxScanner) scanPlain() {
 	}
 }
 
-// scanBlockContent replicates syntax.rs:335-364.
+// scanBlockContent replicates syntax.rs.
 func (s *syntaxScanner) scanBlockContent() (bool, *FormationFailure) {
 	parentIndent := *s.pendingBlockParentIndent
 	start := s.offset
@@ -428,7 +428,7 @@ func (s *syntaxScanner) followedBySeparation(length int) bool {
 	return isSeparation(s.chars[s.offset+length])
 }
 
-// isBlockHeader replicates syntax.rs:398-403: the rest of the line must be
+// isBlockHeader replicates syntax.rs: the rest of the line must be
 // only chomping/indent indicators, separation, or a comment.
 func (s *syntaxScanner) isBlockHeader() bool {
 	for index := s.offset + 1; index < len(s.chars); index++ {

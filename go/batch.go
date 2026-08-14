@@ -261,7 +261,7 @@ func digestFromDocument(digest document.ContentDigest) protocol.ContentDigest {
 }
 
 // encodingFactsToProtocol carries one document-layer encoding-facts record
-// into the wire-form record (protocol source.rs:598-631).
+// into the wire-form record (protocol source.rs).
 func encodingFactsToProtocol(facts document.EncodingFacts) protocol.EncodingFacts {
 	return protocol.EncodingFacts{
 		ProfileDefault: encodingToProtocolPtr(facts.ProfileDefault()),
@@ -279,7 +279,7 @@ func encodingToProtocolPtr(encoding document.SourceEncoding) *protocol.SourceEnc
 }
 
 // encodingKindToProtocol maps one document-layer encoding kind onto the
-// wire-form kind spelling (protocol source.rs:497-514: "Binary", "Utf8",
+// wire-form kind spelling (protocol source.rs: "Binary", "Utf8",
 // "Utf16Le", "Utf16Be", "Latin1", "WindowsCodePage").
 func encodingKindToProtocol(kind document.SourceEncodingKind) string {
 	switch kind {

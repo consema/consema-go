@@ -9,7 +9,7 @@ import "consema.dev/consema/document"
 
 // UntouchedByteRegion is one maximal unchanged raw-byte interval mapped
 // across two source snapshots (document.UntouchedByteRegion;
-// untouched_proof.rs:7-59).
+// untouched_proof.rs).
 type UntouchedByteRegion = document.UntouchedByteRegion
 
 // NewUntouchedByteRegion creates one region fact; the enclosing proof
@@ -20,7 +20,7 @@ func NewUntouchedByteRegion(oldStart, oldEnd, newStart, newEnd int) UntouchedByt
 
 // UntouchedByteProofErrorKind classifies a proof construction or
 // verification failure (document.UntouchedByteProofErrorKind;
-// untouched_proof.rs:135-178).
+// untouched_proof.rs).
 type UntouchedByteProofErrorKind = document.UntouchedByteProofErrorKind
 
 // The stable proof failure classes.
@@ -43,7 +43,7 @@ type UntouchedByteProofError = document.UntouchedByteProofError
 
 // UntouchedByteProof is the immutable evidence for every byte outside one
 // exact replacement plan (document.UntouchedByteProof;
-// untouched_proof.rs:61-132).
+// untouched_proof.rs).
 type UntouchedByteProof = document.UntouchedByteProof
 
 // CreateUntouchedByteProof creates a proof only when the replacements

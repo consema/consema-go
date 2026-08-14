@@ -14,8 +14,8 @@ import (
 // The three vectors below are transcribed byte-for-byte from the Rust PVCE/1
 // encoder's in-code pins:
 //
-//   - consema-rs/consema-pvce/src/lib.rs:1192-1201 (object_byte_vector_is_frozen)
-//   - consema-rs/consema-pvce/src/lib.rs:1336-1342 (byte_vector_is_frozen)
+//   - consema-rs/consema-pvce/src/lib.rs (object_byte_vector_is_frozen)
+//   - consema-rs/consema-pvce/src/lib.rs (byte_vector_is_frozen)
 //
 // The Rust side is the authority for the bytes (roadmap §16.1 hard gate:
 // "Rust 与 Go 的 PVCE/PGCE bytes 完全一致"); any change to these constants
@@ -24,23 +24,23 @@ import (
 
 // TestPVCEGoldenBytes pins the three Rust frozen byte vectors.
 func TestPVCEGoldenBytes(t *testing.T) {
-	// encode(Null) == b"PVCE\x01\x00\x00" (lib.rs:1337)
+	// encode(Null) == b"PVCE\x01\x00\x00" (lib.rs)
 	nullBytes := mustEncode(t, Null{})
 	wantNull := []byte{0x50, 0x56, 0x43, 0x45, 0x01, 0x00, 0x00} // hex 50564345010000
 	if !bytes.Equal(nullBytes, wantNull) {
-		t.Errorf("EncodePVCE(Null{}) = %x, want %x (Rust pin lib.rs:1337)", nullBytes, wantNull)
+		t.Errorf("EncodePVCE(Null{}) = %x, want %x (Rust pin lib.rs)", nullBytes, wantNull)
 	}
 
 	// encode(Integer(-256)) == b"PVCE\x01\x10\x04\x02\x02\x01\x00"
-	// (lib.rs:1339-1341)
+	// (lib.rs)
 	integerBytes := mustEncode(t, NewInteger(big.NewInt(-256)))
 	wantInteger := []byte{0x50, 0x56, 0x43, 0x45, 0x01, 0x10, 0x04, 0x02, 0x02, 0x01, 0x00}
 	if !bytes.Equal(integerBytes, wantInteger) {
-		t.Errorf("EncodePVCE(Integer(-256)) = %x, want %x (Rust pin lib.rs:1339-1341)", integerBytes, wantInteger)
+		t.Errorf("EncodePVCE(Integer(-256)) = %x, want %x (Rust pin lib.rs)", integerBytes, wantInteger)
 	}
 
 	// object {"a": Integer(1)} == hex 5056434501410a01200201611003010101
-	// (lib.rs:1199)
+	// (lib.rs)
 	object, err := NewObject(Entry{Key: "a", Value: NewInteger(big.NewInt(1))})
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestPVCEGoldenBytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(objectBytes, wantObject) {
-		t.Errorf("EncodePVCE({a: 1}) = %x, want %x (Rust pin lib.rs:1199)", objectBytes, wantObject)
+		t.Errorf("EncodePVCE({a: 1}) = %x, want %x (Rust pin lib.rs)", objectBytes, wantObject)
 	}
 
 	// The golden bytes decode back to Equal values.
@@ -68,7 +68,7 @@ func TestPVCEGoldenBytes(t *testing.T) {
 }
 
 // TestRoundTripEveryKind mirrors the Rust every_core_kind_round_trips test
-// (consema-rs/consema-pvce/src/lib.rs:1129-1174) restricted to the closed
+// (consema-rs/consema-pvce/src/lib.rs) restricted to the closed
 // eight-kind Go value model: every kind round-trips byte-stably.
 func TestRoundTripEveryKind(t *testing.T) {
 	object, err := NewObject(
@@ -115,7 +115,7 @@ func TestRoundTripEveryKind(t *testing.T) {
 
 // TestObjectOrderAffectsEncoding mirrors the Rust
 // object_order_affects_encoding_and_is_strict test
-// (consema-rs/consema-pvce/src/lib.rs:1177-1189): entry order is encoded, so a
+// (consema-rs/consema-pvce/src/lib.rs): entry order is encoded, so a
 // different order produces different bytes.
 func TestObjectOrderAffectsEncoding(t *testing.T) {
 	first := mustObject(t, Entry{"a", NewInteger(big.NewInt(1))}, Entry{"b", Null{}})
@@ -127,7 +127,7 @@ func TestObjectOrderAffectsEncoding(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 // Strict canonicality: the decoder rejects every non-canonical form the Rust
-// decoder rejects (consema-rs/consema-pvce/src/lib.rs:404-833, 1317-1333).
+// decoder rejects (consema-rs/consema-pvce/src/lib.rs).
 // ---------------------------------------------------------------------------
 
 func pvce(tag byte, payload []byte) []byte {
@@ -157,7 +157,7 @@ func TestDecodeRejectsNonCanonical(t *testing.T) {
 		{"truncated version", []byte{'P', 'V', 'C', 'E', 0x01}, ErrUnexpectedEnd},
 		{"unsupported version", []byte{'P', 'V', 'C', 'E', 0x02, 0x00, 0x00}, ErrUnsupportedVersion},
 		{"maximal varint version", maximalVarint, ErrUnsupportedVersion},
-		// lib.rs:1317-1324: rejects_non_minimal_version_varint
+		// lib.rs: rejects_non_minimal_version_varint
 		{"non-minimal version varint", []byte{'P', 'V', 'C', 'E', 0x81, 0x00, 0x00, 0x00}, ErrNonCanonicalVarint},
 		{"varint overflow", overflowVarint, ErrVarintOverflow},
 		{"trailing bytes", []byte{'P', 'V', 'C', 'E', 0x01, 0x00, 0x00, 0x00}, ErrTrailingBytes},
@@ -179,7 +179,7 @@ func TestDecodeRejectsNonCanonical(t *testing.T) {
 		{"float64 short payload", pvce(0x13, []byte{0, 0, 0, 0}), ErrInvalidPayload},
 
 		// Integers.
-		// lib.rs:1327-1333: rejects_noncanonical_zero_integer
+		// lib.rs: rejects_noncanonical_zero_integer
 		{"integer leading zero", []byte{'P', 'V', 'C', 'E', 0x01, 0x10, 0x03, 0x01, 0x01, 0x00}, ErrNonCanonicalInteger},
 		{"zero sign with magnitude", pvce(0x10, []byte{0x00, 0x01, 0x05}), ErrNonCanonicalInteger},
 		{"integer empty magnitude", pvce(0x10, []byte{0x01, 0x00}), ErrNonCanonicalInteger},
@@ -228,7 +228,7 @@ func TestDecodeAcceptsCanonicalMultibyteVarints(t *testing.T) {
 }
 
 // TestDecodeEnforcesEachResourceLimit drives every decoder limit with the
-// Rust field names (consema-rs/consema-pvce/src/lib.rs:55-82).
+// Rust field names (consema-rs/consema-pvce/src/lib.rs).
 func TestDecodeEnforcesEachResourceLimit(t *testing.T) {
 	var nested Value = Null{}
 	for i := 0; i < 3; i++ {
@@ -274,7 +274,7 @@ func TestDecodeEnforcesEachResourceLimit(t *testing.T) {
 
 // TestEncodeBoundedRejectsEachResourceLimit mirrors the Rust
 // bounded_encode_rejects_each_resource_limit test
-// (consema-rs/consema-pvce/src/lib.rs:1204-1276).
+// (consema-rs/consema-pvce/src/lib.rs).
 func TestEncodeBoundedRejectsEachResourceLimit(t *testing.T) {
 	value := NewArray(String("12345"), String("67890"), String("abcde"))
 	cases := []struct {
@@ -343,7 +343,7 @@ func TestEncodeNilValue(t *testing.T) {
 }
 
 // TestPVCEErrorCodeTable pins the frozen registered codes for every failure
-// kind, transcribed from consema-rs/consema-pvce/src/lib.rs:1062-1087.
+// kind, transcribed from consema-rs/consema-pvce/src/lib.rs.
 func TestPVCEErrorCodeTable(t *testing.T) {
 	cases := []struct {
 		kind PVCEErrorKind

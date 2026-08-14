@@ -10,7 +10,7 @@ import (
 func strArg(name, value string) core.Value { return core.String(value) }
 
 func TestQueryDomainInputRoles(t *testing.T) {
-	// Every frozen domain validates and pins its root role (query.rs:500-523).
+	// Every frozen domain validates and pins its root role (query.rs).
 	domains := []struct {
 		domain *QueryDomain
 		role   MatchRole
@@ -64,7 +64,7 @@ func TestQueryDomainInputRoles(t *testing.T) {
 
 func TestPortableValueOperatorChains(t *testing.T) {
 	// A complete object-entry chain validates
-	// (query.rs:912-921, 1596-1604).
+	// (query.rs).
 	definition := NewQueryDefinition(DomainPortableValueV1())
 	definition.WithExpression(
 		(&QueryExpression{Kind: ExpressionInput}).Then(
@@ -152,7 +152,7 @@ func newInt64(value int64) *big.Int {
 
 func TestIniDuplicateGroupOperatorRow(t *testing.T) {
 	// ini.duplicate-group is the input-dependent table row (RoleAny
-	// placeholder typed by checkInputDependentRoles; query.rs:1056-1065).
+	// placeholder typed by checkInputDependentRoles; query.rs).
 	// It validates from the section and entry inputs and rejects every
 	// other input role with the registered composition code.
 	fromSections := NewQueryDefinition(DomainININativeV1())
@@ -279,7 +279,7 @@ func syntaxKindOperator(domain *QueryDomain) string {
 
 func TestNativeOperatorChainsPerFamily(t *testing.T) {
 	// One representative chain per native domain validates with the pinned
-	// output role (query.rs:941-1594).
+	// output role (query.rs).
 	chains := []struct {
 		domain *QueryDomain
 		chain  func() *QueryExpression
@@ -426,7 +426,7 @@ func TestQueryBinding(t *testing.T) {
 		t.Fatal(failure)
 	}
 	// The required capability is core.query.ordered-results@1
-	// (query.rs:526-529).
+	// (query.rs).
 	capabilities := validated.RequiredCapabilities()
 	if len(capabilities) != 1 || capabilities[0].Namespace() != "core.query.ordered-results" ||
 		capabilities[0].Version() != 1 {
@@ -453,7 +453,7 @@ func TestQueryBinding(t *testing.T) {
 }
 
 func TestQueryResultNativeMatchWireFormat(t *testing.T) {
-	// Native matches are flat on the wire (query.rs:362-369): kind, role,
+	// Native matches are flat on the wire (query.rs): kind, role,
 	// source_id, node_locator, ordinal sit beside each other; the nested
 	// "native_match" shape is not a published wire form (G5.3 alignment).
 	locator, err := NewNativeMatchLocator("source:one", "json:path:value", RoleJsonValue, 0)

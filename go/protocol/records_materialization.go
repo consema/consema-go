@@ -10,7 +10,7 @@ import (
 )
 
 // MaterializationLimits are the immutable materialization resource bounds
-// (document materialization.rs:82-104).
+// (document materialization.rs).
 type MaterializationLimits struct {
 	MaxInputNodes        int
 	MaxOutputBytes       int
@@ -31,7 +31,7 @@ func DefaultMaterializationLimits() MaterializationLimits {
 }
 
 // MaterializationRequest is the complete immutable request for creating one
-// new target document (document materialization.rs:112-...).
+// new target document (document materialization.rs...).
 type MaterializationRequest struct {
 	targetProfile    ProfileReference
 	styleID          string
@@ -127,13 +127,13 @@ func (r *MaterializationRequest) Equal(other *MaterializationRequest) bool {
 }
 
 // MaterializationRequestMessageV2 is the transferable
-// `core.materialization-request@2` record (materialization.rs:71-...).
+// `core.materialization-request@2` record (materialization.rs...).
 type MaterializationRequestMessageV2 struct {
 	request *MaterializationRequest
 }
 
 // NewMaterializationRequestMessageV2FromRequest copies one validated common
-// request (materialization.rs:78-83).
+// request (materialization.rs).
 func NewMaterializationRequestMessageV2FromRequest(request *MaterializationRequest) *MaterializationRequestMessageV2 {
 	return &MaterializationRequestMessageV2{request: request}
 }
@@ -142,14 +142,14 @@ func NewMaterializationRequestMessageV2FromRequest(request *MaterializationReque
 func (m *MaterializationRequestMessageV2) Request() *MaterializationRequest { return m.request }
 
 // ToValue encodes the exact materialization-request v2 schema
-// (materialization.rs:91-98).
+// (materialization.rs).
 func (m *MaterializationRequestMessageV2) ToValue() (core.Value, error) {
 	return materializationRequestValue("core.materialization-request@2",
 		m.request, sourceEncodingValue(m.request.encoding))
 }
 
 // FromValue strictly decodes every v2 request policy and bound
-// (materialization.rs:99-106).
+// (materialization.rs).
 func (m *MaterializationRequestMessageV2) FromValue(value core.Value) (*MaterializationRequestMessageV2, error) {
 	request, err := materializationRequestFromValue(value, "core.materialization-request@2",
 		func(v core.Value, path string) (*SourceEncoding, error) {
@@ -163,13 +163,13 @@ func (m *MaterializationRequestMessageV2) FromValue(value core.Value) (*Material
 
 // MaterializationRequestMessageV1 is the transferable
 // `core.materialization-request@1` record; Windows code pages are rejected
-// (materialization.rs:24-69).
+// (materialization.rs).
 type MaterializationRequestMessageV1 struct {
 	request *MaterializationRequest
 }
 
 // NewMaterializationRequestMessageV1FromRequest copies one validated common
-// request (materialization.rs:31-36).
+// request (materialization.rs).
 func NewMaterializationRequestMessageV1FromRequest(request *MaterializationRequest) *MaterializationRequestMessageV1 {
 	return &MaterializationRequestMessageV1{request: request}
 }
@@ -177,7 +177,7 @@ func NewMaterializationRequestMessageV1FromRequest(request *MaterializationReque
 // Request returns the exact common request.
 func (m *MaterializationRequestMessageV1) Request() *MaterializationRequest { return m.request }
 
-// ToValue encodes the fixed-field request schema (materialization.rs:44-57);
+// ToValue encodes the fixed-field request schema (materialization.rs);
 // Windows code pages are rejected.
 func (m *MaterializationRequestMessageV1) ToValue() (core.Value, error) {
 	if m.request.encoding != nil && m.request.encoding.Kind == "WindowsCodePage" {
@@ -188,7 +188,7 @@ func (m *MaterializationRequestMessageV1) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes every request policy and bound
-// (materialization.rs:59-66).
+// (materialization.rs).
 func (m *MaterializationRequestMessageV1) FromValue(value core.Value) (*MaterializationRequestMessageV1, error) {
 	request, err := materializationRequestFromValue(value, "core.materialization-request@1",
 		func(v core.Value, path string) (*SourceEncoding, error) {
@@ -205,7 +205,7 @@ func (m *MaterializationRequestMessageV1) FromValue(value core.Value) (*Material
 }
 
 // encodingLowerCaseName converts the wire kind to the v1 lowercase spelling
-// (document source.rs:141-...).
+// (document source.rs...).
 func encodingLowerCaseName(encoding *SourceEncoding) string {
 	if encoding == nil {
 		return "binary"
@@ -388,19 +388,19 @@ func parseMaterializationLimits(value core.Value, path string) (MaterializationL
 }
 
 // MaterializationReportMessage is the ordered
-// `core.materialization-report@1` record (materialization.rs:190-...).
+// `core.materialization-report@1` record (materialization.rs...).
 type MaterializationReportMessage struct {
 	events []*Diagnostic
 }
 
 // NewMaterializationReportMessage validates all events against semantic
-// model v3 (materialization.rs:196-200).
+// model v3 (materialization.rs).
 func NewMaterializationReportMessage(events []*Diagnostic) (*MaterializationReportMessage, error) {
 	return NewMaterializationReportMessageWithRegistry(events, NewErrorCodeRegistry(ErrorRegistryV3))
 }
 
 // NewMaterializationReportMessageWithRegistry validates all events against
-// one explicit semantic-model registry (materialization.rs:201-209).
+// one explicit semantic-model registry (materialization.rs).
 func NewMaterializationReportMessageWithRegistry(events []*Diagnostic,
 	registry ErrorCodeRegistry) (*MaterializationReportMessage, error) {
 	for _, event := range events {
@@ -414,7 +414,7 @@ func NewMaterializationReportMessageWithRegistry(events []*Diagnostic,
 // Events returns the ordered materialization events.
 func (m *MaterializationReportMessage) Events() []*Diagnostic { return m.events }
 
-// ToValue encodes the fixed report schema (materialization.rs:243-256).
+// ToValue encodes the fixed report schema (materialization.rs).
 func (m *MaterializationReportMessage) ToValue() (core.Value, error) {
 	events := make([]core.Value, 0, len(m.events))
 	for _, event := range m.events {
@@ -431,7 +431,7 @@ func (m *MaterializationReportMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes ordered v3 diagnostics under one
-// explicit semantic-model registry (materialization.rs:263-...).
+// explicit semantic-model registry (materialization.rs...).
 func (m *MaterializationReportMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*MaterializationReportMessage, error) {
 	fields, err := schemaFields(value, "core.materialization-report@1",
@@ -462,7 +462,7 @@ func (m *MaterializationReportMessage) FromValue(value core.Value) (*Materializa
 
 // MaterializationProvenanceMapMessage is the transferable
 // `core.materialization-provenance-map@1` record
-// (materialization.rs:327-...). The 0.14.0 milestone carries the empty
+// (materialization.rs...). The 0.14.0 milestone carries the empty
 // default record; full entries land with the source milestone.
 type MaterializationProvenanceMapMessage struct {
 	entries []core.Value
@@ -500,14 +500,14 @@ func (m *MaterializationProvenanceMapMessage) FromValue(value core.Value) (*Mate
 }
 
 // MaterializationResultMessageV2 is the `core.materialization-result@2`
-// record (materialization.rs:834-...).
+// record (materialization.rs...).
 type MaterializationResultMessageV2 struct {
 	targetProfile ProfileReference
 	outcome       core.Value
 }
 
 // NewMaterializationResultMessageV2Complete validates a complete source-v2
-// result and every target binding (materialization.rs:841-...). The
+// result and every target binding (materialization.rs...). The
 // 0.14.0 milestone carries the complete outcome record with an empty report
 // and provenance; the full validation of report/provenance entries lands
 // with the source milestone.
@@ -554,7 +554,7 @@ func (m *MaterializationResultMessageV2) TargetProfile() ProfileReference { retu
 func (m *MaterializationResultMessageV2) Outcome() core.Value { return m.outcome }
 
 // ToValue encodes the fixed, explicitly tagged result-v2 schema
-// (materialization.rs:920-930).
+// (materialization.rs).
 func (m *MaterializationResultMessageV2) ToValue() (core.Value, error) {
 	return core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.materialization-result@2")},
@@ -564,7 +564,7 @@ func (m *MaterializationResultMessageV2) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes reports under one explicit
-// semantic-model registry (materialization.rs:932-...).
+// semantic-model registry (materialization.rs...).
 func (m *MaterializationResultMessageV2) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*MaterializationResultMessageV2, error) {
 	fields, err := schemaFields(value, "core.materialization-result@2",

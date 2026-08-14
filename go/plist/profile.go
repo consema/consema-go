@@ -123,7 +123,7 @@ type PlistParseLimits struct {
 }
 
 // DefaultPlistParseLimits returns the frozen defaults (consema-plist
-// lib.rs:170-193).
+// lib.rs).
 func DefaultPlistParseLimits() PlistParseLimits {
 	return PlistParseLimits{
 		Common:                      document.DefaultParseLimits(),

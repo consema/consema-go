@@ -56,7 +56,7 @@ import (
 )
 
 // ConversionFidelity is the whole-conversion semantic fidelity
-// (conversion.rs:42-51). The ordering Exact < Transformed < Lossy is
+// (conversion.rs). The ordering Exact < Transformed < Lossy is
 // frozen: the overall fidelity is the worst fidelity across both stages.
 type ConversionFidelity uint8
 
@@ -113,7 +113,7 @@ func (f MaterializationFidelity) String() string {
 }
 
 // ConversionProjectionReport retains the complete format-owned projection
-// report without flattening its facts (conversion.rs:53-72). Exactly one
+// report without flattening its facts (conversion.rs). Exactly one
 // family report is set, matching the source family.
 type ConversionProjectionReport struct {
 	// JSON is the JSON-family projection report.
@@ -184,7 +184,7 @@ func projectionEventWireCode(kind jsonpkg.ProjectionEventKind) string {
 }
 
 // ConversionProjectionProvenance retains the complete format-owned source
-// provenance of the projection stage (conversion.rs:74-93). Exactly one
+// provenance of the projection stage (conversion.rs). Exactly one
 // family provenance is set, matching the source family.
 type ConversionProjectionProvenance struct {
 	// JSON is the JSON-family projection provenance.
@@ -301,7 +301,7 @@ type ConversionMaterializationProvenance struct {
 }
 
 // ConversionReport is the complete ordered report for both conversion
-// stages (conversion.rs:95-149).
+// stages (conversion.rs).
 type ConversionReport struct {
 	projectionFidelity      ConversionFidelity
 	projectionReport        ConversionProjectionReport
@@ -349,7 +349,7 @@ func (r *ConversionReport) TargetProfile() document.ProfileId {
 }
 
 // CompleteConversion is the complete conversion result with both
-// provenance directions kept distinct (conversion.rs:151-164).
+// provenance directions kept distinct (conversion.rs).
 type CompleteConversion struct {
 	// Document is the newly materialized target document.
 	Document *Document
@@ -367,7 +367,7 @@ type CompleteConversion struct {
 }
 
 // ConversionFailureKind classifies a conversion failure
-// (conversion.rs:280-308). No failure carries a partial target document.
+// (conversion.rs). No failure carries a partial target document.
 type ConversionFailureKind uint8
 
 // The three frozen failure classes.
@@ -430,7 +430,7 @@ func (e *ConversionFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (conversion.rs:310-333).
+// (conversion.rs).
 func (e *ConversionFailure) Code() string {
 	switch e.Kind {
 	case ConversionFailureProjectionFailed:

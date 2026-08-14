@@ -58,7 +58,7 @@ func (i Integer) magnitude() []byte {
 
 // Decimal is a canonical exact finite decimal, coefficient × 10^exponent
 // (RFC 0016 §4.1; no float round-trip). The canonical form mirrors the Rust
-// Decimal::new normalization (consema-rs/consema-core/src/value.rs:277-292): a
+// Decimal::new normalization (consema-rs/consema-core/src/value.rs): a
 // zero coefficient has exponent zero, and trailing decimal zeros of the
 // coefficient are stripped into the exponent (10 × 10^0 → 1 × 10^1).
 type Decimal struct {
@@ -156,7 +156,7 @@ func (BinaryFloat64) isValue() {}
 
 // BinaryFloat32 is an exact IEEE-754 binary32 datum (配置内容统一处理标准与
 // Rust 参考实现.md §10.3; the Rust BinaryFloat32,
-// consema-rs/consema-core/src/value.rs:384-399). The identity of a BinaryFloat32
+// consema-rs/consema-core/src/value.rs). The identity of a BinaryFloat32
 // is its 32-bit pattern: NaN payloads and the sign of zero are preserved
 // exactly, and PVCE/1 encodes the bits big-endian. BinaryFloat32 and
 // BinaryFloat64 are always different kinds.

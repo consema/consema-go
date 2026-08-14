@@ -5,15 +5,15 @@ import (
 )
 
 // This file transcribes the operator validation table of
-// consema-rs/consema-core/src/query.rs:899-1897. Every operator row pins its
+// consema-rs/consema-core/src/query.rs. Every operator row pins its
 // expected input role, its output role, and its argument value kinds; the
 // argument-value semantic checks (closed kind-name vocabularies, non-empty
 // tags, even byte lengths) follow at the end of validateOperator, in the
 // Rust order.
 
 // QueryFailureKind is one failure class of query definition validation and
-// binding (consema-core/src/query.rs:3114+; the query_failure_code mapping,
-// error_registry.rs:1515-1529).
+// binding (consema-core/src/query.rs; the query_failure_code mapping,
+// error_registry.rs).
 type QueryFailureKind uint8
 
 const (
@@ -99,7 +99,7 @@ func (f *QueryFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (error_registry.rs:1515-1529).
+// (error_registry.rs).
 func (f *QueryFailure) Code() string {
 	switch f.Kind {
 	case FailureDomainMismatch:
@@ -221,7 +221,7 @@ var operatorTable = map[string]operatorSpec{
 	}},
 	"ini.native-semantic-query/ini.entry-value-state-is": {RoleIniEntry, RoleIniEntry, []argSpec{{"state", kindNameString}}},
 	// ini.duplicate-group is the input-dependent row (RoleAny placeholder);
-	// checkInputDependentRoles types it by the input role (query.rs:1056-1065).
+	// checkInputDependentRoles types it by the input role (query.rs).
 	"ini.native-semantic-query/ini.duplicate-group": {RoleAny, RoleAny, nil},
 	"ini.native-semantic-query/ini.physical-lines":  {RoleIniDocument, RoleIniPhysicalLine, nil},
 	"ini.native-semantic-query/ini.logical-lines":   {RoleIniDocument, RoleIniLogicalLine, nil},
@@ -365,7 +365,7 @@ var operatorTable = map[string]operatorSpec{
 const RoleAny MatchRole = ""
 
 // validateOperator validates one operator call against its domain and input
-// role (query.rs:899-1897). The semantic argument checks (kind-name
+// role (query.rs). The semantic argument checks (kind-name
 // vocabularies, non-empty tags, state sets) mirror the Rust checks in order.
 func validateOperator(domain *QueryDomain, operator *OperatorCall, input MatchRole) (MatchRole, *QueryFailure) {
 	if operator.version != 1 {
@@ -406,7 +406,7 @@ func validateOperator(domain *QueryDomain, operator *OperatorCall, input MatchRo
 			}
 		}
 	}
-	// Semantic argument-value checks (query.rs:1634-1897).
+	// Semantic argument-value checks (query.rs).
 	if failure := checkOperatorArguments(domain, operator); failure != nil {
 		return "", failure
 	}
@@ -438,7 +438,7 @@ func checkInputDependentRoles(domainID, operatorID string, input MatchRole, spec
 		}
 		spec.output = RoleXmlElement
 	case domainID == "xml.native-semantic-query" && operatorID == "xml.name-equals":
-		// The name-equals row types by its input role (query.rs:1265-1274).
+		// The name-equals row types by its input role (query.rs).
 		spec.output = input
 	case domainID == "xml.native-semantic-query" && operatorID == "xml.node-kind-is":
 		if !xmlNodeKindRoles(input) {
@@ -463,7 +463,7 @@ func checkInputDependentRoles(domainID, operatorID string, input MatchRole, spec
 	case domainID == "plist.binary-structure-query":
 		// The structure facts are document-level; every operator accepts any
 		// binary-structure match as input so that chains of structure
-		// operators validate (query.rs:1406-1442). The table row already
+		// operators validate (query.rs). The table row already
 		// pins the operator's output role.
 		if !plistBinaryInputRoles(input) {
 			return &QueryFailure{
@@ -475,7 +475,7 @@ func checkInputDependentRoles(domainID, operatorID string, input MatchRole, spec
 		(operatorID == "hcl.attribute-name" || operatorID == "hcl.attribute-name-equals" ||
 			operatorID == "hcl.block-type" || operatorID == "hcl.block-type-equals"):
 		// The attribute/block union accepts chains from hcl.body-items@1
-		// (query.rs:1467-1524); each operator acts on its own matches only.
+		// (query.rs); each operator acts on its own matches only.
 		if input != RoleHclAttribute && input != RoleHclBlock {
 			return &QueryFailure{
 				Kind: FailureInvalidOperatorComposition, Operator: operatorID,
@@ -485,7 +485,7 @@ func checkInputDependentRoles(domainID, operatorID string, input MatchRole, spec
 		spec.output = input
 	case domainID == "hcl.native-semantic-query" && operatorID == "hcl.attribute-literal-value":
 		// The typed literal accessor family accepts the expression directly
-		// or the owning attribute (query.rs:1495-1506).
+		// or the owning attribute (query.rs).
 		if input != RoleHclExpression && input != RoleHclAttribute {
 			return &QueryFailure{
 				Kind: FailureInvalidOperatorComposition, Operator: operatorID,
@@ -553,7 +553,7 @@ func hclErrorRegionInputRoles(input MatchRole) bool {
 }
 
 // checkOperatorArguments applies the semantic argument-value checks of the
-// Rust validator (query.rs:1634-1897), in order.
+// Rust validator (query.rs), in order.
 func checkOperatorArguments(domain *QueryDomain, operator *OperatorCall) *QueryFailure {
 	stringArg := func(name string) (string, bool) {
 		value, exists := operator.arguments[name]
@@ -687,7 +687,7 @@ func checkOperatorArguments(domain *QueryDomain, operator *OperatorCall) *QueryF
 }
 
 // isValueKindName accepts the frozen fifteen-kind vocabulary of the
-// value-kind arguments (query.rs:2187-2209), matching the closed core model
+// value-kind arguments (query.rs), matching the closed core model
 // (doc.go).
 func isValueKindName(kind string) bool {
 	switch kind {
@@ -700,7 +700,7 @@ func isValueKindName(kind string) bool {
 }
 
 // The frozen syntax-kind and value-kind vocabularies
-// (query.rs:1900-2185). Spellings are language-neutral and byte-exact.
+// (query.rs). Spellings are language-neutral and byte-exact.
 func isJSONSyntaxKind(domainVersion uint32, kind string) bool {
 	switch kind {
 	case "Bom", "Whitespace", "LineComment", "BlockComment", "LeftBrace", "RightBrace",

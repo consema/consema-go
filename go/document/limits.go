@@ -1,7 +1,7 @@
 package document
 
 // ParseLimits are the parse resource limits; exceeding one is a fatal
-// formation failure (document lib.rs:614-639).
+// formation failure (document lib.rs).
 type ParseLimits struct {
 	// MaxSourceBytes is the maximum source bytes.
 	MaxSourceBytes int
@@ -29,7 +29,7 @@ func DefaultParseLimits() ParseLimits {
 }
 
 // MaterializationLimits are the resource limits for one complete
-// materialization (materialization.rs:80-105).
+// materialization (materialization.rs).
 type MaterializationLimits struct {
 	// MaxInputNodes is the maximum input PortableValue nodes visited.
 	MaxInputNodes int

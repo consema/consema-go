@@ -663,7 +663,7 @@ func runSyntaxQueryJSONCase(vector *caseData, report *SuiteReport) {
 }
 
 // syntaxQueryDefinition builds the executable from the vector filters,
-// mirroring the Rust pipeline helper (syntax_query_v1.rs:186-269).
+// mirroring the Rust pipeline helper (syntax_query_v1.rs).
 func syntaxQueryDefinition(vector *caseData, format string) (*protocol.ExecutableQuery, *protocol.QueryFailure) {
 	filterValues, ok := sequenceField(vector.Input, "filters")
 	if !ok {

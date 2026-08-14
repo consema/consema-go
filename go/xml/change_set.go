@@ -36,7 +36,7 @@ type EditPlan = document.EditPlan
 type UntouchedByteProof = document.UntouchedByteProof
 
 // FormatOperationRegistry is the validated operation registry for one
-// exact XML profile (operation_registry.rs:11-14).
+// exact XML profile (operation_registry.rs).
 type FormatOperationRegistry struct {
 	profile    document.ProfileId
 	operations []FormatOperationDescriptor
@@ -62,7 +62,7 @@ type OperationArgumentDescriptor struct {
 
 // FormatOperationRegistryFor returns the frozen registry for one profile.
 // Every profile publishes the identical surface
-// (operation_registry.rs:11-14); the descriptors are ordered by their
+// (operation_registry.rs); the descriptors are ordered by their
 // stable operation identifier, exactly as the reference registry sorts
 // them.
 func FormatOperationRegistryFor(profile XmlProfile) *FormatOperationRegistry {
@@ -86,7 +86,7 @@ func (r *FormatOperationRegistry) Operations() []FormatOperationDescriptor {
 }
 
 // operationDescriptors builds the frozen eight-operation surface
-// (operation_registry.rs:16-75).
+// (operation_registry.rs).
 func operationDescriptors() []FormatOperationDescriptor {
 	stringArgument := func(name string) OperationArgumentDescriptor {
 		return OperationArgumentDescriptor{Name: name, Kind: "String", Required: true}

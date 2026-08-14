@@ -16,7 +16,7 @@ import (
 // base document.
 
 // EditOperationKind is the closed Properties edit operation category
-// (edit.rs:16-56).
+// (edit.rs).
 type EditOperationKind uint8
 
 // The five frozen operation categories.
@@ -39,7 +39,7 @@ const (
 )
 
 // EditOperation is one typed Java Properties edit operation bound to an
-// immutable base snapshot (edit.rs:16-56). Only the fields of the declared
+// immutable base snapshot (edit.rs). Only the fields of the declared
 // Kind are meaningful.
 type EditOperation struct {
 	// Kind is the closed operation category.
@@ -83,7 +83,7 @@ func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (edit.rs:70-89).
+// against one base snapshot (edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -99,7 +99,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder is a builder that is not a committed edit
-// (edit.rs:91-163).
+// (edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -158,7 +158,7 @@ func (b *EditTransactionBuilder) RenameProperty(target document.NodeRef,
 }
 
 // Build completes the immutable request; target validation happens
-// atomically at commit (edit.rs:155-162).
+// atomically at commit (edit.rs).
 func (b *EditTransactionBuilder) Build() *EditTransaction {
 	return &EditTransaction{
 		base:       b.base,
@@ -166,7 +166,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	}
 }
 
-// EditCommit is the atomic edit success (edit.rs:165-176).
+// EditCommit is the atomic edit success (edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -180,7 +180,7 @@ type EditCommit struct {
 }
 
 // EditFailureKind is the stable edit validation or commit failure category
-// (edit.rs:179-205).
+// (edit.rs).
 type EditFailureKind uint8
 
 // The closed edit failure categories.
@@ -293,7 +293,7 @@ func (e *EditFailure) Name() string {
 	return "EditFailure"
 }
 
-// Code returns the frozen registered code for the failure (edit.rs:237-252).
+// Code returns the frozen registered code for the failure (edit.rs).
 func (e *EditFailure) Code() string {
 	switch e.Kind {
 	case EditFailureRecoveredDocument:
@@ -322,7 +322,7 @@ func (e *EditFailure) Code() string {
 }
 
 // expectedProperty is one final document association expected after the
-// commit (edit.rs:255-263).
+// commit (edit.rs).
 type expectedProperty struct {
 	old            document.NodeRef
 	hasOld         bool
@@ -341,7 +341,7 @@ type preparedEdit struct {
 }
 
 // Commit atomically commits every declared Properties operation
-// (edit.rs:270-442). On failure the base document remains unchanged.
+// (edit.rs). On failure the base document remains unchanged.
 func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	if d.formationStatus != document.FormationStatusComplete {
 		return nil, &EditFailure{Kind: EditFailureRecoveredDocument}
@@ -544,7 +544,7 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 }
 
 // DryRun fully validates and plans an edit without returning a new
-// Document (edit.rs:445-459).
+// Document (edit.rs).
 func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *EditFailure) {
 	commit, failure := d.Commit(tx)
 	if failure != nil {
@@ -600,7 +600,7 @@ func (d *Document) validateDocumentTarget(target document.NodeRef) *EditFailure 
 }
 
 // validateRemovedAnchors rejects insertions anchored at a removed
-// property (edit.rs:487-505).
+// property (edit.rs).
 func (d *Document) validateRemovedAnchors(tx *EditTransaction) *EditFailure {
 	removed := make(map[document.NodeRef]bool, len(tx.operations))
 	for index := range tx.operations {
@@ -624,7 +624,7 @@ func (d *Document) validateRemovedAnchors(tx *EditTransaction) *EditFailure {
 }
 
 // insertionLocation resolves one placement to its (boundary, raw
-// position) pair (edit.rs:507-541).
+// position) pair (edit.rs).
 func (d *Document) insertionLocation(placement AssociationPlacement) (int, int, *EditFailure) {
 	count := len(d.properties)
 	switch placement.Kind() {
@@ -665,7 +665,7 @@ func (d *Document) insertionLocation(placement AssociationPlacement) (int, int, 
 }
 
 // recordOwnership spans every natural line of one property's logical line
-// (edit.rs:543-560).
+// (edit.rs).
 func (d *Document) recordOwnership(property *Property) (document.Span, *EditFailure) {
 	logical, err := d.LogicalLine(property.logicalLine)
 	if err != nil {
@@ -710,7 +710,7 @@ func fragmentOwnership(authority document.DocumentAuthority, fragments []documen
 }
 
 // preserveDirectValue reuses the direct raw value spelling when the
-// replacement closes exactly without re-encoding (edit.rs:578-599).
+// replacement closes exactly without re-encoding (edit.rs).
 func (d *Document) preserveDirectValue(property *Property, value *JavaString) []byte {
 	logical, err := d.LogicalLine(property.logicalLine)
 	if err != nil {
@@ -745,7 +745,7 @@ func (d *Document) preserveDirectValue(property *Property, value *JavaString) []
 }
 
 // canonicalFragment emits the canonical escaped form of one Java string
-// under the base document's profile and encoding (edit.rs:601-614).
+// under the base document's profile and encoding (edit.rs).
 func (d *Document) canonicalFragment(value *JavaString, isKey bool) ([]byte, *EditFailure) {
 	text, failure := canonicalJavaString(value, d.profile, isKey,
 		d.parseLimits.Common.MaxSourceBytes)
@@ -761,7 +761,7 @@ func (d *Document) canonicalFragment(value *JavaString, isKey bool) ([]byte, *Ed
 }
 
 // canonicalRecord emits one canonical `key=value` record at one raw
-// position, honoring the existing newline convention (edit.rs:615-663).
+// position, honoring the existing newline convention (edit.rs).
 func (d *Document) canonicalRecord(position int, key, value *JavaString) ([]byte, *EditFailure) {
 	newline := d.newlineConvention()
 	text := ""
@@ -807,7 +807,7 @@ func (d *Document) canonicalRecord(position int, key, value *JavaString) ([]byte
 }
 
 // newlineConvention derives the existing newline spelling from the first
-// line break of the base source (edit.rs:665-683).
+// line break of the base source (edit.rs).
 func (d *Document) newlineConvention() string {
 	text, ok := d.source.DecodedText()
 	if !ok {
@@ -838,7 +838,7 @@ func (d *Document) isLineBoundary(raw int) (bool, *EditFailure) {
 }
 
 // validateLiteral requires the literal bytes to decode into exactly one
-// raw value element with no line break (edit.rs:694-720).
+// raw value element with no line break (edit.rs).
 func (d *Document) validateLiteral(literal []byte) *EditFailure {
 	if len(literal) > d.parseLimits.Common.MaxSourceBytes {
 		return &EditFailure{Kind: EditFailureResourceLimit, LimitName: "replacement-bytes"}
@@ -891,7 +891,7 @@ func validateNonOverlapping(prepared []preparedEdit) *EditFailure {
 }
 
 // assembleExpected merges the base expectations with the ordered
-// insertions (edit.rs:794-808).
+// insertions (edit.rs).
 func assembleExpected(old []expectedProperty, insertions map[int]expectedProperty) []expectedProperty {
 	output := make([]expectedProperty, 0, len(old)+len(insertions))
 	for boundary := 0; boundary <= len(old); boundary++ {
@@ -920,7 +920,7 @@ func verifyExpected(document *Document, expected []expectedProperty) *EditFailur
 }
 
 // buildSourceEdits maps every prepared replacement into exact old/new
-// spans (edit.rs:835-870).
+// spans (edit.rs).
 func buildSourceEdits(newDocument *Document, prepared []preparedEdit) ([]SourceEdit, *EditFailure) {
 	delta := 0
 	sourceEdits := make([]SourceEdit, 0, len(prepared))
@@ -942,7 +942,7 @@ func buildSourceEdits(newDocument *Document, prepared []preparedEdit) ([]SourceE
 }
 
 // verifyLiteralOwnership requires every literal replacement to own exactly
-// the reparsed value interval (edit.rs:872-892).
+// the reparsed value interval (edit.rs).
 func verifyLiteralOwnership(document *Document, expected []expectedProperty,
 	sourceEdits []SourceEdit) *EditFailure {
 	for ordinal, item := range expected {
@@ -978,7 +978,7 @@ func verifyLiteralOwnership(document *Document, expected []expectedProperty,
 }
 
 // buildNodeMappings records the old-to-new property identities
-// (edit.rs:894-923).
+// (edit.rs).
 func buildNodeMappings(document *Document, expected []expectedProperty,
 	tx *EditTransaction) []NodeMapping {
 	var mappings []NodeMapping
@@ -1015,7 +1015,7 @@ func buildNodeMappings(document *Document, expected []expectedProperty,
 }
 
 // canonicalJavaString renders one exact Java string into canonical escaped
-// text (edit.rs:925-990; RFC 0010 §7, §12). Unpaired surrogates keep
+// text (edit.rs; RFC 0010 §7, §12). Unpaired surrogates keep
 // their exact code units through uppercase `\uXXXX` escapes.
 func canonicalJavaString(value *JavaString, profile PropertiesProfile, isKey bool,
 	limit int) (string, *EditFailure) {
@@ -1131,7 +1131,7 @@ func pushBounded(output *string, text string, limit int) *EditFailure {
 }
 
 // mapEncodingFailure maps one encoding failure onto the edit contract
-// (edit.rs:1029-1036).
+// (edit.rs).
 func mapEncodingFailure(failure *MaterializationFailure) *EditFailure {
 	if failure.Kind == MaterializationResourceLimit {
 		return &EditFailure{Kind: EditFailureResourceLimit, LimitName: failure.LimitName}
@@ -1140,7 +1140,7 @@ func mapEncodingFailure(failure *MaterializationFailure) *EditFailure {
 }
 
 // originalEncodingSelection rebuilds the parse selection of an edited
-// document (edit.rs:1038-1045).
+// document (edit.rs).
 func originalEncodingSelection(document *Document) PropertiesEncodingSelection {
 	if document.profile == PropertiesReaderV1 {
 		return ReaderEncodingSelection(document.source.EncodingFacts().Selected())
@@ -1161,7 +1161,7 @@ func editSourcePatchLimits(limits PropertiesParseLimits, operationCount int) doc
 }
 
 // operationMetadata builds the deterministic patch audit metadata
-// (edit.rs:1077-1089).
+// (edit.rs).
 func operationMetadata(tx *EditTransaction) map[string]string {
 	metadata := make(map[string]string, len(tx.operations))
 	for index := range tx.operations {
@@ -1230,7 +1230,7 @@ func placementName(placement AssociationPlacement) string {
 }
 
 // applyPrepared splices the ordered replacements into the base bytes
-// (edit.rs:732-760).
+// (edit.rs).
 func (d *Document) applyPrepared(prepared []preparedEdit) ([]byte, *EditFailure) {
 	source := d.source.Bytes()
 	targetLen := len(source)

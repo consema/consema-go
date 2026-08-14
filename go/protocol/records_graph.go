@@ -12,7 +12,7 @@ import (
 )
 
 // GraphQueryMatchMessage is one graph match expressed only with canonical
-// wire node IDs (graph_query.rs:12-50).
+// wire node IDs (graph_query.rs).
 type GraphQueryMatchMessage struct {
 	// Kind is "Node", "SequenceElement", or "MappingEntry".
 	Kind string
@@ -41,7 +41,7 @@ func (m GraphQueryMatchMessage) role() MatchRole {
 }
 
 // GraphQueryResultMessage is the complete or explicitly non-complete
-// `core.graph-query-result@1` record (graph_query.rs:52-61).
+// `core.graph-query-result@1` record (graph_query.rs).
 type GraphQueryResultMessage struct {
 	domain      *QueryDomain
 	role        MatchRole
@@ -52,7 +52,7 @@ type GraphQueryResultMessage struct {
 }
 
 // NewGraphQueryResultMessage validates graph binding, uniform match roles,
-// associations, and counts (graph_query.rs:64-100).
+// associations, and counts (graph_query.rs).
 func NewGraphQueryResultMessage(domain *QueryDomain, role MatchRole, graphMessage *PortableGraphMessage,
 	matches []GraphQueryMatchMessage, completion *Completion,
 	diagnostics []*Diagnostic) (*GraphQueryResultMessage, error) {
@@ -98,7 +98,7 @@ func (m *GraphQueryResultMessage) Completion() *Completion { return m.completion
 // Diagnostics returns the ordered diagnostics.
 func (m *GraphQueryResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.graph-query-result@1` (graph_query.rs:191-215).
+// ToValue encodes `core.graph-query-result@1` (graph_query.rs).
 func (m *GraphQueryResultMessage) ToValue() (core.Value, error) {
 	matches := make([]core.Value, 0, len(m.matches))
 	for _, match := range m.matches {
@@ -137,7 +137,7 @@ func (m *GraphQueryResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes with explicit graph limits and
-// semantic-model registry (graph_query.rs:229-...).
+// semantic-model registry (graph_query.rs...).
 func (m *GraphQueryResultMessage) FromValueWithRegistry(value core.Value,
 	limits graph.PGCELimits, registry ErrorCodeRegistry) (*GraphQueryResultMessage, error) {
 	fields, err := schemaFields(value, "core.graph-query-result@1",
@@ -378,7 +378,7 @@ func parseGraphQueryMatch(value core.Value, path string) (GraphQueryMatchMessage
 }
 
 // GraphProjectedLocationMessage is one projected graph location expressed
-// with canonical wire node IDs (graph_projection.rs:13-41).
+// with canonical wire node IDs (graph_projection.rs).
 type GraphProjectedLocationMessage struct {
 	// Kind is "Root", "Node", "SequenceElement", "MappingKey", or
 	// "MappingValue".
@@ -437,7 +437,7 @@ func graphLocationRank(kind string) int {
 }
 
 // GraphProvenanceRelationMessage is the exact YAML-source relation to a
-// projected graph fact (graph_projection.rs:43-56).
+// projected graph fact (graph_projection.rs).
 type GraphProvenanceRelationMessage string
 
 // The two frozen graph relations.
@@ -447,7 +447,7 @@ const (
 )
 
 // GraphSourceOriginMessage is a transferable graph origin with
-// caller-assigned identities (graph_projection.rs:58-74).
+// caller-assigned identities (graph_projection.rs).
 type GraphSourceOriginMessage struct {
 	// SourceID is the stable source identity.
 	SourceID string
@@ -462,7 +462,7 @@ type GraphSourceOriginMessage struct {
 }
 
 // NewGraphSourceOriginMessage validates one externalized graph origin
-// (graph_projection.rs:76-102).
+// (graph_projection.rs).
 func NewGraphSourceOriginMessage(sourceID string, nodeLocator *string, startByte, endByte uint64,
 	relation GraphProvenanceRelationMessage) (*GraphSourceOriginMessage, error) {
 	if sourceID == "" || len(sourceID) > 1024 || startByte > endByte ||
@@ -479,7 +479,7 @@ func NewGraphSourceOriginMessage(sourceID string, nodeLocator *string, startByte
 }
 
 // GraphProvenanceEntryMessage is one graph location and all ordered source
-// origins (graph_projection.rs:104-112).
+// origins (graph_projection.rs).
 type GraphProvenanceEntryMessage struct {
 	// Projected is the projected graph location.
 	Projected GraphProjectedLocationMessage
@@ -488,13 +488,13 @@ type GraphProvenanceEntryMessage struct {
 }
 
 // GraphProvenanceMapMessage is the sorted unique
-// `core.graph-provenance-map@1` record (graph_projection.rs:114-120).
+// `core.graph-provenance-map@1` record (graph_projection.rs).
 type GraphProvenanceMapMessage struct {
 	entries []GraphProvenanceEntryMessage
 }
 
 // NewGraphProvenanceMapMessage validates canonical location order,
-// uniqueness, and non-empty origins (graph_projection.rs:121-141).
+// uniqueness, and non-empty origins (graph_projection.rs).
 func NewGraphProvenanceMapMessage(entries []GraphProvenanceEntryMessage) (*GraphProvenanceMapMessage, error) {
 	for _, entry := range entries {
 		if len(entry.Origins) == 0 {
@@ -513,7 +513,7 @@ func NewGraphProvenanceMapMessage(entries []GraphProvenanceEntryMessage) (*Graph
 func (m *GraphProvenanceMapMessage) Entries() []GraphProvenanceEntryMessage { return m.entries }
 
 // ValidateAgainst validates every projected location against one exact
-// graph message (graph_projection.rs:143-158).
+// graph message (graph_projection.rs).
 func (m *GraphProvenanceMapMessage) ValidateAgainst(graphMessage *PortableGraphMessage) error {
 	order, _ := graphMessage.WireLayout()
 	for index, entry := range m.entries {
@@ -526,7 +526,7 @@ func (m *GraphProvenanceMapMessage) ValidateAgainst(graphMessage *PortableGraphM
 }
 
 // validateGraphLocation validates one projected location against the exact
-// graph (graph_projection.rs:360-...).
+// graph (graph_projection.rs...).
 func validateGraphLocation(graphMessage *PortableGraphMessage, canonical []graph.NodeID,
 	location GraphProjectedLocationMessage, path string) error {
 	resolve := func(id uint64, name string) (graph.NodeID, error) {
@@ -576,7 +576,7 @@ func validateGraphLocation(graphMessage *PortableGraphMessage, canonical []graph
 	return nil
 }
 
-// ToValue encodes `core.graph-provenance-map@1` (graph_projection.rs:160-182).
+// ToValue encodes `core.graph-provenance-map@1` (graph_projection.rs).
 func (m *GraphProvenanceMapMessage) ToValue() (core.Value, error) {
 	entries := make([]core.Value, 0, len(m.entries))
 	for _, entry := range m.entries {
@@ -608,7 +608,7 @@ func (m *GraphProvenanceMapMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes one graph provenance map
-// (graph_projection.rs:183-208).
+// (graph_projection.rs).
 func (m *GraphProvenanceMapMessage) FromValue(value core.Value) (*GraphProvenanceMapMessage, error) {
 	fields, err := schemaFields(value, "core.graph-provenance-map@1", []string{"schema", "entries"}, "$")
 	if err != nil {
@@ -766,7 +766,7 @@ func parseGraphOrigin(value core.Value, path string) (*GraphSourceOriginMessage,
 }
 
 // GraphProjectionResultMessage is the atomic exact
-// `core.graph-projection-result@1` record (graph_projection.rs:232-244).
+// `core.graph-projection-result@1` record (graph_projection.rs).
 type GraphProjectionResultMessage struct {
 	completion  *Completion
 	graph       *PortableGraphMessage
@@ -776,7 +776,7 @@ type GraphProjectionResultMessage struct {
 }
 
 // NewGraphProjectionResultMessage validates atomic success, produced
-// count, and complete graph provenance (graph_projection.rs:245-...).
+// count, and complete graph provenance (graph_projection.rs...).
 func NewGraphProjectionResultMessage(completion *Completion, graphMessage *PortableGraphMessage,
 	hasGraph bool, provenance *GraphProvenanceMapMessage,
 	diagnostics []*Diagnostic) (*GraphProjectionResultMessage, error) {
@@ -815,7 +815,7 @@ func (m *GraphProjectionResultMessage) Provenance() *GraphProvenanceMapMessage {
 func (m *GraphProjectionResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
 // ToValue encodes `core.graph-projection-result@1`
-// (graph_projection.rs:283-302).
+// (graph_projection.rs).
 func (m *GraphProjectionResultMessage) ToValue() (core.Value, error) {
 	var graphValue core.Value = core.NullValue()
 	if m.hasGraph {
@@ -854,7 +854,7 @@ func (m *GraphProjectionResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes with explicit graph limits and
-// semantic-model registry (graph_projection.rs:321-...).
+// semantic-model registry (graph_projection.rs...).
 func (m *GraphProjectionResultMessage) FromValueWithRegistry(value core.Value,
 	limits graph.PGCELimits, registry ErrorCodeRegistry) (*GraphProjectionResultMessage, error) {
 	fields, err := schemaFields(value, "core.graph-projection-result@1",

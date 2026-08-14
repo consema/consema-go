@@ -15,7 +15,7 @@ import (
 // The vectors below were transcribed byte-for-byte from the Rust PVCE/1
 // encoder, generated with the reference codec itself (consema-rs/consema-pvce)
 // for the exact values of the Rust every_core_kind_round_trips test
-// (consema-rs/consema-pvce/src/lib.rs:1129-1174): BinaryFloat32(0x7fc0_0001),
+// (consema-rs/consema-pvce/src/lib.rs): BinaryFloat32(0x7fc0_0001),
 // Bytes([0, 255]), Date(-12345-02-28), Time(23:59:58.125),
 // LocalDateTime(-12345-02-28T23:59:58.125),
 // OffsetDateTime(-12345-02-28T23:59:58.125-23:00), and the entry mapping
@@ -125,7 +125,7 @@ func mustOffsetFraction(t *testing.T, offset int64, year int64, month, day, hour
 }
 
 // TestNewKindsRoundTrip mirrors the Rust every_core_kind_round_trips values
-// (consema-rs/consema-pvce/src/lib.rs:1129-1174) for the additional kinds:
+// (consema-rs/consema-pvce/src/lib.rs) for the additional kinds:
 // every value round-trips byte-stably.
 func TestNewKindsRoundTrip(t *testing.T) {
 	date := mustDate(t, -12345, 2, 28)
@@ -189,8 +189,8 @@ func TestNewKindsRoundTrip(t *testing.T) {
 
 // TestNewKindTemporalDecodeRejections drives the canonicality and validation
 // rejections of the additional kinds, mirroring the Rust decode branches
-// (consema-rs/consema-pvce/src/lib.rs:736-774, 895-940) and the
-// map_build_error mapping (lib.rs:971-979).
+// (consema-rs/consema-pvce/src/lib.rs) and the
+// map_build_error mapping (lib.rs).
 func TestNewKindTemporalDecodeRejections(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -207,7 +207,7 @@ func TestNewKindTemporalDecodeRejections(t *testing.T) {
 		{"date day too large", pvce(0x30, []byte{0x02, 0x00, 0x00, 0x02, 0x1f}), ErrInvalidTemporal},
 		{"date non-leap february 29", pvce(0x30, []byte{0x03, 0x01, 0x01, 0x64, 0x02, 0x1d}), ErrInvalidTemporal},
 		// The Rust negative_year_leap_rule test
-		// (consema-rs/consema-core/src/value.rs:1183-1186): year -400 is a leap
+		// (consema-rs/consema-core/src/value.rs): year -400 is a leap
 		// year (covered by the round-trip tests), year -100 is not.
 		{"date non-leap negative year february 29", pvce(0x30, []byte{0x03, 0x02, 0x01, 0x64, 0x02, 0x1d}), ErrInvalidTemporal},
 		// Time validation (DecodeError::InvalidTemporal).
@@ -253,7 +253,7 @@ func TestNewKindTemporalDecodeRejections(t *testing.T) {
 
 // TestDateNegativeYearLeapRule mirrors the Rust
 // negative_year_leap_rule_uses_absolute_remainders test
-// (consema-rs/consema-core/src/value.rs:1183-1186): the leap rule operates on the
+// (consema-rs/consema-core/src/value.rs): the leap rule operates on the
 // absolute magnitude of the year, so -400 is a leap year and -100 is not.
 func TestDateNegativeYearLeapRule(t *testing.T) {
 	if _, err := NewDate(big.NewInt(-400), 2, 29); err != nil {
@@ -274,7 +274,7 @@ func TestDateNegativeYearLeapRule(t *testing.T) {
 }
 
 // TestTimeFractionValidation pins the is_fraction rule (the Rust
-// Decimal::is_fraction, consema-rs/consema-core/src/value.rs:337-352): the
+// Decimal::is_fraction, consema-rs/consema-core/src/value.rs): the
 // fractional second must be an exact finite decimal in [0, 1).
 func TestTimeFractionValidation(t *testing.T) {
 	valid := []struct {
@@ -300,7 +300,7 @@ func TestTimeFractionValidation(t *testing.T) {
 }
 
 // TestOffsetDateTimeValidation pins the 24-hour offset bound (the Rust
-// OffsetDateTime::new, consema-rs/consema-core/src/value.rs:553-563).
+// OffsetDateTime::new, consema-rs/consema-core/src/value.rs).
 func TestOffsetDateTimeValidation(t *testing.T) {
 	local := NewLocalDateTime(mustDate(t, 2024, 1, 1), mustTime(t, 0, 0, 0, 0, 0))
 	for _, offset := range []int32{0, 86399, -86399, -90} {
@@ -506,7 +506,7 @@ func TestNewKindHashConsistency(t *testing.T) {
 }
 
 // TestNewKindDecodeLimits pins the additional kinds' resource-limit fields
-// (the Rust decode limits, consema-rs/consema-pvce/src/lib.rs:848-940). The
+// (the Rust decode limits, consema-rs/consema-pvce/src/lib.rs). The
 // outer "decimal-field"/"date-field"/"time-field" caps are defensive
 // (max_integer_bytes×2+32 / +32 / ×2+64) and, exactly as in the Rust
 // decoder, a canonical value that passes the inner integer-bytes limit can

@@ -14,7 +14,7 @@ const XMLNamespaceURI = "http://www.w3.org/XML/1998/namespace"
 const XMLNSNamespaceURI = "http://www.w3.org/2000/xmlns/"
 
 // QName is one lexical QName with its source-derived parts
-// (namespace.rs:15-39).
+// (namespace.rs).
 type QName struct {
 	// Prefix is the spelling before the colon, when present.
 	Prefix *string
@@ -47,7 +47,7 @@ func (q QName) Equal(other QName) bool {
 }
 
 // ExpandedName is a resolved expanded name = `{ namespace URI or none,
-// local name }` (namespace.rs:41-57).
+// local name }` (namespace.rs).
 type ExpandedName struct {
 	// Namespace is the namespace URI, or nil for an unprefixed attribute or
 	// an unbound default namespace.
@@ -73,7 +73,7 @@ func (e ExpandedName) Equal(other ExpandedName) bool {
 	return *e.Namespace == *other.Namespace
 }
 
-// Binding is one in-scope namespace binding (namespace.rs:59-66).
+// Binding is one in-scope namespace binding (namespace.rs).
 type Binding struct {
 	// Prefix is the bound prefix; nil is the default namespace.
 	Prefix *string
@@ -82,7 +82,7 @@ type Binding struct {
 }
 
 // NamespaceErrorKind classifies a namespace resolution failure
-// (namespace.rs:68-89).
+// (namespace.rs).
 type NamespaceErrorKind uint8
 
 // The closed namespace failure classes.
@@ -126,11 +126,11 @@ func (e *NamespaceError) Error() string {
 }
 
 // Code returns the stable family code of the failure (RFC 0016 §6;
-// parser.rs:130-137).
+// parser.rs).
 func (e *NamespaceError) Code() string { return namespaceCode(e) }
 
 // NamespaceScope is an immutable, ancestry-derived namespace scope
-// (namespace.rs:91-99). A scope is never mutated in place; declaring a
+// (namespace.rs). A scope is never mutated in place; declaring a
 // binding appends to a new child scope, so the immutable ancestry chain of
 // a tree is preserved.
 type NamespaceScope struct {
@@ -152,7 +152,7 @@ func (s NamespaceScope) Bindings() []Binding {
 // Declare appends one namespace declaration and returns the child scope.
 // The `xmlns` prefix can never be declared, the `xml` prefix can only be
 // declared to its standard URI, and the `xmlns` URI cannot become the
-// default namespace (namespace.rs:117-144).
+// default namespace (namespace.rs).
 func (s NamespaceScope) Declare(prefix *string, uri string) (NamespaceScope, *NamespaceError) {
 	if uri == XMLNSNamespaceURI && prefix == nil {
 		return NamespaceScope{}, &NamespaceError{Kind: NamespaceErrorIllegalDefaultXmlns}
@@ -172,7 +172,7 @@ func (s NamespaceScope) Declare(prefix *string, uri string) (NamespaceScope, *Na
 }
 
 // ResolveElement resolves an element name: the default namespace applies
-// (namespace.rs:146-155).
+// (namespace.rs).
 func (s NamespaceScope) ResolveElement(qname QName) (ExpandedName, *NamespaceError) {
 	if qname.Prefix == nil {
 		return ExpandedName{Namespace: s.lookupDefault(), Local: qname.Local}, nil
@@ -181,7 +181,7 @@ func (s NamespaceScope) ResolveElement(qname QName) (ExpandedName, *NamespaceErr
 }
 
 // ResolveAttribute resolves an attribute name: the default namespace never
-// applies (namespace.rs:157-166).
+// applies (namespace.rs).
 func (s NamespaceScope) ResolveAttribute(qname QName) (ExpandedName, *NamespaceError) {
 	if qname.Prefix == nil {
 		return ExpandedName{Namespace: nil, Local: qname.Local}, nil
@@ -192,7 +192,7 @@ func (s NamespaceScope) ResolveAttribute(qname QName) (ExpandedName, *NamespaceE
 // DeclarationExpandedName is the expanded name of a namespace declaration
 // attribute itself: `xmlns` is `{ xmlns-URI, "xmlns" }` and `xmlns:p` is
 // `{ xmlns-URI, "p" }`, used for attribute-uniqueness checks
-// (namespace.rs:168-179).
+// (namespace.rs).
 func DeclarationExpandedName(prefix *string) ExpandedName {
 	local := "xmlns"
 	if prefix != nil {

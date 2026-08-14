@@ -56,7 +56,7 @@ type OperationArgumentDescriptor struct {
 }
 
 // FormatOperationRegistryFor returns the frozen registry for one profile.
-// Every profile publishes the identical surface (operation_registry.rs:11-14).
+// Every profile publishes the identical surface (operation_registry.rs).
 func FormatOperationRegistryFor(profile JsonProfile) *FormatOperationRegistry {
 	return &FormatOperationRegistry{
 		profile:    profile.ID(),
@@ -74,7 +74,7 @@ func (r *FormatOperationRegistry) Operations() []FormatOperationDescriptor {
 }
 
 // operationDescriptors builds the frozen eight-operation surface
-// (operation_registry.rs:16-80).
+// (operation_registry.rs).
 func operationDescriptors() []FormatOperationDescriptor {
 	stringArgument := func(name string) OperationArgumentDescriptor {
 		return OperationArgumentDescriptor{Name: name, Kind: "String", Required: true}

@@ -3,7 +3,7 @@ package document
 import "fmt"
 
 // WindowsCodePage is one deterministic Windows code page admitted by
-// source contract v2 (document source.rs:57-119). Only the published
+// source contract v2 (document source.rs). Only the published
 // numbers resolve; the host locale never participates.
 type WindowsCodePage uint16
 
@@ -24,7 +24,7 @@ func (p WindowsCodePage) Number() uint16 { return uint16(p) }
 func (p WindowsCodePage) Name() string { return "windows-" + fmt.Sprint(uint16(p)) }
 
 // SourceEncodingKind identifies the closed set of source encodings
-// (document source.rs:122-155).
+// (document source.rs).
 type SourceEncodingKind uint8
 
 // The closed source encoding kinds.
@@ -102,7 +102,7 @@ func (e SourceEncoding) Equal(other SourceEncoding) bool {
 }
 
 // BomPolicy selects whether leading marker-shaped bytes participate in
-// Unicode BOM resolution (document source.rs:157-165).
+// Unicode BOM resolution (document source.rs).
 type BomPolicy string
 
 // The two frozen BOM interpretation policies.
@@ -116,7 +116,7 @@ const (
 )
 
 // BomKind is one recognized Unicode byte-order mark (document
-// source.rs:167-187).
+// source.rs).
 type BomKind string
 
 // The three recognized BOMs.
@@ -140,7 +140,7 @@ func (k BomKind) Encoding() SourceEncoding {
 }
 
 // UnsupportedBomKind is one recognized but unsupported Unicode marker
-// (document source.rs:719-726).
+// (document source.rs).
 type UnsupportedBomKind string
 
 // The two unsupported UTF-32 markers.
@@ -150,7 +150,7 @@ const (
 )
 
 // EncodingRequest carries the caller inputs to deterministic encoding
-// resolution (document source.rs:190-260). The frozen priority rule
+// resolution (document source.rs). The frozen priority rule
 // resolves conflicts in the order caller override, declaration, BOM,
 // profile default.
 type EncodingRequest struct {
@@ -208,7 +208,7 @@ func (r EncodingRequest) Declaration() *SourceEncoding { return r.declaration }
 func (r EncodingRequest) CallerOverride() *SourceEncoding { return r.callerOverride }
 
 // EncodingFacts is the complete, auditable result of encoding resolution
-// (document source.rs:263-379).
+// (document source.rs).
 type EncodingFacts struct {
 	profileDefault SourceEncoding
 	bomPolicy      BomPolicy
@@ -307,7 +307,7 @@ func equalEncodingPtr(left, right *SourceEncoding) bool {
 }
 
 // resolveEncoding resolves the deterministic encoding facts for raw bytes
-// (document source.rs:727-738).
+// (document source.rs).
 func resolveEncoding(bytes []byte, request EncodingRequest) (EncodingFacts, error) {
 	hasExplicitText := (request.declaration != nil && request.declaration.IsText()) ||
 		(request.callerOverride != nil && request.callerOverride.IsText())
@@ -325,7 +325,7 @@ func resolveEncoding(bytes []byte, request EncodingRequest) (EncodingFacts, erro
 }
 
 // resolveAssertions applies the frozen encoding priority rule (document
-// source.rs:740-782).
+// source.rs).
 func resolveAssertions(request EncodingRequest, bom *BomKind) (EncodingFacts, error) {
 	if !request.profileDefault.IsText() &&
 		((request.declaration != nil && request.declaration.IsText()) ||
@@ -383,7 +383,7 @@ func encodingConflictError(bom *BomKind, declaration, callerOverride *SourceEnco
 }
 
 // detectBOM recognizes the frozen BOM set and rejects UTF-32 markers
-// (document source.rs:784-804).
+// (document source.rs).
 func detectBOM(bytes []byte) (*BomKind, error) {
 	if len(bytes) >= 4 && bytes[0] == 0xff && bytes[1] == 0xfe && bytes[2] == 0x00 && bytes[3] == 0x00 {
 		return nil, &SourceError{Kind: SourceErrorUnsupportedBom, UnsupportedBom: UnsupportedBomUtf32Le}

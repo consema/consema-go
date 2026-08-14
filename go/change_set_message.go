@@ -15,7 +15,7 @@ import (
 
 // ChangeSetMessageFromDocument externalizes one change set with caller-
 // stable source identities and a caller-supplied node locator
-// (change.rs:184-262). The locator must resolve every NodeRef that
+// (change.rs). The locator must resolve every NodeRef that
 // participates in the change set's node mappings; an unresolvable old or
 // new NodeRef is a protocol error (process-local handle), exactly as the
 // Rust composition maps it.
@@ -27,7 +27,7 @@ func ChangeSetMessageFromDocument(changeSet *document.ChangeSet,
 }
 
 // ChangeSetMessageFromDocumentWithRegistry externalizes one change set
-// under one explicit semantic-model error registry (change.rs:200-262).
+// under one explicit semantic-model error registry (change.rs).
 func ChangeSetMessageFromDocumentWithRegistry(changeSet *document.ChangeSet,
 	oldSourceID, newSourceID string, locator func(document.NodeRef) (string, bool),
 	registry protocol.ErrorCodeRegistry) (*protocol.ChangeSetMessage, error) {

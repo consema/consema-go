@@ -13,7 +13,7 @@ import (
 // comparison and collision policy. Recovered documents never project.
 
 // ProjectionTarget is the versioned INI projection target
-// (projection.rs:9-17).
+// (projection.rs).
 type ProjectionTarget string
 
 // The two frozen projection targets.
@@ -41,7 +41,7 @@ const (
 )
 
 // CollisionPolicy is the explicit Object collision behavior
-// (projection.rs:28-38).
+// (projection.rs).
 type CollisionPolicy string
 
 // The three frozen collision policies.
@@ -82,7 +82,7 @@ func DefaultProjectionLimits() ProjectionLimits {
 }
 
 // ProjectionRequest is the immutable explicit projection request
-// (projection.rs:39-100).
+// (projection.rs).
 type ProjectionRequest struct {
 	target          ProjectionTarget
 	comparison      NameComparison
@@ -143,7 +143,7 @@ const (
 )
 
 // ProjectedLocation is one projected value or association location
-// (projection.rs:138-145).
+// (projection.rs).
 type ProjectedLocation struct {
 	// Value is the portable value location of Value locations.
 	Value *protocol.ValuePath
@@ -196,7 +196,7 @@ const (
 	RelationCollapsed ProvenanceRelation = "Collapsed"
 )
 
-// SourceOrigin is one exact source origin (projection.rs:159-172).
+// SourceOrigin is one exact source origin (projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source document snapshot.
 	Snapshot document.SnapshotIdentity
@@ -218,7 +218,7 @@ type ProvenanceEntry struct {
 }
 
 // ProvenanceMap is the immutable many-valued provenance mapping
-// (projection.rs:184-196).
+// (projection.rs).
 type ProvenanceMap struct {
 	entries []ProvenanceEntry
 }
@@ -263,7 +263,7 @@ type ProjectionEvent struct {
 }
 
 // ProjectionReport is the complete ordered projection report
-// (projection.rs:232-245).
+// (projection.rs).
 type ProjectionReport struct {
 	events []ProjectionEvent
 }
@@ -288,7 +288,7 @@ type CompleteProjection struct {
 }
 
 // FailedProjectionAttempt is the failed projection without a partial value
-// (projection.rs:264-271).
+// (projection.rs).
 type FailedProjectionAttempt struct {
 	// Diagnostics are the stable ordered diagnostics.
 	Diagnostics []*protocol.Diagnostic
@@ -298,7 +298,7 @@ type FailedProjectionAttempt struct {
 }
 
 // ProjectionResult is the projection completion algebra; exactly one
-// outcome is meaningful (projection.rs:273-279).
+// outcome is meaningful (projection.rs).
 type ProjectionResult struct {
 	// Complete is the complete success outcome.
 	Complete *CompleteProjection
@@ -307,7 +307,7 @@ type ProjectionResult struct {
 }
 
 // ProjectionFailureKind classifies a stable INI projection failure
-// (projection.rs:282-299).
+// (projection.rs).
 type ProjectionFailureKind uint8
 
 // The stable projection failure classes.
@@ -355,7 +355,7 @@ func (f *ProjectionFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (projection.rs:886-893).
+// (projection.rs).
 func (f *ProjectionFailure) Code() string {
 	switch f.Kind {
 	case ProjectionFailureRecoveredDocument:
@@ -371,7 +371,7 @@ func (f *ProjectionFailure) Code() string {
 }
 
 // Project projects this snapshot under one explicit target and collision
-// contract (projection.rs:301-314).
+// contract (projection.rs).
 func (d *Document) Project(request ProjectionRequest) ProjectionResult {
 	if d.formationStatus != document.FormationStatusComplete {
 		return d.failed(&ProjectionFailure{Kind: ProjectionFailureRecoveredDocument})
@@ -397,7 +397,7 @@ type projectionContext struct {
 }
 
 // addOrigin records one provenance origin with the deterministic unit
-// accounting (projection.rs:326-369).
+// accounting (projection.rs).
 func (c *projectionContext) addOrigin(projected ProjectedLocation, node document.NodeRef,
 	span document.Span, relation ProvenanceRelation) *ProjectionFailure {
 	newLocation := true
@@ -439,7 +439,7 @@ func (c *projectionContext) addOrigin(projected ProjectedLocation, node document
 	return nil
 }
 
-// pushEvent records one explicit collision event (projection.rs:372-379).
+// pushEvent records one explicit collision event (projection.rs).
 func (c *projectionContext) pushEvent(event ProjectionEvent) *ProjectionFailure {
 	if len(c.report.events) >= c.request.limits.MaxReportEntries {
 		return &ProjectionFailure{Kind: ProjectionFailureResourceLimit,
@@ -451,7 +451,7 @@ func (c *projectionContext) pushEvent(event ProjectionEvent) *ProjectionFailure 
 }
 
 // addEntryValueOrigins records the value and continuation origins of one
-// entry (projection.rs:381-425).
+// entry (projection.rs).
 func (c *projectionContext) addEntryValueOrigins(projected ProjectedLocation,
 	entryIndex int) *ProjectionFailure {
 	entry := c.document.entries[entryIndex]
@@ -495,7 +495,7 @@ func (c *projectionContext) addEntryValueOrigins(projected ProjectedLocation,
 }
 
 // projectExact builds the best-exact EntryMapping projection
-// (projection.rs:428-537).
+// (projection.rs).
 func (d *Document) projectExact(request ProjectionRequest) ProjectionResult {
 	requiredNodes := len(d.sections)*2 + len(d.entries)*2 + 1
 	if requiredNodes > request.limits.MaxValueNodes {
@@ -571,7 +571,7 @@ type selectedSection struct {
 }
 
 // projectObject builds the explicit RequireObject projection
-// (projection.rs:546-785).
+// (projection.rs).
 func (d *Document) projectObject(request ProjectionRequest) ProjectionResult {
 	sectionNames := make([]string, 0, len(d.sections))
 	for _, section := range d.sections {
@@ -738,7 +738,7 @@ func (d *Document) projectObject(request ProjectionRequest) ProjectionResult {
 }
 
 // selectIndices applies one collision policy to an ordered name list
-// (projection.rs:787-821).
+// (projection.rs).
 func selectIndices(names []string, policy CollisionPolicy,
 	container document.NodeRef) ([]int, *ProjectionFailure) {
 	counts := map[string]int{}
@@ -796,7 +796,7 @@ func (d *Document) groupEntries() map[document.NodeRef][]int {
 }
 
 // comparisonName applies the request comparison mode to one name
-// (projection.rs:831-846).
+// (projection.rs).
 func comparisonName(profile IniProfile, value string, comparison NameComparison,
 	isKey bool) string {
 	if comparison == ComparisonOriginalExact {
@@ -812,7 +812,7 @@ func comparisonName(profile IniProfile, value string, comparison NameComparison,
 }
 
 // failed builds the failed projection attempt with the frozen diagnostic
-// (projection.rs:852-884).
+// (projection.rs).
 func (d *Document) failed(failure *ProjectionFailure) ProjectionResult {
 	reason := "target-not-applicable"
 	switch failure.Kind {

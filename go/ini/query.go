@@ -16,7 +16,7 @@ import (
 // Definitions validate domain, operator, argument types, and role
 // composition before execution; steps and results are bounded by limits.
 
-// IniMatchKind is the closed native match variant (query.rs:10-68).
+// IniMatchKind is the closed native match variant (query.rs).
 type IniMatchKind string
 
 // The five frozen native match variants.
@@ -34,7 +34,7 @@ const (
 )
 
 // IniMatch is one owned snapshot-bound INI native semantic query match
-// (query.rs:10-68).
+// (query.rs).
 type IniMatch struct {
 	// Kind is the match variant.
 	Kind IniMatchKind
@@ -68,7 +68,7 @@ type IniMatch struct {
 }
 
 // IniSyntaxMatch is one owned snapshot-bound INI lossless syntax query
-// match (query.rs:81-114).
+// match (query.rs).
 type IniSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -154,7 +154,7 @@ func (c *queryContext) entryMatch(ordinal int) IniMatch {
 }
 
 // ExecuteIniQuery executes a validated INI native semantic query against
-// one immutable snapshot (query.rs:117-143). The context is used for
+// one immutable snapshot (query.rs). The context is used for
 // cancellation and deadlines only. Steps and result counts are bounded by
 // limits; exceeding either is core.query.resource-limit@1.
 func ExecuteIniQuery(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -182,7 +182,7 @@ func ExecuteIniQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 
 // ExecuteIniQueryCursor executes an INI native query and exposes the
 // complete result through a cancellable ordered cursor
-// (query.rs:146-157; OrderedQueryCursor). The cursor yields the precomputed
+// (query.rs; OrderedQueryCursor). The cursor yields the precomputed
 // standard-order matches until the context is cancelled or the result is
 // exhausted; the terminal state is Cancelled, Completed, or Failed.
 func ExecuteIniQueryCursor(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -228,7 +228,7 @@ func (c *IniQueryCursor) Next() (IniMatch, bool) {
 func (c *IniQueryCursor) TerminalState() string { return c.terminal }
 
 // ExecuteIniSyntaxQuery executes a validated INI lossless syntax query
-// against every source piece in raw order (query.rs:160-204). Text
+// against every source piece in raw order (query.rs). Text
 // comparison uses the decoded scalar text of the exact piece span, so
 // UTF-8, UTF-16LE, and code-page sources behave identically.
 func ExecuteIniSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -264,7 +264,7 @@ func ExecuteIniSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQ
 }
 
 // executeQueryExpression evaluates one native expression against the input
-// matches (query.rs:298-332).
+// matches (query.rs).
 func executeQueryExpression(ctx context.Context, expression *protocol.QueryExpression,
 	input []IniMatch, context *queryContext) ([]IniMatch, *protocol.QueryFailure) {
 	switch expression.Kind {
@@ -370,7 +370,7 @@ func executeSyntaxExpression(ctx context.Context, expression *protocol.QueryExpr
 	return nil, &protocol.QueryFailure{Kind: protocol.FailureInvalidArgument}
 }
 
-// applyQueryOperator evaluates one native operator (query.rs:421-625).
+// applyQueryOperator evaluates one native operator (query.rs).
 func applyQueryOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []IniMatch, context *queryContext) ([]IniMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -580,7 +580,7 @@ func applyQueryOperator(ctx context.Context, operator *protocol.OperatorCall,
 	return output, nil
 }
 
-// applySyntaxOperator evaluates one syntax operator (query.rs:370-419).
+// applySyntaxOperator evaluates one syntax operator (query.rs).
 func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []IniSyntaxMatch, context *queryContext) ([]IniSyntaxMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -656,7 +656,7 @@ func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 }
 
 // nativeSourceOrder returns the source-order key of one native match
-// (query.rs:627-659).
+// (query.rs).
 func nativeSourceOrder(document *Document, match *IniMatch) int {
 	switch match.Kind {
 	case IniMatchDocument:
@@ -693,7 +693,7 @@ func nativeSourceOrder(document *Document, match *IniMatch) int {
 }
 
 // sectionComparison applies the profile comparison rule to one name
-// (query.rs:678-683).
+// (query.rs).
 func sectionComparison(profile IniProfile, name string) string {
 	if profile.isWindows() {
 		return stringsToLowerASCII(name)
@@ -702,7 +702,7 @@ func sectionComparison(profile IniProfile, name string) string {
 }
 
 // keyComparison applies the profile comparison rule to one key
-// (query.rs:685-691).
+// (query.rs).
 func keyComparison(profile IniProfile, key string) string {
 	switch {
 	case profile.isWindows():
@@ -767,7 +767,7 @@ func integerArgument(operator *protocol.OperatorCall, name string) (int, bool) {
 	return int(host), true
 }
 
-// applyIniSelection applies the definition selection (query.rs:693-710).
+// applyIniSelection applies the definition selection (query.rs).
 func applyIniSelection(matches []IniMatch,
 	selection protocol.QuerySelection) ([]IniMatch, *protocol.QueryFailure) {
 	switch selection {

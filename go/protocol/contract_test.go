@@ -6,7 +6,7 @@ import (
 	"consema.dev/consema/core"
 )
 
-// The frozen per-version contract counts (contract.rs:696-702).
+// The frozen per-version contract counts (contract.rs).
 var contractVersionCounts = map[ContractRegistryVersion]int{
 	RegistryV1: 16,
 	RegistryV2: 18,
@@ -40,7 +40,7 @@ func TestContractRegistryCountsAndSortedness(t *testing.T) {
 }
 
 func TestContractRegistrySupersetsAndBoundaries(t *testing.T) {
-	// v5 ⊂ v6 ⊂ v7 (contract.rs:703-716).
+	// v5 ⊂ v6 ⊂ v7 (contract.rs).
 	for _, descriptor := range NewContractRegistry(RegistryV5).Contracts() {
 		contract, err := NewContractId(descriptor.ID, descriptor.Version)
 		if err != nil {
@@ -118,7 +118,7 @@ func TestContractIdentifierStrictness(t *testing.T) {
 		t.Errorf("valid identifier rejected: %v", err)
 	}
 	// The profile/capability namespace allows digit-leading non-first
-	// segments (registry.rs:475-498).
+	// segments (registry.rs).
 	reference, err := NewProfileReference("toml.1-0", 1)
 	if err != nil {
 		t.Errorf("valid profile reference rejected: %v", err)
@@ -203,7 +203,7 @@ func TestProtocolMessageRejectionRules(t *testing.T) {
 
 	// A matching schema does not bypass full payload validation
 	// (protocol.envelope.reject-schema-only-payload; the Rust test
-	// contract.rs:650-663): the diagnostic schema is present but an
+	// contract.rs): the diagnostic schema is present but an
 	// undeclared field is rejected.
 	emptyPayload, _ := core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.diagnostic@1")},

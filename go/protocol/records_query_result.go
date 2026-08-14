@@ -10,7 +10,7 @@ import (
 )
 
 // NativeMatchLocator is a transferable locator for one native match
-// (query.rs:56-62).
+// (query.rs).
 type NativeMatchLocator struct {
 	sourceID    string
 	nodeLocator string
@@ -19,7 +19,7 @@ type NativeMatchLocator struct {
 }
 
 // NewNativeMatchLocator creates a transferable locator for one native
-// match (query.rs:66-90).
+// match (query.rs).
 func NewNativeMatchLocator(sourceID, nodeLocator string, role MatchRole,
 	ordinal uint64) (*NativeMatchLocator, error) {
 	if sourceID == "" || len(sourceID) > 1024 || nodeLocator == "" || len(nodeLocator) > 4096 ||
@@ -36,7 +36,7 @@ func NewNativeMatchLocator(sourceID, nodeLocator string, role MatchRole,
 
 // NativeMatchLocatorFromProcessLocal is the explicit rejection adapter for
 // raw process-local handles: a Go NodeRef equivalent must be externalized to
-// a stable caller locator before wire encoding (query.rs:92-97).
+// a stable caller locator before wire encoding (query.rs).
 func NativeMatchLocatorFromProcessLocal() error {
 	return protocolError(KindProcessLocalHandle, "$.native_match.node",
 		"NodeRef must be externalized to a stable caller locator")
@@ -54,7 +54,7 @@ func (l *NativeMatchLocator) Role() MatchRole { return l.role }
 // Ordinal returns the standard-order ordinal.
 func (l *NativeMatchLocator) Ordinal() uint64 { return l.ordinal }
 
-// ProtocolQueryMatch is one transferable query match (query.rs:127-146).
+// ProtocolQueryMatch is one transferable query match (query.rs).
 type ProtocolQueryMatch struct {
 	// Kind is "Value", "ObjectEntry", "EntryMappingEntry", or "Native".
 	Kind string
@@ -90,7 +90,7 @@ func (m ProtocolQueryMatch) role() MatchRole {
 }
 
 // QueryResultMessage is the complete or explicitly non-complete
-// `core.query-result@1` record (query.rs:148-155).
+// `core.query-result@1` record (query.rs).
 type QueryResultMessage struct {
 	domain      *QueryDomain
 	role        MatchRole
@@ -100,7 +100,7 @@ type QueryResultMessage struct {
 }
 
 // NewQueryResultMessage validates domain, match roles, ordering ordinals,
-// and completion counts (query.rs:158-191).
+// and completion counts (query.rs).
 func NewQueryResultMessage(domain *QueryDomain, role MatchRole, matches []ProtocolQueryMatch,
 	completion *Completion, diagnostics []*Diagnostic) (*QueryResultMessage, error) {
 	if !isV1Role(role) {
@@ -136,7 +136,7 @@ func NewQueryResultMessage(domain *QueryDomain, role MatchRole, matches []Protoc
 }
 
 // NewQueryResultFromPortableExecution converts a completed portable query
-// execution (query.rs:193-215).
+// execution (query.rs).
 func NewQueryResultFromPortableExecution(domain *QueryDomain, role MatchRole,
 	matches []ProtocolQueryMatch) (*QueryResultMessage, error) {
 	count := uint64(len(matches))
@@ -162,7 +162,7 @@ func (m *QueryResultMessage) Completion() *Completion { return m.completion }
 // Diagnostics returns the ordered operation diagnostics.
 func (m *QueryResultMessage) Diagnostics() []*Diagnostic { return m.diagnostics }
 
-// ToValue encodes `core.query-result@1` (query.rs:256-282).
+// ToValue encodes `core.query-result@1` (query.rs).
 func (m *QueryResultMessage) ToValue() (core.Value, error) {
 	matches := make([]core.Value, 0, len(m.matches))
 	for _, match := range m.matches {
@@ -196,7 +196,7 @@ func (m *QueryResultMessage) ToValue() (core.Value, error) {
 }
 
 // FromValueWithRegistry strictly decodes `core.query-result@1` under one
-// explicit semantic-model registry (query.rs:298-...).
+// explicit semantic-model registry (query.rs...).
 func (m *QueryResultMessage) FromValueWithRegistry(value core.Value,
 	registry ErrorCodeRegistry) (*QueryResultMessage, error) {
 	fields, err := schemaFields(value, "core.query-result@1",
@@ -259,7 +259,7 @@ func (m *QueryResultMessage) FromValue(value core.Value) (*QueryResultMessage, e
 	return m.FromValueWithRegistry(value, DefaultErrorCodeRegistry())
 }
 
-// protocolMatchValue encodes one transferable match (query.rs:380-437).
+// protocolMatchValue encodes one transferable match (query.rs).
 func protocolMatchValue(match ProtocolQueryMatch) (core.Value, error) {
 	switch match.Kind {
 	case "Value":
@@ -310,7 +310,7 @@ func protocolMatchValue(match ProtocolQueryMatch) (core.Value, error) {
 			core.Entry{Key: "value", Value: match.Value},
 		)
 	case "Native":
-		// Native matches are flat on the wire (query.rs:362-369): the
+		// Native matches are flat on the wire (query.rs): the
 		// locator fields sit beside "kind" rather than under a nested
 		// "native_match" record.
 		return core.NewObject(
@@ -384,7 +384,7 @@ func parseProtocolMatch(value core.Value, path string) (ProtocolQueryMatch, erro
 		return ProtocolQueryMatch{Kind: "EntryMappingEntry", Location: location, KeyPath: keyPath,
 			Key: fields[3], ValuePath: valuePath, Value: fields[5]}, nil
 	case "Native":
-		// The Native match is flat on the wire (query.rs:422-435): the
+		// The Native match is flat on the wire (query.rs): the
 		// locator fields sit beside "kind" in canonical order kind, role,
 		// source_id, node_locator, ordinal.
 		fields, err := exactFields(value,
@@ -422,7 +422,7 @@ func parseProtocolMatch(value core.Value, path string) (ProtocolQueryMatch, erro
 }
 
 // isV1Role reports whether the role is published by core.query-result@1
-// (query.rs:628-...): every role except the graph, YAML, line-format,
+// (query.rs...): every role except the graph, YAML, line-format,
 // XML, plist, and HCL families.
 func isV1Role(role MatchRole) bool {
 	switch role {
@@ -450,7 +450,7 @@ func isV1Role(role MatchRole) bool {
 }
 
 // isNativeRole reports whether the role may appear in a Native match
-// locator (query.rs:711-...).
+// locator (query.rs...).
 func isNativeRole(role MatchRole) bool {
 	switch role {
 	case RoleJsonValue, RoleJsonObjectMember, RoleJsonArrayElement,

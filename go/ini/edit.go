@@ -17,7 +17,7 @@ import (
 // encoding behavior is profile-specific.
 
 // RepresentationPolicy is the explicit semantic value representation
-// policy (edit.rs:15-27).
+// policy (edit.rs).
 type RepresentationPolicy uint8
 
 // The four frozen policies.
@@ -37,7 +37,7 @@ const (
 )
 
 // ValueReplacementKind is the closed value replacement category
-// (edit.rs:29-47).
+// (edit.rs).
 type ValueReplacementKind uint8
 
 // The two frozen categories.
@@ -51,7 +51,7 @@ const (
 )
 
 // ValueReplacement is one INI value replacement bound to the transaction's
-// base snapshot (edit.rs:29-47).
+// base snapshot (edit.rs).
 type ValueReplacement struct {
 	// Kind is the closed replacement category.
 	Kind ValueReplacementKind
@@ -67,7 +67,7 @@ type ValueReplacement struct {
 }
 
 // EditOperationKind is the closed INI edit operation category
-// (edit.rs:58-107).
+// (edit.rs).
 type EditOperationKind uint8
 
 // The seven frozen operation categories.
@@ -91,7 +91,7 @@ const (
 )
 
 // EditOperation is one typed INI edit operation bound to an immutable base
-// snapshot (edit.rs:58-107). Only the fields of the declared Kind are
+// snapshot (edit.rs). Only the fields of the declared Kind are
 // meaningful.
 type EditOperation struct {
 	// Kind is the closed operation category.
@@ -139,7 +139,7 @@ func PlacementAfter(anchor document.NodeRef) AssociationPlacement {
 }
 
 // EditTransaction is the immutable transaction; every operation resolves
-// against one base snapshot (edit.rs:109-128).
+// against one base snapshot (edit.rs).
 type EditTransaction struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -155,7 +155,7 @@ func (t *EditTransaction) Operations() []EditOperation {
 }
 
 // EditTransactionBuilder is a builder that is not a committed edit
-// (edit.rs:130-243).
+// (edit.rs).
 type EditTransactionBuilder struct {
 	base       document.SnapshotIdentity
 	operations []EditOperation
@@ -245,7 +245,7 @@ func (b *EditTransactionBuilder) RenameEntry(target document.NodeRef,
 }
 
 // Build completes the immutable request; target validation happens
-// atomically at commit (edit.rs:235-242).
+// atomically at commit (edit.rs).
 func (b *EditTransactionBuilder) Build() *EditTransaction {
 	return &EditTransaction{
 		base:       b.base,
@@ -253,7 +253,7 @@ func (b *EditTransactionBuilder) Build() *EditTransaction {
 	}
 }
 
-// EditCommit is the atomic edit success (edit.rs:245-256).
+// EditCommit is the atomic edit success (edit.rs).
 type EditCommit struct {
 	// Document is the new immutable document.
 	Document *Document
@@ -267,7 +267,7 @@ type EditCommit struct {
 }
 
 // EditFailureKind is the stable edit validation or commit failure category
-// (edit.rs:258-303).
+// (edit.rs).
 type EditFailureKind uint8
 
 // The closed edit failure categories.
@@ -518,7 +518,7 @@ type mappingPlan struct {
 }
 
 // Commit atomically commits all declared value replacements and
-// structural operations (edit.rs:305-553). On failure the base document
+// structural operations (edit.rs). On failure the base document
 // remains unchanged.
 func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	if d.formationStatus != document.FormationStatusComplete {
@@ -728,7 +728,7 @@ func (d *Document) Commit(tx *EditTransaction) (*EditCommit, *EditFailure) {
 }
 
 // DryRun fully validates and plans an edit without returning a new
-// Document (edit.rs:555-570).
+// Document (edit.rs).
 func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *EditFailure) {
 	commit, failure := d.Commit(tx)
 	if failure != nil {
@@ -747,7 +747,7 @@ func (d *Document) DryRun(tx *EditTransaction, sourceID string) (*EditPlan, *Edi
 }
 
 // validateDependencies checks the removed-anchor and ancestor-descendant
-// rules (edit.rs:863-920).
+// rules (edit.rs).
 func (d *Document) validateDependencies(tx *EditTransaction) *EditFailure {
 	removedSections := map[document.NodeRef]bool{}
 	removedEntries := map[document.NodeRef]bool{}
@@ -793,7 +793,7 @@ func (d *Document) validateDependencies(tx *EditTransaction) *EditFailure {
 }
 
 // prepareOperation dispatches one operation to its byte-level preparation
-// (edit.rs:617-650).
+// (edit.rs).
 func (d *Document) prepareOperation(operation *EditOperation,
 	diagnostics *[]*protocol.Diagnostic) ([]preparedEdit, *EditFailure) {
 	switch operation.Kind {
@@ -837,7 +837,7 @@ func (d *Document) prepareOperation(operation *EditOperation,
 	return nil, &EditFailure{Kind: EditFailureWrongRole}
 }
 
-// prepareValue prepares one value replacement (edit.rs:572-615).
+// prepareValue prepares one value replacement (edit.rs).
 func (d *Document) prepareValue(replacement *ValueReplacement,
 	diagnostics *[]*protocol.Diagnostic) (*preparedEdit, *EditFailure) {
 	target := replacement.Target
@@ -891,7 +891,7 @@ func (d *Document) prepareValue(replacement *ValueReplacement,
 }
 
 // prepareInsertSection prepares one canonical section insertion
-// (edit.rs:652-705).
+// (edit.rs).
 func (d *Document) prepareInsertSection(documentRef document.NodeRef, name string,
 	placement AssociationPlacement) (*preparedEdit, *EditFailure) {
 	if failure := d.resolveDocument(documentRef); failure != nil {
@@ -973,7 +973,7 @@ func (d *Document) prepareInsertSection(documentRef document.NodeRef, name strin
 }
 
 // prepareRemoveSection prepares one section removal including its owned
-// entries (edit.rs:707-739).
+// entries (edit.rs).
 func (d *Document) prepareRemoveSection(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	section, failure := d.resolveSection(target)
 	if failure != nil {
@@ -1003,7 +1003,7 @@ func (d *Document) prepareRemoveSection(target document.NodeRef) ([]preparedEdit
 }
 
 // prepareRenameSection prepares one exact section-name replacement
-// (edit.rs:741-760).
+// (edit.rs).
 func (d *Document) prepareRenameSection(target document.NodeRef,
 	name string) (*preparedEdit, *EditFailure) {
 	section, failure := d.resolveSection(target)
@@ -1030,7 +1030,7 @@ func (d *Document) prepareRenameSection(target document.NodeRef,
 }
 
 // prepareInsertEntry prepares one canonical entry insertion
-// (edit.rs:762-827).
+// (edit.rs).
 func (d *Document) prepareInsertEntry(section document.NodeRef, key, value string,
 	placement AssociationPlacement) (*preparedEdit, *EditFailure) {
 	if _, failure := d.resolveSection(section); failure != nil {
@@ -1105,7 +1105,7 @@ func (d *Document) prepareInsertEntry(section document.NodeRef, key, value strin
 	}, nil
 }
 
-// prepareRemoveEntry prepares one exact entry removal (edit.rs:829-840).
+// prepareRemoveEntry prepares one exact entry removal (edit.rs).
 func (d *Document) prepareRemoveEntry(target document.NodeRef) ([]preparedEdit, *EditFailure) {
 	entry, failure := d.resolveEntry(target)
 	if failure != nil {
@@ -1123,7 +1123,7 @@ func (d *Document) prepareRemoveEntry(target document.NodeRef) ([]preparedEdit, 
 }
 
 // prepareRenameEntry prepares one exact entry-key replacement
-// (edit.rs:841-861).
+// (edit.rs).
 func (d *Document) prepareRenameEntry(target document.NodeRef,
 	key string) (*preparedEdit, *EditFailure) {
 	entry, failure := d.resolveEntry(target)
@@ -1150,7 +1150,7 @@ func (d *Document) prepareRenameEntry(target document.NodeRef,
 }
 
 // semanticValue computes one semantic replacement under the policy
-// (edit.rs:1228-1259).
+// (edit.rs).
 func (d *Document) semanticValue(entry *IniEntry, value string, policy RepresentationPolicy,
 	diagnostics *[]*protocol.Diagnostic) ([]byte, *EditFailure) {
 	if policy == RepresentationPolicyExactLiteral {
@@ -1178,7 +1178,7 @@ func (d *Document) semanticValue(entry *IniEntry, value string, policy Represent
 }
 
 // preservedValue retains the compatible quote or multiline representation
-// (edit.rs:1261-1284).
+// (edit.rs).
 func (d *Document) preservedValue(entry *IniEntry, value string) ([]byte, *EditFailure) {
 	switch {
 	case d.profile.isPortable():
@@ -1204,7 +1204,7 @@ func (d *Document) preservedValue(entry *IniEntry, value string) ([]byte, *EditF
 }
 
 // canonicalValue renders the frozen canonical value representation
-// (edit.rs:1286-1303).
+// (edit.rs).
 func (d *Document) canonicalValue(entry *IniEntry, value string) ([]byte, *EditFailure) {
 	switch {
 	case d.profile.isPortable():
@@ -1224,7 +1224,7 @@ func (d *Document) canonicalValue(entry *IniEntry, value string) ([]byte, *EditF
 }
 
 // preservedPythonValue retains the exact multiline representation when the
-// new value has the same line structure (edit.rs:1305-1385).
+// new value has the same line structure (edit.rs).
 func (d *Document) preservedPythonValue(entry *IniEntry, value string) ([]byte, *EditFailure) {
 	logical, ok := d.LogicalLine(entry.logicalLine)
 	if !ok {
@@ -1288,7 +1288,7 @@ func (d *Document) preservedPythonValue(entry *IniEntry, value string) ([]byte, 
 }
 
 // canonicalPythonValue renders the canonical multiline value with the
-// original base indentation (edit.rs:1387-1430).
+// original base indentation (edit.rs).
 func (d *Document) canonicalPythonValue(entry *IniEntry, value string) ([]byte, *EditFailure) {
 	logical, ok := d.LogicalLine(entry.logicalLine)
 	if !ok {
@@ -1330,7 +1330,7 @@ func (d *Document) canonicalPythonValue(entry *IniEntry, value string) ([]byte, 
 }
 
 // encodeValue encodes one replacement fragment into the base source
-// encoding (edit.rs:1432-1443).
+// encoding (edit.rs).
 func (d *Document) encodeValue(value string) ([]byte, *EditFailure) {
 	bytes, failure := encodeFragment(value, d.source.EncodingFacts().Selected(),
 		d.limits.Common.MaxSourceBytes)
@@ -1348,7 +1348,7 @@ func (d *Document) encodeValue(value string) ([]byte, *EditFailure) {
 }
 
 // valueOwnership returns the exact value ownership span of one entry
-// (edit.rs:1445-1475).
+// (edit.rs).
 func (d *Document) valueOwnership(entry *IniEntry) (document.Span, *EditFailure) {
 	var start, end int
 	switch {
@@ -1383,7 +1383,7 @@ func (d *Document) valueOwnership(entry *IniEntry) (document.Span, *EditFailure)
 }
 
 // entryRecordSpan returns the complete record span of one entry
-// (edit.rs:1477-1494).
+// (edit.rs).
 func (d *Document) entryRecordSpan(entry *IniEntry) (document.Span, *EditFailure) {
 	logical, ok := d.LogicalLine(entry.logicalLine)
 	if !ok {
@@ -1408,7 +1408,7 @@ func (d *Document) entryRecordSpan(entry *IniEntry) (document.Span, *EditFailure
 	return span, nil
 }
 
-// validateSectionName validates one new section name (edit.rs:950-969).
+// validateSectionName validates one new section name (edit.rs).
 func (d *Document) validateSectionName(name string) *EditFailure {
 	valid := false
 	switch {
@@ -1426,7 +1426,7 @@ func (d *Document) validateSectionName(name string) *EditFailure {
 }
 
 // validateSectionCollision rejects strict-profile section collisions
-// (edit.rs:972-987).
+// (edit.rs).
 func (d *Document) validateSectionCollision(name string, except *document.NodeRef) *EditFailure {
 	if d.profile.isWindows() {
 		return nil
@@ -1443,7 +1443,7 @@ func (d *Document) validateSectionCollision(name string, except *document.NodeRe
 	return nil
 }
 
-// validateEntryKey validates one new entry key (edit.rs:1016-1040).
+// validateEntryKey validates one new entry key (edit.rs).
 func (d *Document) validateEntryKey(key string) *EditFailure {
 	valid := false
 	switch {
@@ -1463,7 +1463,7 @@ func (d *Document) validateEntryKey(key string) *EditFailure {
 }
 
 // validateEntryCollision rejects strict-profile entry collisions
-// (edit.rs:1042-1069).
+// (edit.rs).
 func (d *Document) validateEntryCollision(section document.NodeRef, key string,
 	except *document.NodeRef) *EditFailure {
 	if d.profile.isWindows() {
@@ -1491,7 +1491,7 @@ func (d *Document) validateEntryCollision(section document.NodeRef, key string,
 	return nil
 }
 
-// resolveDocument resolves the document root target (edit.rs:922-932).
+// resolveDocument resolves the document root target (edit.rs).
 func (d *Document) resolveDocument(target document.NodeRef) *EditFailure {
 	if target.Snapshot() != d.SnapshotIdentity() {
 		return &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1506,7 +1506,7 @@ func (d *Document) resolveDocument(target document.NodeRef) *EditFailure {
 }
 
 // resolveSection resolves one section/default-section target
-// (edit.rs:934-948).
+// (edit.rs).
 func (d *Document) resolveSection(target document.NodeRef) (*IniSection, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1522,7 +1522,7 @@ func (d *Document) resolveSection(target document.NodeRef) (*IniSection, *EditFa
 	return nil, &EditFailure{Kind: EditFailureTargetNotFound}
 }
 
-// resolveEntry resolves one entry target (edit.rs:989-1000).
+// resolveEntry resolves one entry target (edit.rs).
 func (d *Document) resolveEntry(target document.NodeRef) (*IniEntry, *EditFailure) {
 	if target.Snapshot() != d.SnapshotIdentity() {
 		return nil, &EditFailure{Kind: EditFailureWrongSnapshot}
@@ -1539,7 +1539,7 @@ func (d *Document) resolveEntry(target document.NodeRef) (*IniEntry, *EditFailur
 }
 
 // resolveEntryInSection resolves one entry placement anchor within its
-// declared section (edit.rs:1002-1014).
+// declared section (edit.rs).
 func (d *Document) resolveEntryInSection(target document.NodeRef, section document.NodeRef,
 	entries []*IniEntry) (*IniEntry, *EditFailure) {
 	if _, failure := d.resolveEntry(target); failure != nil {
@@ -1554,7 +1554,7 @@ func (d *Document) resolveEntryInSection(target document.NodeRef, section docume
 }
 
 // entryLineStart returns the raw start byte of one entry's record
-// (edit.rs:1071-1078).
+// (edit.rs).
 func (d *Document) entryLineStart(entry *IniEntry) (int, *EditFailure) {
 	logical, ok := d.LogicalLine(entry.logicalLine)
 	if !ok {
@@ -1572,7 +1572,7 @@ func (d *Document) entryLineStart(entry *IniEntry) (int, *EditFailure) {
 }
 
 // entryLineEnd returns the raw end byte of one entry's record
-// (edit.rs:1080-1087).
+// (edit.rs).
 func (d *Document) entryLineEnd(entry *IniEntry) (int, *EditFailure) {
 	logical, ok := d.LogicalLine(entry.logicalLine)
 	if !ok {
@@ -1590,7 +1590,7 @@ func (d *Document) entryLineEnd(entry *IniEntry) (int, *EditFailure) {
 }
 
 // sectionLineStart returns the raw start byte of one section header record
-// (edit.rs:1169-1176).
+// (edit.rs).
 func (d *Document) sectionLineStart(section *IniSection) (int, *EditFailure) {
 	logical, ok := d.LogicalLine(section.logicalLine)
 	if !ok {
@@ -1608,7 +1608,7 @@ func (d *Document) sectionLineStart(section *IniSection) (int, *EditFailure) {
 }
 
 // sectionContentEnd returns the raw insertion end of one section
-// (edit.rs:1089-1099).
+// (edit.rs).
 func (d *Document) sectionContentEnd(target document.NodeRef) (int, *EditFailure) {
 	ordinal := -1
 	for index := range d.sections {
@@ -1627,7 +1627,7 @@ func (d *Document) sectionContentEnd(target document.NodeRef) (int, *EditFailure
 }
 
 // canonicalEntryText renders one canonical entry line with its profile
-// newline (edit.rs:1101-1167).
+// newline (edit.rs).
 func (d *Document) canonicalEntryText(key, value string) (string, *EditFailure) {
 	continuationOverhead := 0
 	if d.profile.isPython() {
@@ -1681,7 +1681,7 @@ func (d *Document) canonicalEntryText(key, value string) (string, *EditFailure) 
 }
 
 // logicalPhysicalSpans returns the ordered physical spans of one logical
-// record (edit.rs:1178-1194).
+// record (edit.rs).
 func (d *Document) logicalPhysicalSpans(logical document.NodeRef) ([]document.Span, *EditFailure) {
 	record, ok := d.LogicalLine(logical)
 	if !ok {
@@ -1699,7 +1699,7 @@ func (d *Document) logicalPhysicalSpans(logical document.NodeRef) ([]document.Sp
 }
 
 // coalesceAdjacentDeletions merges contiguous deletion intervals
-// (edit.rs:1196-1226).
+// (edit.rs).
 func (d *Document) coalesceAdjacentDeletions(edits []preparedEdit) []preparedEdit {
 	var merged []preparedEdit
 	for _, edit := range edits {
@@ -1721,7 +1721,7 @@ func (d *Document) coalesceAdjacentDeletions(edits []preparedEdit) []preparedEdi
 }
 
 // pushFallbackDiagnostic records the explicit canonical fallback
-// (edit.rs:1247-1255).
+// (edit.rs).
 func (d *Document) pushFallbackDiagnostic(diagnostics *[]*protocol.Diagnostic,
 	span document.Span) {
 	diagnostic, err := protocol.NewDiagnostic("ini.edit.canonical-fallback@1",
@@ -1749,7 +1749,7 @@ func (d *Document) rawBetween(start, end int) []byte {
 	return d.source.Bytes()[start:end]
 }
 
-// validateSemanticValue checks one new semantic value (edit.rs:1518-1535).
+// validateSemanticValue checks one new semantic value (edit.rs).
 func validateSemanticValue(profile IniProfile, value string) *EditFailure {
 	valid := false
 	switch {
@@ -1779,7 +1779,7 @@ func validateSemanticValue(profile IniProfile, value string) *EditFailure {
 }
 
 // destructiveTarget returns the destructive target of one operation
-// (edit.rs:1537-1546).
+// (edit.rs).
 func destructiveTarget(operation *EditOperation) *document.NodeRef {
 	switch operation.Kind {
 	case EditOperationReplaceValue:
@@ -1791,7 +1791,7 @@ func destructiveTarget(operation *EditOperation) *document.NodeRef {
 	return nil
 }
 
-// deletionEdit builds one mergeable deletion interval (edit.rs:1548-1561).
+// deletionEdit builds one mergeable deletion interval (edit.rs).
 func deletionEdit(span document.Span, target *document.NodeRef) preparedEdit {
 	var mappings []plannedMapping
 	if target != nil {
@@ -1809,7 +1809,7 @@ func firstTarget(index int, target document.NodeRef) *document.NodeRef {
 	return nil
 }
 
-// profileNewline returns the frozen profile newline (edit.rs:1563-1568).
+// profileNewline returns the frozen profile newline (edit.rs).
 func profileNewline(profile IniProfile) string {
 	if profile.isWindows() {
 		return "\r\n"
@@ -1818,7 +1818,7 @@ func profileNewline(profile IniProfile) string {
 }
 
 // originalEncodingSelection rebuilds the parse selection from the base
-// encoding facts (edit.rs:1570-1575).
+// encoding facts (edit.rs).
 func originalEncodingSelection(document *Document) IniEncodingSelection {
 	if override := document.source.EncodingFacts().CallerOverride(); override != nil {
 		return IniEncodingExplicit(*override)
@@ -1827,7 +1827,7 @@ func originalEncodingSelection(document *Document) IniEncodingSelection {
 }
 
 // editSourcePatchLimits maps the parse limits onto the patch limits
-// (edit.rs:1592-1602).
+// (edit.rs).
 func editSourcePatchLimits(limits IniParseLimits, operationCount int) document.SourcePatchLimits {
 	return document.SourcePatchLimits{
 		Source: document.SourceLimits{
@@ -1854,7 +1854,7 @@ func editSourcePatchReplacements(source []byte,
 }
 
 // editOperationMetadata records the frozen operation identities for the
-// patch provenance (edit.rs:1604-1627).
+// patch provenance (edit.rs).
 func editOperationMetadata(tx *EditTransaction) map[string]string {
 	metadata := make(map[string]string, len(tx.operations))
 	for index := range tx.operations {
@@ -1884,7 +1884,7 @@ func editOperationMetadata(tx *EditTransaction) map[string]string {
 }
 
 // operationSummaries builds the ordered safe operation summaries
-// (edit.rs:1629-1702).
+// (edit.rs).
 func operationSummaries(tx *EditTransaction) ([]*protocol.EditOperationSummary, *EditFailure) {
 	summaries := make([]*protocol.EditOperationSummary, 0, len(tx.operations))
 	for index := range tx.operations {

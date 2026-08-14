@@ -11,7 +11,7 @@ import (
 // be an Object, every field must be declared by the schema, every declared
 // field must be present, and the fields must appear exactly in the canonical
 // order. It returns the field values in schema order
-// (consema-rs/consema-protocol/src/schema.rs:16-53).
+// (consema-rs/consema-protocol/src/schema.rs).
 func exactFields(value core.Value, expected []string, path string) ([]core.Value, error) {
 	object, ok := value.(*core.Object)
 	if !ok {
@@ -42,7 +42,7 @@ func exactFields(value core.Value, expected []string, path string) ([]core.Value
 
 // schemaFields validates a fixed-field record whose first field is the
 // schema discriminator and returns all field values
-// (consema-rs/consema-protocol/src/schema.rs:55-70).
+// (consema-rs/consema-protocol/src/schema.rs).
 func schemaFields(value core.Value, schema string, expected []string, path string) ([]core.Value, error) {
 	fields, err := exactFields(value, expected, path)
 	if err != nil {

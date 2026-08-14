@@ -6,7 +6,7 @@ import (
 )
 
 // ContentDigest is the stable SHA-256 identity of exact raw source bytes
-// (document source.rs:16-54).
+// (document source.rs).
 type ContentDigest struct {
 	bytes [32]byte
 }

@@ -268,7 +268,7 @@ type MaterializationResult struct {
 }
 
 // Materialize materializes one complete `xml.element-tree@1` record into a
-// new immutable canonical XML document (materialization.rs:36-50).
+// new immutable canonical XML document (materialization.rs).
 func Materialize(value core.Value, request document.MaterializationRequest) MaterializationResult {
 	analyzed := make([]protocol.ValuePath, 0, 16)
 	complete, failure := materializeComplete(value, request, &analyzed)
@@ -283,7 +283,7 @@ func Materialize(value core.Value, request document.MaterializationRequest) Mate
 }
 
 // materializeComplete runs the two-phase materialization
-// (materialization.rs:52-88).
+// (materialization.rs).
 func materializeComplete(value core.Value, request document.MaterializationRequest,
 	analyzed *[]protocol.ValuePath) (*CompleteMaterialization, *MaterializationFailure) {
 	if failure := validateRequest(request); failure != nil {
@@ -323,7 +323,7 @@ func materializeComplete(value core.Value, request document.MaterializationReque
 	}, nil
 }
 
-// validateRequest checks the request contract (materialization.rs:90-107).
+// validateRequest checks the request contract (materialization.rs).
 func validateRequest(request document.MaterializationRequest) *MaterializationFailure {
 	if request.TargetProfile().ID() != "xml.1.0-safe" || request.TargetProfile().Version() != 1 {
 		return &MaterializationFailure{Kind: MaterializationFailureUnsupportedProfile}
@@ -343,7 +343,7 @@ func validateRequest(request document.MaterializationRequest) *MaterializationFa
 }
 
 // parseLimitsFor derives the reparse limits from the materialization
-// limits (materialization.rs:109-140).
+// limits (materialization.rs).
 func parseLimitsFor(limits document.MaterializationLimits) XmlParseLimits {
 	return XmlParseLimits{
 		Common: document.ParseLimits{
@@ -378,7 +378,7 @@ func parseLimitsFor(limits document.MaterializationLimits) XmlParseLimits {
 }
 
 // encodeText encodes canonical UTF-8 text into the requested output
-// encoding (materialization.rs:143-172).
+// encoding (materialization.rs).
 func encodeText(text []byte, encoding document.SourceEncoding,
 	maxOutputBytes int) ([]byte, *MaterializationFailure) {
 	var output []byte
@@ -423,7 +423,7 @@ func utf16Encode(text string) []uint16 {
 }
 
 // record is the validated input record mirroring `xml.element-tree@1`
-// (materialization.rs:174-237).
+// (materialization.rs).
 type record struct {
 	declaration *declarationRecord
 	entities    []entityRecord
@@ -501,7 +501,7 @@ const (
 	fragmentRecordGeneralEntity
 )
 
-// validateRecord validates the input record (materialization.rs:238-304).
+// validateRecord validates the input record (materialization.rs).
 func validateRecord(value core.Value, analyzed *[]protocol.ValuePath) (*record, *MaterializationFailure) {
 	*analyzed = append(*analyzed, protocol.RootValuePath())
 	recordValue, failure := expectStringField(value, "record", protocol.RootValuePath())
@@ -569,7 +569,7 @@ func validateRecord(value core.Value, analyzed *[]protocol.ValuePath) (*record, 
 	return &record{declaration: declaration, entities: entities, root: root}, nil
 }
 
-// validateElementRecord validates one element record (materialization.rs:306-500).
+// validateElementRecord validates one element record (materialization.rs).
 func validateElementRecord(value core.Value, path protocol.ValuePath,
 	analyzed *[]protocol.ValuePath) (*elementRecord, *MaterializationFailure) {
 	*analyzed = append(*analyzed, path)
@@ -747,7 +747,7 @@ func validateElementRecord(value core.Value, path protocol.ValuePath,
 }
 
 // materializationWriter is the deterministic output writer
-// (materialization.rs:565-574).
+// (materialization.rs).
 type materializationWriter struct {
 	limits     document.MaterializationLimits
 	inputNodes int
@@ -758,7 +758,7 @@ type materializationWriter struct {
 	items      []inputItem
 }
 
-// inputItemKind is the closed input location category (materialization.rs:528-541).
+// inputItemKind is the closed input location category (materialization.rs).
 type inputItemKind uint8
 
 const (
@@ -798,7 +798,7 @@ func (p *materializationWriter) push(bytes []byte) *MaterializationFailure {
 }
 
 // spellingPrefix is the spelling prefix for one expanded namespace using
-// the current scope (materialization.rs:601-621).
+// the current scope (materialization.rs).
 func (p *materializationWriter) spellingPrefix(uri *string) *string {
 	if uri == nil {
 		empty := ""
@@ -825,7 +825,7 @@ func (p *materializationWriter) spellingPrefix(uri *string) *string {
 }
 
 // prefixFor is the deterministic generated-prefix assignment by
-// first-encounter order (materialization.rs:503-526).
+// first-encounter order (materialization.rs).
 func (p *materializationWriter) prefixFor(namespace string) string {
 	if namespace == XMLNamespaceURI {
 		return "xml"
@@ -897,7 +897,7 @@ func (p *materializationWriter) pushEscapedAttribute(text string) *Materializati
 }
 
 // emitDocument writes the complete canonical document
-// (materialization.rs:650-715).
+// (materialization.rs).
 func (p *materializationWriter) emitDocument(input *record,
 	request document.MaterializationRequest) *MaterializationFailure {
 	if failure := p.step(); failure != nil {
@@ -996,7 +996,7 @@ func (p *materializationWriter) emitDocument(input *record,
 	return p.push(request.Newline().Bytes())
 }
 
-// emitElement writes one element record (materialization.rs:717-899).
+// emitElement writes one element record (materialization.rs).
 func (p *materializationWriter) emitElement(element *elementRecord, depth int) *MaterializationFailure {
 	if failure := p.step(); failure != nil {
 		return failure
@@ -1221,7 +1221,7 @@ type outputItem struct {
 
 // verifyClosure walks the input record and the reparsed document in
 // lockstep, compares the promised semantics, and pairs every recorded
-// input location with its exact output origin (materialization.rs:912-1014).
+// input location with its exact output origin (materialization.rs).
 func verifyClosure(input *record, target *Document, items []inputItem,
 	limits document.MaterializationLimits) (MaterializationProvenanceMap, *MaterializationFailure) {
 	var outputs []outputItem
@@ -1331,7 +1331,7 @@ func (c *closureContext) push(node document.NodeRef, span document.Span,
 }
 
 // element walks one input element against one reparsed element
-// (materialization.rs:1040-1209).
+// (materialization.rs).
 func (c *closureContext) element(input *elementRecord, element *XmlElement) *MaterializationFailure {
 	if failure := c.push(element.NodeRef(), element.Span(), MaterializationRelationDirect); failure != nil {
 		return failure

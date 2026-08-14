@@ -695,7 +695,7 @@ func TestAccessErrors(t *testing.T) {
 
 func TestSemanticUnavailableRecovery(t *testing.T) {
 	// `{"a` forms a recovered document whose object root is complete at
-	// the node level (edit.rs:2652-2687 regression).
+	// the node level (edit.rs regression).
 	for _, profile := range []JsonProfile{JsonProfileStrictV1, JsonProfileJsoncBoundedV1,
 		JsonProfileJson5StandardV1} {
 		doc := parseForTest(t, "{\"a", profile)
@@ -707,7 +707,7 @@ func TestSemanticUnavailableRecovery(t *testing.T) {
 }
 
 func TestSyntaxKindsNeverGap(t *testing.T) {
-	// The syntax kinds and pieces must align exactly (lib.rs:705-738).
+	// The syntax kinds and pieces must align exactly (lib.rs).
 	source := "\xef\xbb\xbf // line\n{\"x\":true,/* block */\"y\":null}"
 	doc := parseForTest(t, source, JsonProfileJsoncBoundedV1)
 	if len(doc.LosslessSyntaxKinds()) != len(doc.LosslessStructuralIndex().Pieces()) {

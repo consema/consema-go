@@ -153,7 +153,7 @@ func TestCanonicalJSONResourceLimits(t *testing.T) {
 
 func TestCanonicalJSONStringEscapingIsExact(t *testing.T) {
 	// The control-character escapes match the Rust encoder
-	// (value_transport.rs:137-162).
+	// (value_transport.rs).
 	value := core.String("a\"b\\c\bd\te\nf\fc\rd\x01e")
 	bytes, err := EncodeJSON(value, DefaultProtocolLimits())
 	if err != nil {

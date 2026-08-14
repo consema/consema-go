@@ -14,7 +14,7 @@ import (
 // output (consema-rs/consema-protocol/src/value_transport.rs), generated with
 // the reference encoder itself for the exact values of the Rust
 // every_core_kind_round_trips_through_both_transports test
-// (value_transport.rs:1045-1053).
+// (value_transport.rs).
 // ---------------------------------------------------------------------------
 
 func TestFifteenKindJSONGoldenVectors(t *testing.T) {
@@ -79,7 +79,7 @@ func TestFifteenKindJSONGoldenVectors(t *testing.T) {
 
 // TestFifteenKindsRoundTripBothTransports mirrors the Rust
 // every_core_kind_round_trips_through_both_transports test
-// (consema-rs/consema-protocol/src/value_transport.rs:1045-1053): a value
+// (consema-rs/consema-protocol/src/value_transport.rs): a value
 // exercising every kind round-trips through the canonical JSON transport and
 // the PVCE transport.
 func TestFifteenKindsRoundTripBothTransports(t *testing.T) {
@@ -185,7 +185,7 @@ func TestFifteenKindsRoundTripBothTransports(t *testing.T) {
 
 // TestEncodeJSONRootNodeCountedOnce pins the fix for the root double-count:
 // the Rust encoder counts the root value exactly once
-// (value_transport.rs:175-181), so EncodeJSON(Null{}, MaxNodes:1) succeeds,
+// (value_transport.rs), so EncodeJSON(Null{}, MaxNodes:1) succeeds,
 // and a one-entry object needs two nodes.
 func TestEncodeJSONRootNodeCountedOnce(t *testing.T) {
 	limits := DefaultProtocolLimits()
@@ -218,7 +218,7 @@ func TestEncodeJSONRootNodeCountedOnce(t *testing.T) {
 // TestCanonicalJSONNumberToken drives the bare-JSON-number parse path
 // (numberToken, e.g. {"type":"Integer","value":123}): the strict parser
 // forms the number token and only then rejects it as the wrong member type,
-// exactly as the Rust decoder does (value_transport.rs:427-433).
+// exactly as the Rust decoder does (value_transport.rs).
 func TestCanonicalJSONNumberToken(t *testing.T) {
 	limits := DefaultProtocolLimits()
 	// A bare number where a JSON string is required is WrongType, not a
@@ -287,7 +287,7 @@ func TestUnicodeEscapeSurrogatePairs(t *testing.T) {
 	// A valid surrogate pair (😀) decodes to the scalar, but the
 	// canonical byte form emits the raw UTF-8 text, so the escaped input is
 	// valid but non-canonical (the Rust re-encode canonicality check,
-	// value_transport.rs:66-73).
+	// value_transport.rs).
 	if _, err := DecodeJSON([]byte(escape(`"`+"\\ud83d\\ude00"+`"`)), limits); err == nil || protocolCode(err) != "core.protocol.non-canonical-json@1" {
 		t.Errorf("valid surrogate pair: got %v", err)
 	}
@@ -354,7 +354,7 @@ func TestNewKindJSONDecodeRejections(t *testing.T) {
 		})
 	}
 	// Bytes payloads beyond MaxBlobBytes are a ResourceLimit (the Rust
-	// parse_hex_bytes, value_transport.rs:837-856).
+	// parse_hex_bytes, value_transport.rs).
 	limited := DefaultProtocolLimits()
 	limited.MaxBlobBytes = 2
 	bigBytes := `{"schema":"core.portable-value-json@1","value":{"type":"Bytes","hex":"ffffff"}}`

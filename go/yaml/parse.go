@@ -5,7 +5,7 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// Parse forms one exact YAML stream snapshot (consema-yaml lib.rs:259-320).
+// Parse forms one exact YAML stream snapshot (consema-yaml lib.rs).
 // The source contract is explicit: UTF-8 with or without BOM, or
 // BOM-detected UTF-16LE/UTF-16BE; no BOM means UTF-8. The profile is
 // selected explicitly and never guessed. Syntax, directive, tag, scalar,

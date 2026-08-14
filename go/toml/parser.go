@@ -11,7 +11,7 @@ import (
 )
 
 // Parse forms one complete immutable TOML 1.0 document snapshot
-// (consema-toml parser.rs:17-63; RFC 0001 §3). The formation order is:
+// (consema-toml parser.rs; RFC 0001 §3). The formation order is:
 // max_source_bytes, UTF-8 validation, tokenization
 // (max_token_count), delimiter preflight (max_nesting_depth), the full
 // TOML 1.0 grammar, and entity construction (max_node_count,
@@ -68,7 +68,7 @@ func Parse(source []byte, profile TomlProfile, limits document.ParseLimits) (*Do
 }
 
 // sourceFailure maps a SourceSnapshot construction failure onto the frozen
-// fatal diagnostic (consema-document lib.rs:655-767).
+// fatal diagnostic (consema-document lib.rs).
 func sourceFailure(err error) *FormationFailure {
 	sourceError, ok := err.(*document.SourceError)
 	if !ok {
@@ -108,7 +108,7 @@ type spanRange struct {
 }
 
 // tokenize produces the exhaustive lossless pieces and syntax kinds
-// (consema-toml parser.rs:360-431). The tokenizer is byte-mechanical and
+// (consema-toml parser.rs). The tokenizer is byte-mechanical and
 // never fails except for max_token_count; the semantic parser validates
 // the grammar.
 func tokenize(text string, authority *document.DocumentAuthority,
@@ -206,7 +206,7 @@ func isASCIIWhitespace(byte byte) bool {
 }
 
 // tokenizerStringEnd scans a string token from its opening quote
-// (consema-toml parser.rs:480-499): escapes skip two bytes, and triple
+// (consema-toml parser.rs): escapes skip two bytes, and triple
 // quotes close on three consecutive quotes.
 func tokenizerStringEnd(bytes []byte, start int) int {
 	quote := bytes[start]
@@ -237,7 +237,7 @@ func tokenizerStringEnd(bytes []byte, start int) int {
 }
 
 // preflightDelimiterNesting counts `[` and `{` tokens before the semantic
-// parse (consema-toml parser.rs:433-461).
+// parse (consema-toml parser.rs).
 func preflightDelimiterNesting(text string, pieces []StructuralPiece, maxDepth int) *FormationFailure {
 	depth := 0
 	for _, piece := range pieces {
@@ -1732,7 +1732,7 @@ func (p *parser) descendInlinePath(table *pTable, path []keyPart) (*pTable, erro
 }
 
 // entityBuilder constructs the immutable entity list in the exact Rust
-// order (consema-toml parser.rs:84-337) and enforces max_node_count and
+// order (consema-toml parser.rs) and enforces max_node_count and
 // max_nesting_depth.
 type entityBuilder struct {
 	authority *document.DocumentAuthority

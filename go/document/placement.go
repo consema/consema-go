@@ -1,7 +1,7 @@
 package document
 
 // PlacementKind is the closed placement category of one association
-// insertion (consema-document lib.rs:261-272 AssociationPlacement).
+// insertion (consema-document lib.rs AssociationPlacement).
 type PlacementKind uint8
 
 // The four frozen placements.

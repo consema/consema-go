@@ -4,7 +4,7 @@ package conformance
 // deliverable "全操作补齐（query/projection/materialization/edit 闭包）").
 //
 // The five delivered families publish frozen per-profile operation
-// registries (RFC 0015 §6.2; consema-document operation_registry.rs:234):
+// registries (RFC 0015 §6.2; consema-document operation_registry.rs):
 // json 8, toml 7, yaml 8, ini 8, java-properties 5. This test verifies
 // that every registered operation ID is actually executable through the
 // family's public edit API: each row parses a small document, applies the

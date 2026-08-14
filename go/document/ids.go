@@ -1,7 +1,7 @@
 package document
 
 // FormatFamilyId is a stable namespaced format family contract (document
-// lib.rs:344-372).
+// lib.rs).
 type FormatFamilyId struct {
 	id      string
 	version uint32
@@ -19,7 +19,7 @@ func (f FormatFamilyId) ID() string { return f.id }
 func (f FormatFamilyId) Version() uint32 { return f.version }
 
 // ProfileId is an immutable named language profile (document
-// lib.rs:374-402).
+// lib.rs).
 type ProfileId struct {
 	id      string
 	version uint32
@@ -37,7 +37,7 @@ func (p ProfileId) ID() string { return p.id }
 func (p ProfileId) Version() uint32 { return p.version }
 
 // MaterializationStyleId is a versioned format-owned materialization style
-// identifier (materialization.rs:11-39).
+// identifier (materialization.rs).
 type MaterializationStyleId struct {
 	id      string
 	version uint32
@@ -81,7 +81,7 @@ func (p NewlinePolicy) Bytes() []byte {
 }
 
 // MappingPolicy is the explicit treatment of ordered mappings at
-// object-only targets (materialization.rs:64-72).
+// object-only targets (materialization.rs).
 type MappingPolicy string
 
 // The two frozen ordered-mapping policies.
@@ -94,7 +94,7 @@ const (
 )
 
 // RepresentabilityPolicy is the closed v1 representability policy
-// (materialization.rs:73-79).
+// (materialization.rs).
 type RepresentabilityPolicy string
 
 // The frozen v1 representability policy.

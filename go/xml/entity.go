@@ -8,7 +8,7 @@ package xml
 // behavior. Expansion is guarded before and during allocation across the
 // whole document, not independently per reference.
 
-// PredefinedEntity is one predefined XML entity (entity.rs:9-16).
+// PredefinedEntity is one predefined XML entity (entity.rs).
 type PredefinedEntity struct {
 	// Name is the entity name without the `&` and `;`.
 	Name string
@@ -17,7 +17,7 @@ type PredefinedEntity struct {
 }
 
 // PredefinedEntities are the five predefined entities, always available
-// with their XML meanings (entity.rs:19-40).
+// with their XML meanings (entity.rs).
 var PredefinedEntities = []PredefinedEntity{
 	{Name: "lt", Value: "<"},
 	{Name: "gt", Value: ">"},
@@ -27,7 +27,7 @@ var PredefinedEntities = []PredefinedEntity{
 }
 
 // PredefinedValue returns the replacement value of a predefined entity by
-// exact name (entity.rs:44-49).
+// exact name (entity.rs).
 func PredefinedValue(name string) (string, bool) {
 	for _, entity := range PredefinedEntities {
 		if entity.Name == name {
@@ -37,7 +37,7 @@ func PredefinedValue(name string) (string, bool) {
 	return "", false
 }
 
-// IsXMLChar reports whether c is a legal XML 1.0 character (entity.rs:52-59).
+// IsXMLChar reports whether c is a legal XML 1.0 character (entity.rs).
 func IsXMLChar(c rune) bool {
 	switch value := uint32(c); {
 	case value == 0x09 || value == 0x0A || value == 0x0D:
@@ -53,7 +53,7 @@ func IsXMLChar(c rune) bool {
 }
 
 // ReplacementErrorKind classifies a replacement-text validation failure
-// (entity.rs:61-72).
+// (entity.rs).
 type ReplacementErrorKind uint8
 
 // The closed replacement failure classes.
@@ -86,7 +86,7 @@ func (e *ReplacementError) Error() string {
 }
 
 // replacementCode maps one replacement-text failure to its stable
-// diagnostic code (parser.rs:783-794).
+// diagnostic code (parser.rs).
 func replacementCode(err *ReplacementError) string {
 	switch err.Kind {
 	case ReplacementErrorContainsMarkup:
@@ -98,11 +98,11 @@ func replacementCode(err *ReplacementError) string {
 }
 
 // Code returns the stable family code of the failure (RFC 0016 §6;
-// parser.rs:783-794).
+// parser.rs).
 func (e *ReplacementError) Code() string { return replacementCode(e) }
 
 // ValidateReplacementText validates one internal general entity value
-// (entity.rs:74-89). An admitted value may contain character data,
+// (entity.rs). An admitted value may contain character data,
 // character references, predefined entity references, or references to
 // another admitted internal general entity, but never `<`.
 func ValidateReplacementText(text string) *ReplacementError {
@@ -120,7 +120,7 @@ func ValidateReplacementText(text string) *ReplacementError {
 }
 
 // ExpansionBreachKind is an entity expansion breach category
-// (entity.rs:91-106).
+// (entity.rs).
 type ExpansionBreachKind uint8
 
 // The closed breach categories.
@@ -149,7 +149,7 @@ type ExpansionBreach struct {
 }
 
 // EntityExpansionLimits are the entity expansion limits derived from
-// XmlParseLimits (entity.rs:108-123).
+// XmlParseLimits (entity.rs).
 type EntityExpansionLimits struct {
 	// MaxDeclarations is the maximum entity declarations.
 	MaxDeclarations int
@@ -169,7 +169,7 @@ type EntityExpansionLimits struct {
 }
 
 // EntityExpansionState is the document-wide entity expansion accounting
-// (entity.rs:125-145). Counters apply across the whole document, not
+// (entity.rs). Counters apply across the whole document, not
 // independently per reference, so an attack cannot split its budget across
 // references.
 type EntityExpansionState struct {
@@ -196,7 +196,7 @@ func NewEntityExpansionState() EntityExpansionState {
 }
 
 // RecordDeclaration records one collected declaration with its replacement
-// text size (entity.rs:147-168).
+// text size (entity.rs).
 func (s *EntityExpansionState) RecordDeclaration(replacementBytes, replacementScalars int,
 	limits EntityExpansionLimits) *ExpansionBreach {
 	if s.Declarations >= limits.MaxDeclarations {
@@ -209,7 +209,7 @@ func (s *EntityExpansionState) RecordDeclaration(replacementBytes, replacementSc
 }
 
 // EnterReference enters one reference expansion and accounts its resolved
-// size (entity.rs:170-197).
+// size (entity.rs).
 func (s *EntityExpansionState) EnterReference(expandedBytes, expandedScalars int,
 	limits EntityExpansionLimits) *ExpansionBreach {
 	if s.References >= limits.MaxReferences {
@@ -235,7 +235,7 @@ func (s *EntityExpansionState) EnterReference(expandedBytes, expandedScalars int
 }
 
 // LeaveReference leaves one completed reference expansion
-// (entity.rs:199-202).
+// (entity.rs).
 func (s *EntityExpansionState) LeaveReference() {
 	if s.ExpansionDepth > 0 {
 		s.ExpansionDepth--

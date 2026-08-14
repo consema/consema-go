@@ -21,7 +21,7 @@ import (
 // carries Bytes leaves (replacement original/replacement content). The
 // fifteen-kind Go value model expresses Bytes (RFC 0016 §4.1), and both
 // codec paths carry replacement records with full byte fidelity, exactly as
-// the Rust value-level codec does (source.rs:328-357):
+// the Rust value-level codec does (source.rs):
 //
 //   - FromJSON/ToJSON operate on the strict canonical JSON tree: replacement
 //     bytes travel as hex, exactly as the Rust transport carries them. This
@@ -68,7 +68,7 @@ func ParseCliCommand(name string) (CliCommand, bool) {
 }
 
 // PayloadSchemas returns the payload schemas the command may carry
-// (RFC 0015 §6.1 table; cli.rs:92-115).
+// (RFC 0015 §6.1 table; cli.rs).
 func (c CliCommand) PayloadSchemas() []string {
 	switch c {
 	case CommandInspect:
@@ -100,7 +100,7 @@ func (c CliCommand) PayloadSchemas() []string {
 }
 
 // Redaction carries the envelope redaction facts (RFC 0015 §11.3;
-// cli.rs:117-147).
+// cli.rs).
 type Redaction struct {
 	redacted bool
 	count    uint64
@@ -122,7 +122,7 @@ func (r *Redaction) Redacted() bool { return r.redacted }
 func (r *Redaction) Count() uint64 { return r.count }
 
 // ContentDigest is the stable SHA-256 identity of exact raw source bytes
-// (consema-document/src/source.rs:16-50). The document milestone (G1.1)
+// (consema-document/src/source.rs). The document milestone (G1.1)
 // owns the full source model; this is the wire-form digest used by the CLI
 // records.
 type ContentDigest struct {
@@ -161,7 +161,7 @@ func (d ContentDigest) Hex() string {
 func (d ContentDigest) Equal(other ContentDigest) bool { return d.bytes == other.bytes }
 
 // FormatOperationId is a stable format-operation contract identity
-// (consema-document operation_registry.rs:10-29).
+// (consema-document operation_registry.rs).
 type FormatOperationId struct {
 	id      string
 	version uint32
@@ -179,7 +179,7 @@ func (o *FormatOperationId) ID() string { return o.id }
 func (o *FormatOperationId) Version() uint32 { return o.version }
 
 // EditOperationSummary is one safe, content-free summary of a declared edit
-// operation (consema-document edit_plan.rs:35-75). Summary values must not
+// operation (consema-document edit_plan.rs). Summary values must not
 // contain raw edited values.
 type EditOperationSummary struct {
 	// Operation is the exact immutable operation ID/version.
@@ -215,7 +215,7 @@ func validSummaryName(name string) bool {
 }
 
 // SourceEncoding is the wire form of one core.source-encoding@1 record
-// (protocol/src/source.rs:497-514): the kind spelling and the optional
+// (protocol/src/source.rs): the kind spelling and the optional
 // Windows code page.
 type SourceEncoding struct {
 	// Kind is the frozen kind spelling: Binary, Utf8, Utf16Le, Utf16Be,
@@ -226,7 +226,7 @@ type SourceEncoding struct {
 }
 
 // EncodingFacts is the source-patch@2 encoding facts record
-// (protocol/src/source.rs:598-631). The semantic consistency checks of the
+// (protocol/src/source.rs). The semantic consistency checks of the
 // facts (BOM policy, code-page registration, selected-encoding
 // reconciliation) belong to the document milestone; this package validates
 // the record structure and carries the facts.
@@ -247,7 +247,7 @@ type EncodingFacts struct {
 }
 
 // SourceReplacement is one structural replacement of a wire source patch
-// (consema-document source_patch.rs:31-90).
+// (consema-document source_patch.rs).
 type SourceReplacement struct {
 	// OldStart is the inclusive start offset of the replaced range.
 	OldStart uint64
@@ -266,7 +266,7 @@ type SourceReplacement struct {
 }
 
 // SourcePatch is the wire form of a source patch (core.source-patch@2
-// record; protocol/src/source.rs:222-238, 323-371). The document milestone
+// record; protocol/src/source.rs). The document milestone
 // (G1.1) owns the applied patch type; this package carries the transferable
 // verification facts so the batch-plan record can round-trip them.
 type SourcePatch struct {
@@ -283,7 +283,7 @@ type SourcePatch struct {
 }
 
 // BatchPlanFileStatus is one file-level status in a core.batch-plan@1
-// manifest (RFC 0015 §8.2; cli.rs:366-374).
+// manifest (RFC 0015 §8.2; cli.rs).
 type BatchPlanFileStatus string
 
 const (
@@ -296,7 +296,7 @@ const (
 )
 
 // BatchPlanFileEntry is one file entry of a core.batch-plan@1 manifest
-// (cli.rs:376-541).
+// (cli.rs).
 type BatchPlanFileEntry struct {
 	path         string
 	status       BatchPlanFileStatus
@@ -310,7 +310,7 @@ type BatchPlanFileEntry struct {
 
 // NewBatchPlanFileEntry validates the per-status presence rules and the
 // `source_digest == source_patch.base_digest` cross constraint
-// (cli.rs:389-492).
+// (cli.rs).
 func NewBatchPlanFileEntry(path string, status BatchPlanFileStatus,
 	profile *ProfileReference, sourceDigest *ContentDigest,
 	operations []*EditOperationSummary, sourcePatch *SourcePatch,
@@ -354,7 +354,7 @@ func NewBatchPlanFileEntry(path string, status BatchPlanFileStatus,
 	for index, diagnostic := range diagnostics {
 		// The registry binding check mirrors the Rust
 		// DiagnosticMessage::from_value_with_registry re-validation
-		// (cli.rs:470-481); both codecs carry fix replacement bytes, so the
+		// (cli.rs); both codecs carry fix replacement bytes, so the
 		// binding check is the code/category rule directly.
 		if err := validateDiagnosticCode(diagnostic.Code, diagnostic.Category, registry); err != nil {
 			return nil, &ProtocolError{
@@ -406,7 +406,7 @@ func (e *BatchPlanFileEntry) Diagnostics() []*Diagnostic {
 }
 
 // BatchPlanMessage is the full core.batch-plan@1 manifest (RFC 0015 §8;
-// cli.rs:543-641).
+// cli.rs).
 type BatchPlanMessage struct {
 	productVersion string
 	files          []*BatchPlanFileEntry
@@ -466,7 +466,7 @@ func (m *BatchPlanMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes core.batch-plan@1 under the semantic-model v7
-// error registry (cli.rs:610-640).
+// error registry (cli.rs).
 func (m *BatchPlanMessage) FromValue(value core.Value) (*BatchPlanMessage, error) {
 	return m.fromValueWithRegistry(value, NewErrorCodeRegistry(ErrorRegistryV7), DefaultSourcePatchLimits())
 }
@@ -574,7 +574,7 @@ func (m *BatchPlanMessage) FromPVCE(bytes []byte, limits ProtocolLimits) (*Batch
 }
 
 // BatchResultFileStatus is one file-level status in a core.batch-result@1
-// manifest (RFC 0015 §9.2; cli.rs:643-655).
+// manifest (RFC 0015 §9.2; cli.rs).
 type BatchResultFileStatus string
 
 const (
@@ -592,7 +592,7 @@ const (
 )
 
 // BatchResultFileEntry is one result entry of a core.batch-result@1
-// manifest (cli.rs:656-743).
+// manifest (cli.rs).
 type BatchResultFileEntry struct {
 	path         string
 	status       BatchResultFileStatus
@@ -602,7 +602,7 @@ type BatchResultFileEntry struct {
 }
 
 // NewBatchResultFileEntry validates the per-status presence rules and the
-// closed status set (cli.rs:666-712).
+// closed status set (cli.rs).
 func NewBatchResultFileEntry(path string, status BatchResultFileStatus,
 	failureCode *string, targetDigest *ContentDigest, redacted bool) (*BatchResultFileEntry, error) {
 	if path == "" || len(path) > 1024 {
@@ -653,7 +653,7 @@ func (e *BatchResultFileEntry) TargetDigest() *ContentDigest { return e.targetDi
 func (e *BatchResultFileEntry) Redacted() bool { return e.redacted }
 
 // BatchResultMessage is the full core.batch-result@1 manifest (RFC 0015 §9;
-// cli.rs:745-822).
+// cli.rs).
 type BatchResultMessage struct {
 	productVersion string
 	files          []*BatchResultFileEntry
@@ -690,7 +690,7 @@ func (m *BatchResultMessage) ToValue() (core.Value, error) {
 	)
 }
 
-// FromValue strictly decodes core.batch-result@1 (cli.rs:801-821).
+// FromValue strictly decodes core.batch-result@1 (cli.rs).
 func (m *BatchResultMessage) FromValue(value core.Value) (*BatchResultMessage, error) {
 	fields, err := schemaFields(value, "core.batch-result@1",
 		[]string{"schema", "product_version", "command", "files"}, "$")
@@ -762,7 +762,7 @@ func (m *BatchResultMessage) FromPVCE(bytes []byte, limits ProtocolLimits) (*Bat
 }
 
 // CliOutputMessage is the full core.cli-output@1 machine envelope
-// (RFC 0015 §4; cli.rs:149-364).
+// (RFC 0015 §4; cli.rs).
 type CliOutputMessage struct {
 	command        CliCommand
 	exitClass      ExitClass
@@ -774,7 +774,7 @@ type CliOutputMessage struct {
 
 // NewCliOutputMessage validates command/exit-class closure, product-version
 // shape, payload schema consistency, diagnostic registry binding, and
-// redaction facts (cli.rs:160-220).
+// redaction facts (cli.rs).
 func NewCliOutputMessage(command CliCommand, exitClass ExitClass,
 	productVersion string, payload core.Value, diagnostics []*Diagnostic,
 	redaction *Redaction) (*CliOutputMessage, error) {
@@ -869,7 +869,7 @@ func (m *CliOutputMessage) ToValue() (core.Value, error) {
 }
 
 // FromValue strictly decodes core.cli-output@1 under the semantic-model v7
-// error registry (cli.rs:288-343).
+// error registry (cli.rs).
 func (m *CliOutputMessage) FromValue(value core.Value) (*CliOutputMessage, error) {
 	return m.fromValueWithRegistry(value, NewErrorCodeRegistry(ErrorRegistryV7))
 }
@@ -985,7 +985,7 @@ func (m *CliOutputMessage) FromPVCE(bytes []byte, limits ProtocolLimits) (*CliOu
 
 // validatePayloadSchema requires the payload to be an Object whose first
 // field is "schema" carrying one of the command's published schemas
-// (cli.rs:824-868).
+// (cli.rs).
 func validatePayloadSchema(payload core.Value, command CliCommand) error {
 	object, ok := payload.(*core.Object)
 	if !ok {
@@ -1010,7 +1010,7 @@ func validatePayloadSchema(payload core.Value, command CliCommand) error {
 }
 
 // isSemanticVersion validates the SemVer 2.0 core shape of a product version
-// (RFC 0015 §3.3, 2026-08-10 revision; cli.rs:870-929): MAJOR.MINOR.PATCH
+// (RFC 0015 §3.3, 2026-08-10 revision; cli.rs): MAJOR.MINOR.PATCH
 // with an optional dot-separated -prerelease suffix; numeric segments and
 // numeric prerelease identifiers carry no leading zeros; build metadata ('+'
 // suffix) is rejected (product_version never carries build metadata or git
@@ -1100,7 +1100,7 @@ func prereleaseIdentifier(identifier string) bool {
 }
 
 // revalidatePlanEntry re-verifies the entry-level cross constraints of a
-// manifest (cli.rs:887-938).
+// manifest (cli.rs).
 func revalidatePlanEntry(entry *BatchPlanFileEntry, index int, registry ErrorCodeRegistry) (*BatchPlanFileEntry, error) {
 	path := "$.files[" + uint32String(uint32(index)) + "]"
 	switch entry.status {
@@ -1131,7 +1131,7 @@ func revalidatePlanEntry(entry *BatchPlanFileEntry, index int, registry ErrorCod
 }
 
 // planEntryValue encodes one plan entry as a PortableValue tree
-// (cli.rs:940-1020). Source-patch replacement records travel as Bytes
+// (cli.rs). Source-patch replacement records travel as Bytes
 // leaves with full fidelity.
 func planEntryValue(entry *BatchPlanFileEntry, index int) (core.Value, error) {
 	var profile core.Value = core.NullValue()
@@ -1206,7 +1206,7 @@ func planEntryValue(entry *BatchPlanFileEntry, index int) (core.Value, error) {
 }
 
 // parsePlanEntry strictly decodes one plan entry at the value level
-// (cli.rs:1022-1135).
+// (cli.rs).
 func parsePlanEntry(value core.Value, index int, registry ErrorCodeRegistry,
 	patchLimits SourcePatchLimits) (*BatchPlanFileEntry, error) {
 	path := "$.files[" + uint32String(uint32(index)) + "]"
@@ -1317,7 +1317,7 @@ func parsePlanEntry(value core.Value, index int, registry ErrorCodeRegistry,
 		sourcePatch, failureCode, diagnostics, registry)
 }
 
-// resultEntryValue encodes one result entry (cli.rs:1137-1164).
+// resultEntryValue encodes one result entry (cli.rs).
 func resultEntryValue(entry *BatchResultFileEntry) core.Value {
 	var failureCode core.Value = core.NullValue()
 	if entry.failureCode != nil {
@@ -1336,7 +1336,7 @@ func resultEntryValue(entry *BatchResultFileEntry) core.Value {
 	)
 }
 
-// parseResultEntry strictly decodes one result entry (cli.rs:1166-1210).
+// parseResultEntry strictly decodes one result entry (cli.rs).
 func parseResultEntry(value core.Value, path string) (*BatchResultFileEntry, error) {
 	fields, err := exactFields(value,
 		[]string{"path", "status", "failure_code", "target_digest", "redacted"}, path)
@@ -1387,7 +1387,7 @@ func parseResultEntry(value core.Value, path string) (*BatchResultFileEntry, err
 	return NewBatchResultFileEntry(pathText, status, failureCode, targetDigest, redacted)
 }
 
-// digestValue encodes one digest record (cli.rs:1222-1227).
+// digestValue encodes one digest record (cli.rs).
 func digestValue(digest ContentDigest) core.Value {
 	return valueObject(
 		core.Entry{Key: "algorithm", Value: core.String(digest.Algorithm())},
@@ -1396,7 +1396,7 @@ func digestValue(digest ContentDigest) core.Value {
 }
 
 // parseDigest strictly decodes one sha256 digest record
-// (cli.rs:1229-1248).
+// (cli.rs).
 func parseDigest(value core.Value, path string) (ContentDigest, error) {
 	fields, err := exactFields(value, []string{"algorithm", "hex"}, path)
 	if err != nil {
@@ -1426,7 +1426,7 @@ func parseDigest(value core.Value, path string) (ContentDigest, error) {
 }
 
 // isLowercaseHex reports whether every byte is a lowercase hexadecimal
-// digit (the canonical digest spelling, cli.rs:1234-1240).
+// digit (the canonical digest spelling, cli.rs).
 func isLowercaseHex(text string) bool {
 	for index := 0; index < len(text); index++ {
 		byte := text[index]
@@ -1438,7 +1438,7 @@ func isLowercaseHex(text string) bool {
 }
 
 // parseProfile strictly decodes one profile reference record
-// (cli.rs:1250-1257).
+// (cli.rs).
 func parseProfile(value core.Value, path string) (*ProfileReference, error) {
 	reference, err := parseProfileReference(value, path)
 	if err != nil {
@@ -1448,7 +1448,7 @@ func parseProfile(value core.Value, path string) (*ProfileReference, error) {
 }
 
 // parseOperationSummary strictly decodes one operation summary record
-// (cli.rs:1259-1286).
+// (cli.rs).
 func parseOperationSummary(value core.Value, path string) (*EditOperationSummary, error) {
 	fields, err := exactFields(value, []string{"operation", "summary"}, path)
 	if err != nil {
@@ -1474,7 +1474,7 @@ func parseOperationSummary(value core.Value, path string) (*EditOperationSummary
 }
 
 // sourcePatchValue encodes the core.source-patch@2 record at the value
-// level with full replacement fidelity (protocol/src/source.rs:323-371;
+// level with full replacement fidelity (protocol/src/source.rs;
 // the 15-kind value model carries Bytes leaves).
 func sourcePatchValue(patch *SourcePatch) (core.Value, error) {
 	encoding, err := encodingFactsValue(&patch.Encoding)
@@ -1516,7 +1516,7 @@ func sourcePatchValue(patch *SourcePatch) (core.Value, error) {
 
 // parseSourcePatchValue strictly decodes the core.source-patch@2 record at
 // the value level with full replacement fidelity
-// (protocol/src/source.rs:373-...).
+// (protocol/src/source.rs...).
 func parseSourcePatchValue(value core.Value, path string) (*SourcePatch, error) {
 	fields, err := schemaFields(value, "core.source-patch@2",
 		[]string{"schema", "base_digest", "target_digest", "encoding",
@@ -1599,7 +1599,7 @@ func parseSourcePatchValue(value core.Value, path string) (*SourcePatch, error) 
 }
 
 // encodingFactsValue encodes the source-patch@2 encoding facts record
-// (protocol/src/source.rs:598-631).
+// (protocol/src/source.rs).
 func encodingFactsValue(facts *EncodingFacts) (core.Value, error) {
 	profileDefault := core.NullValue()
 	if facts.ProfileDefault != nil {
@@ -1632,7 +1632,7 @@ func encodingFactsValue(facts *EncodingFacts) (core.Value, error) {
 }
 
 // sourceEncodingValue encodes one core.source-encoding@1 record
-// (protocol/src/source.rs:497-514).
+// (protocol/src/source.rs).
 func sourceEncodingValue(encoding *SourceEncoding) core.Value {
 	var codePage core.Value = core.NullValue()
 	if encoding.WindowsCodePage != nil {
@@ -1646,7 +1646,7 @@ func sourceEncodingValue(encoding *SourceEncoding) core.Value {
 }
 
 // parseEncodingFactsValue strictly decodes the source-patch@2 encoding
-// facts record (protocol/src/source.rs:598-631). The structural facts are
+// facts record (protocol/src/source.rs). The structural facts are
 // validated; the semantic reconciliation belongs to the document milestone.
 func parseEncodingFactsValue(value core.Value, path string) (*EncodingFacts, error) {
 	fields, err := exactFields(value, []string{"profile_default", "bom_policy", "bom",
@@ -1699,7 +1699,7 @@ func parseEncodingFactsValue(value core.Value, path string) (*EncodingFacts, err
 }
 
 // parseSourceEncodingValue strictly decodes one core.source-encoding@1
-// record (protocol/src/source.rs:497-514).
+// record (protocol/src/source.rs).
 func parseSourceEncodingValue(value core.Value, path string) (*SourceEncoding, error) {
 	fields, err := schemaFields(value, "core.source-encoding@1",
 		[]string{"schema", "kind", "windows_code_page"}, path)

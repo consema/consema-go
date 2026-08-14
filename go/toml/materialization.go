@@ -213,7 +213,7 @@ type MaterializationResult struct {
 }
 
 // Materialize materializes one complete PortableValue into a new immutable
-// TOML document (consema-toml materialization.rs:19-34). The request must
+// TOML document (consema-toml materialization.rs). The request must
 // target `toml.1.0@1` with the `toml.canonical-document@1` style, UTF-8,
 // and an Lf or CrLf newline policy; the generated canonical bytes are
 // re-parsed under the request's limits before the document is returned
@@ -298,7 +298,7 @@ type preparedRoot struct {
 }
 
 // prepareRoot validates the root value form and applies the mapping
-// policy (consema-toml materialization.rs:116-176).
+// policy (consema-toml materialization.rs).
 func prepareRoot(value core.Value, request document.MaterializationRequest,
 	report *MaterializationReport) (preparedRoot, *MaterializationFailure) {
 	if object, ok := value.(*core.Object); ok {
@@ -358,7 +358,7 @@ func prepareRoot(value core.Value, request document.MaterializationRequest,
 }
 
 // materializationParseLimits maps the materialization limits onto the
-// re-parse limits (consema-toml materialization.rs:178-186).
+// re-parse limits (consema-toml materialization.rs).
 func materializationParseLimits(limits document.MaterializationLimits) document.ParseLimits {
 	return document.ParseLimits{
 		MaxSourceBytes:  limits.MaxOutputBytes,
@@ -370,7 +370,7 @@ func materializationParseLimits(limits document.MaterializationLimits) document.
 }
 
 // tomlWriter renders the canonical TOML 1.0 document (consema-toml
-// materialization.rs:188-547).
+// materialization.rs).
 type tomlWriter struct {
 	newline    document.NewlinePolicy
 	limits     document.MaterializationLimits
@@ -576,13 +576,13 @@ func kindNameOf(value core.Value) string {
 }
 
 // writeKey writes a canonical quoted key (consema-toml
-// materialization.rs:353-355).
+// materialization.rs).
 func (w *tomlWriter) writeKey(value string) *MaterializationFailure {
 	return w.writeString(value)
 }
 
 // writeString writes the canonical basic string (consema-toml
-// materialization.rs:357-380).
+// materialization.rs).
 func (w *tomlWriter) writeString(value string) *MaterializationFailure {
 	if failure := w.pushByte('"'); failure != nil {
 		return failure
@@ -633,7 +633,7 @@ func (w *tomlWriter) writeString(value string) *MaterializationFailure {
 }
 
 // writeFloat writes the canonical float (consema-toml
-// materialization.rs:382-407): only the frozen NaN payloads are
+// materialization.rs): only the frozen NaN payloads are
 // representable.
 func (w *tomlWriter) writeFloat(bits uint64, path *protocol.ValuePath) *MaterializationFailure {
 	float := math.Float64frombits(bits)
@@ -660,7 +660,7 @@ func (w *tomlWriter) writeFloat(bits uint64, path *protocol.ValuePath) *Material
 }
 
 // writeDate writes the canonical local date (consema-toml
-// materialization.rs:409-424).
+// materialization.rs).
 func (w *tomlWriter) writeDate(value core.Date, path *protocol.ValuePath) *MaterializationFailure {
 	year := value.Year().Int()
 	if !year.IsInt64() {
@@ -674,7 +674,7 @@ func (w *tomlWriter) writeDate(value core.Date, path *protocol.ValuePath) *Mater
 }
 
 // writeTime writes the canonical local time (consema-toml
-// materialization.rs:426-448).
+// materialization.rs).
 func (w *tomlWriter) writeTime(value core.Time, path *protocol.ValuePath) *MaterializationFailure {
 	nanoseconds, ok := exactNanoseconds(value.FractionalSecond())
 	if !ok {
@@ -697,7 +697,7 @@ func (w *tomlWriter) writeTime(value core.Time, path *protocol.ValuePath) *Mater
 }
 
 // writeSequence writes the canonical array (consema-toml
-// materialization.rs:488-507).
+// materialization.rs).
 func (w *tomlWriter) writeSequence(value *core.Array, path *protocol.ValuePath, depth int) *MaterializationFailure {
 	if failure := w.pushByte('['); failure != nil {
 		return failure
@@ -717,7 +717,7 @@ func (w *tomlWriter) writeSequence(value *core.Array, path *protocol.ValuePath, 
 }
 
 // writeInlineObject writes the canonical inline table (consema-toml
-// materialization.rs:510-536).
+// materialization.rs).
 func (w *tomlWriter) writeInlineObject(value *core.Object, path *protocol.ValuePath, depth int) *MaterializationFailure {
 	if failure := w.pushByte('{'); failure != nil {
 		return failure
@@ -754,7 +754,7 @@ func (w *tomlWriter) writeInlineObject(value *core.Object, path *protocol.ValueP
 }
 
 // exactNanoseconds converts one core fractional-second decimal into
-// nanoseconds (consema-toml materialization.rs:549-567).
+// nanoseconds (consema-toml materialization.rs).
 func exactNanoseconds(value core.Decimal) (uint32, bool) {
 	coefficient := value.Coefficient()
 	if !coefficient.IsInt64() {
@@ -789,7 +789,7 @@ func exactNanoseconds(value core.Decimal) (uint32, bool) {
 }
 
 // canonicalFragment renders one canonical TOML value fragment for
-// structural editing (consema-toml materialization.rs:36-45).
+// structural editing (consema-toml materialization.rs).
 func canonicalFragment(value core.Value, limits document.MaterializationLimits) ([]byte, *MaterializationFailure) {
 	analyzed := make([]protocol.ValuePath, 0)
 	writer := &tomlWriter{newline: document.NewlineLf, limits: limits, analyzed: &analyzed}
@@ -801,7 +801,7 @@ func canonicalFragment(value core.Value, limits document.MaterializationLimits) 
 }
 
 // provenanceBuilder collects the input-to-output provenance
-// (consema-toml materialization.rs:613-864).
+// (consema-toml materialization.rs).
 type provenanceBuilder struct {
 	document *Document
 	limits   document.MaterializationLimits
@@ -978,7 +978,7 @@ func sameMaterializationInput(left, right MaterializationInputLocation) bool {
 }
 
 // scalarKindMatches reports whether the materialized scalar category
-// matches the input kind (consema-toml materialization.rs:866-884).
+// matches the input kind (consema-toml materialization.rs).
 func scalarKindMatches(input core.Value, output TomlItemKind) bool {
 	switch input.(type) {
 	case core.String:

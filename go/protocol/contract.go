@@ -55,7 +55,7 @@ type ContractId struct {
 // NewContractId validates and creates an identifier: the version must be
 // non-zero and the id must be a dotted lowercase identifier of at most 255
 // bytes whose segments start with a lowercase letter
-// (consema-rs/consema-protocol/src/contract.rs:18-30, 559-578).
+// (consema-rs/consema-protocol/src/contract.rs).
 func NewContractId(id string, version uint32) (*ContractId, error) {
 	if version == 0 {
 		return nil, invalid("$.contract.version", "version must be non-zero")
@@ -114,7 +114,7 @@ func uint32String(value uint32) string {
 }
 
 // validateIdentifier enforces the strict dotted identifier rule of the
-// contract registry (contract.rs:559-578): at most 255 bytes, at least two
+// contract registry (contract.rs): at most 255 bytes, at least two
 // segments, each segment starting with a lowercase letter and continuing
 // with lowercase letters, digits, or dashes.
 func validateIdentifier(identifier, path string) error {
@@ -141,7 +141,7 @@ func validateIdentifier(identifier, path string) error {
 func isLower(byte byte) bool { return byte >= 'a' && byte <= 'z' }
 
 // validateNamespace enforces the profile/capability namespace rule
-// (consema-rs/consema-protocol/src/registry.rs:475-498): at most 255 bytes, and
+// (consema-rs/consema-protocol/src/registry.rs): at most 255 bytes, and
 // when requireDot is set at least two segments; every segment starts with a
 // lowercase letter (or a digit when not the first segment) and continues
 // with lowercase letters, digits, or dashes.
@@ -256,7 +256,7 @@ func (r ContractRegistry) ErrorCodeRegistry() ErrorCodeRegistry {
 
 // contractsV7 returns the frozen contract records of one semantic-model
 // version. The lists are transcribed from the Rust CONTRACTS_V1..V7
-// (consema-rs/consema-protocol/src/contract.rs:71-273) and are strictly sorted
+// (consema-rs/consema-protocol/src/contract.rs) and are strictly sorted
 // by (id, version); the test battery re-pins the counts
 // (16/18/25/25/30/38/41) and sortedness.
 func contractsV7(version ContractRegistryVersion) []ContractDescriptor {
@@ -473,7 +473,7 @@ var contractsV7List = []ContractDescriptor{
 }
 
 // ProtocolMessage is one validated protocol payload in the common envelope
-// (consema-rs/consema-protocol/src/contract.rs:417-521).
+// (consema-rs/consema-protocol/src/contract.rs).
 type ProtocolMessage struct {
 	contract *ContractId
 	payload  core.Value
@@ -591,7 +591,7 @@ func (m *ProtocolMessage) FromPVCE(bytes []byte, limits ProtocolLimits, registry
 
 // validateContractPayloadSchema requires the payload to be an Object whose
 // first field is "schema" carrying the exact contract schema
-// (contract.rs:523-557).
+// (contract.rs).
 func validateContractPayloadSchema(payload core.Value, contract *ContractId) error {
 	object, ok := payload.(*core.Object)
 	if !ok {

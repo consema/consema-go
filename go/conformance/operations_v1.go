@@ -305,7 +305,7 @@ func emptyReportValue() core.Value {
 }
 
 // conversionReportPayload builds the exact two-stage conversion report
-// (conversion.rs:144-165): Exact projection over an empty projection
+// (conversion.rs): Exact projection over an empty projection
 // report, Exact materialization over an empty materialization report.
 func conversionReportPayload() core.Value {
 	projectionReport, _ := core.NewObject(
@@ -325,7 +325,7 @@ func conversionReportPayload() core.Value {
 	return value
 }
 
-// editPlanPayload builds the exact dry-run plan (operation.rs:291-323):
+// editPlanPayload builds the exact dry-run plan (operation.rs):
 // an empty operation/replacement/report plan whose empty replacement set
 // cannot change the content digest.
 func editPlanPayload() core.Value {
@@ -344,7 +344,7 @@ func editPlanPayload() core.Value {
 }
 
 // formatOperationRegistryPayload builds the JSON-family format operation
-// registry record (operation.rs:36-75) from the same frozen descriptor
+// registry record (operation.rs) from the same frozen descriptor
 // surface the shared operation-registry face checks.
 func formatOperationRegistryPayload() core.Value {
 	registry := jsonpkg.FormatOperationRegistryFor(jsonpkg.JsonProfileStrictV1)
@@ -394,7 +394,7 @@ func splitVersionedID(text string) (string, uint32) {
 }
 
 // materializationProvenanceMapPayload builds the empty default
-// provenance map (materialization.rs:470-500).
+// provenance map (materialization.rs).
 func materializationProvenanceMapPayload() core.Value {
 	value, _ := core.NewObject(
 		core.Entry{Key: "schema", Value: core.String("core.materialization-provenance-map@1")},
@@ -404,7 +404,7 @@ func materializationProvenanceMapPayload() core.Value {
 }
 
 // materializationReportPayload builds the empty default materialization
-// report (materialization.rs:243-256).
+// report (materialization.rs).
 func materializationReportPayload() core.Value {
 	return emptyReportValue()
 }
@@ -426,7 +426,7 @@ func materializationRequestPayload() (core.Value, error) {
 }
 
 // materializationResultPayload builds the explicitly failed result
-// (materialization.rs:659-675 and 719-733): UnsupportedStyle against an
+// (materialization.rs and 719-733): UnsupportedStyle against an
 // empty report and no analyzed input paths.
 func materializationResultPayload() core.Value {
 	failure, _ := core.NewObject(

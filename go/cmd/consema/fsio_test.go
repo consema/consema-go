@@ -1,7 +1,7 @@
 package main
 
 // The fsio write-policy tests (mirror of the Rust bin's fsio.rs tests,
-// fsio.rs:1140-1203): the atomic-write engine refuses symlink/junction
+// fsio.rs): the atomic-write engine refuses symlink/junction
 // targets AND intermediate path components by default
 // (cli.write.symlink-policy@1), names the offending component, never writes
 // through the link, and leaves no temporary-file residue. Windows skips the
@@ -12,7 +12,7 @@ package main
 // The system-temp carve-out is not probed directly: the scratch dirs of
 // these tests live under the temp root, so a refusal of user components
 // strictly inside the temp tree proves the carve-out boundary (Rust
-// fsio.rs:557-607).
+// fsio.rs).
 
 import (
 	"os"

@@ -4,8 +4,8 @@ package protocol_test
 // (G2.4; protocol/query_validate.go). The row is input-dependent: the
 // table lookup types it by the input role, and the operator then emits
 // every section or entry sharing the same duplicate/case-equivalence
-// group (query.rs:1056-1065; consema-ini query.rs:543-565). The Rust
-// reference test (consema-rs/consema-ini/src/query.rs:778-794) asserts the
+// group (query.rs; consema-ini query.rs). The Rust
+// reference test (consema-rs/consema-ini/src/query.rs) asserts the
 // same two-match outcome on the same case-equivalent Windows source.
 //
 // This file is an external test package (protocol_test) so it can execute

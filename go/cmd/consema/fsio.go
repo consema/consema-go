@@ -181,7 +181,7 @@ func isSymlinkPath(path string) bool {
 
 // refuseSymlinkComponents refuses any symlink or junction component in the
 // write path (R-4; mirror of the Rust bin's refuse_symlink_components,
-// fsio.rs:548-591): the target itself and every ancestor prefix are
+// fsio.rs): the target itself and every ancestor prefix are
 // inspected with Lstat plus the Windows reparse-point attribute, so a
 // junction directory in the middle of the path is refused, not just a
 // final-component link. A prefix that does not exist (a missing parent) is
@@ -191,7 +191,7 @@ func isSymlinkPath(path string) bool {
 // classify: permission denial → cli.write.permission@1, everything else →
 // cli.write.io@1).
 //
-// macOS system-temp carve-out (Rust fsio.rs:557-607): the walk stops once it
+// macOS system-temp carve-out (Rust fsio.rs): the walk stops once it
 // reaches the system temp root, whose ancestors are exempt. On macOS
 // os.TempDir() returns /var/folders/... and /var → /private/var is a system
 // symlink sitting in every temp-dir path, so without the carve-out every

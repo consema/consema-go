@@ -216,7 +216,7 @@ var lowerSingles = []lowerSingle{
 }
 
 // optionxform applies the pinned Unicode 16.0 lowercase option transform
-// (python_case.rs:201-215). U+0130 (Latin capital I with dot above) maps to
+// (python_case.rs). U+0130 (Latin capital I with dot above) maps to
 // "i" plus combining dot above, exactly as the frozen profile requires.
 func optionxform(value string) string {
 	var output []byte
@@ -236,7 +236,7 @@ func optionxform(value string) string {
 }
 
 // simpleLowercase resolves one code point through the frozen tables
-// (python_case.rs:217-232).
+// (python_case.rs).
 func simpleLowercase(code uint32) (uint32, bool) {
 	index := sort.Search(len(lowerRanges), func(i int) bool {
 		return lowerRanges[i].start > code

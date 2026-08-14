@@ -620,14 +620,14 @@ RFC 0016 §10 rejected alternatives.
 ## Golden-bytes provenance
 The PVCE/1 golden vectors in `core/pvce_test.go` (`TestPVCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `consema-rs/consema-pvce/src/lib.rs:1192-1201` —`object_byte_vector_is_frozen`
+- `consema-rs/consema-pvce/src/lib.rs` —`object_byte_vector_is_frozen`
   (`{"a": Integer(1)}` →hex `5056434501410a01200201611003010101`);
-- `consema-rs/consema-pvce/src/lib.rs:1336-1342` —`byte_vector_is_frozen`
+- `consema-rs/consema-pvce/src/lib.rs` —`byte_vector_is_frozen`
   (Null →`50564345010000`; Integer(-256) →`5056434501100402020100`).
 The additional-kind golden vectors in `core/fifteen_test.go`
 (`TestPVCEFifteenKindGoldenBytes`) are pinned to the Rust encoder's bytes
 for the exact values of the Rust `every_core_kind_round_trips` test
-(`consema-rs/consema-pvce/src/lib.rs:1129-1174`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
+(`consema-rs/consema-pvce/src/lib.rs`): BinaryFloat32(0x7fc00001) →`505643450112047fc00001`, Bytes([0, 255]) →`505643450121030200ff`,
 Date(-12345-02-28) →`505643450130070402023039021c`,
 Time(23:59:58.125) →`5056434501310c173b3a080301017d03020103`,
 LocalDateTime(-12345-02-28T23:59:58.125) →`50564345013215070402023039021c0c173b3a080301017d03020103`,
@@ -639,10 +639,10 @@ are pinned to the Rust `value_transport.rs` encoder output for the same
 values.
 The PGCE/1 golden vectors in `graph/pgce_test.go` (`TestPGCEGoldenBytes`) are
 transcribed byte-for-byte from the Rust reference codec's in-code pins:
-- `consema-rs/consema-graph/src/pgce.rs:664-678` —`scalar_byte_vector_is_frozen`
+- `consema-rs/consema-graph/src/pgce.rs` —`scalar_byte_vector_is_frozen`
   (scalar "x" tagged `tag:yaml.org,2002:str` →hex
   `504743450101010020157461673a79616d6c2e6f72672c323030323a7374720178`);
-- `consema-rs/consema-graph/src/pgce.rs:680-686` —`empty_graph_byte_vector_is_frozen`
+- `consema-rs/consema-graph/src/pgce.rs` —`empty_graph_byte_vector_is_frozen`
   (empty graph →`50474345010000`).
 Both are also the shared conformance vector expectations
 (`conformance/vectors/portable-graph-v1.json`: `pgce.empty-vector` and
@@ -683,7 +683,7 @@ bytes), the closed formation-status contract holds, a Recovered document
 publishes at least one diagnostic within the MaxDiagnostics budget, and
 nothing panics or hangs (the fuzz engine bounds wall time). The
 family-specific high-value faces mirror the Rust threat corpora
-(SECURITY.md:32-36): YAML alias bombs (the generated alias count must
+(SECURITY.md): YAML alias bombs (the generated alias count must
 equal the emitted references —no invented aliases), binary plist
 trailer/offset/object-table accounting (a limit breach must never report a
 Complete document), XML entity expansion (billion laughs, cycles, deep
@@ -791,7 +791,7 @@ plist 专项 threat tests 通过"; G114 line re-verification 2026-08-13):
 - **Limits matrices** —13 XML rows, 10 plist XML rows, 9 plist binary
   rows, 13 HCL rows (XML/plist 32 boundary rows + HCL 13 rows, 45 total;
   G061, adversarial audit 2026-08-13 — the old "(32 boundary rows total)"
-  arithmetic only summed the XML+plist rows; SECURITY.md:18 already used
+  arithmetic only summed the XML+plist rows; SECURITY.md already used
   the correct split), each pinning the exact
   positive/negative boundary: N-1 fails with the family's frozen code
   (`xml.limit.*@1`, `plist.limit.*@1`, `hcl.limit.*@1`,

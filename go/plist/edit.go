@@ -509,7 +509,7 @@ func operationID(kind EditOperationKind) string {
 // ---------------------------------------------------------------------------
 
 // appliedEdit is one applied raw-byte splice, recorded for base-coordinate
-// translation (edit.rs:611-622).
+// translation (edit.rs).
 type appliedEdit struct {
 	// preStart is the start of the replaced span in the state immediately
 	// before this splice was applied.
@@ -526,7 +526,7 @@ type appliedEdit struct {
 
 // unmapIn maps one position from the final state back to the base snapshot
 // through the applied edits in reverse application order; a position inside
-// an earlier replacement is an ownership overlap (edit.rs:627-644).
+// an earlier replacement is an ownership overlap (edit.rs).
 func unmapIn(edits []appliedEdit, position int) (int, *EditFailure) {
 	for index := len(edits) - 1; index >= 0; index-- {
 		edit := edits[index]
@@ -546,7 +546,7 @@ func unmapIn(edits []appliedEdit, position int) (int, *EditFailure) {
 }
 
 // mapIn maps one position from one pre-state to the final state through
-// the applied edits in application order (edit.rs:648-659).
+// the applied edits in application order (edit.rs).
 func mapIn(edits []appliedEdit, position int) (int, *EditFailure) {
 	for _, edit := range edits {
 		if position <= edit.preStart {
@@ -564,7 +564,7 @@ func mapIn(edits []appliedEdit, position int) (int, *EditFailure) {
 // same base position (a duplicate target). An operation whose span lies
 // inside a replacement an earlier operation of this transaction wrote
 // (including the exact boundaries) folds into that replacement
-// (edit.rs:668-728).
+// (edit.rs).
 func recordEdit(edits *[]appliedEdit, preStart, preLen int, replacement []byte,
 	structural bool) *EditFailure {
 	if preLen == 0 && len(replacement) == 0 {
@@ -623,7 +623,7 @@ func recordEdit(edits *[]appliedEdit, preStart, preLen int, replacement []byte,
 }
 
 // applySplices builds the new bytes by applying the splices sequentially
-// against a working buffer (edit.rs:733-746).
+// against a working buffer (edit.rs).
 func applySplices(bytes []byte, splices []appliedEdit) ([]byte, *EditFailure) {
 	working := append([]byte(nil), bytes...)
 	for _, splice := range splices {
@@ -638,7 +638,7 @@ func applySplices(bytes []byte, splices []appliedEdit) ([]byte, *EditFailure) {
 }
 
 // applyStep validates the target length, records every splice against the
-// base coordinates, then builds the new bytes in one pass (edit.rs:581-
+// base coordinates, then builds the new bytes in one pass (edit.rs
 // 607).
 func applyStep(edits *[]appliedEdit, bytes []byte, limits PlistParseLimits,
 	splices []appliedEdit) ([]byte, *EditFailure) {
@@ -662,7 +662,7 @@ func applyStep(edits *[]appliedEdit, bytes []byte, limits PlistParseLimits,
 }
 
 // resolvePath resolves one path against one native arena; the empty path is
-// the root (edit.rs:749-769).
+// the root (edit.rs).
 func resolvePath(native *PlistDocument, path *EditPath) (PlistValueRef, *EditFailure) {
 	current := native.Root()
 	for _, step := range path.steps {
@@ -696,7 +696,7 @@ func resolvePath(native *PlistDocument, path *EditPath) (PlistValueRef, *EditFai
 }
 
 // nthKeyPosition returns the source position of the occurrence-th
-// association with the given key (edit.rs:771-787).
+// association with the given key (edit.rs).
 func nthKeyPosition(dict PlistDict, key PlistKey, occurrence int) (int, *EditFailure) {
 	seen := 0
 	for position, entry := range dict.Entries() {
@@ -715,7 +715,7 @@ func nthKeyPosition(dict PlistDict, key PlistKey, occurrence int) (int, *EditFai
 // ---------------------------------------------------------------------------
 
 // xmlKeyLayout is one key element's byte facts of a dictionary entry
-// (edit.rs:826-836).
+// (edit.rs).
 type xmlKeyLayout struct {
 	// text is the text span between `<key>` and `</key>`; for a
 	// self-closing `<key/>` this is the whole tag.
@@ -727,7 +727,7 @@ type xmlKeyLayout struct {
 }
 
 // xmlNodeLayout is one value element's byte facts, indexed by native arena
-// ordinal (edit.rs:796-824).
+// ordinal (edit.rs).
 type xmlNodeLayout struct {
 	// span is the full element span `[open tag start, close tag end)`.
 	spanStart, spanEnd int
@@ -763,7 +763,7 @@ type editXmlFrame struct {
 }
 
 // xmlLayout walks the lossless pieces and assigns every value element its
-// byte span in arena ordinal order (edit.rs:840-978).
+// byte span in arena ordinal order (edit.rs).
 func xmlLayout(formed *Document) ([]xmlNodeLayout, *EditFailure) {
 	source := formed.source
 	pieces := formed.xmlIndex.Pieces()
@@ -889,7 +889,7 @@ func xmlLayout(formed *Document) ([]xmlNodeLayout, *EditFailure) {
 }
 
 // finalizeXMLFrame assigns the next arena ordinal to one closed frame and
-// updates its parent dictionary's pending entry (edit.rs:996-1024).
+// updates its parent dictionary's pending entry (edit.rs).
 func finalizeXMLFrame(stack *[]editXmlFrame, frame editXmlFrame, closeStart, closeEnd int,
 	selfClosing bool, ordinal int) xmlNodeLayout {
 	if len(*stack) > 0 {
@@ -911,7 +911,7 @@ func finalizeXMLFrame(stack *[]editXmlFrame, frame editXmlFrame, closeStart, clo
 }
 
 // prepareXMLOperation prepares one XML operation's splices against the
-// current formed state (edit.rs:1042-1223).
+// current formed state (edit.rs).
 func prepareXMLOperation(formed *Document, layout []xmlNodeLayout, operation *EditOperation,
 	encoding document.SourceEncoding) ([]appliedEdit, *EditFailure) {
 	switch operation.Kind {
@@ -1105,7 +1105,7 @@ func prepareXMLOperation(formed *Document, layout []xmlNodeLayout, operation *Ed
 	return nil, &EditFailure{Kind: EditFailureWrongRole}
 }
 
-// entryMarkup is `<key>..</key>` plus one value element (edit.rs:1247-1255).
+// entryMarkup is `<key>..</key>` plus one value element (edit.rs).
 func entryMarkup(key *PlistKey, value *EditValue,
 	encoding document.SourceEncoding) ([]byte, *EditFailure) {
 	keyMarkup, failure := encodeXMLKey(key, encoding)
@@ -1119,7 +1119,7 @@ func entryMarkup(key *PlistKey, value *EditValue,
 	return append(keyMarkup, valueMarkup...), nil
 }
 
-// encodeXMLElement writes one value element as markup (edit.rs:1258-1308).
+// encodeXMLElement writes one value element as markup (edit.rs).
 func encodeXMLElement(value *EditValue, encoding document.SourceEncoding) ([]byte, *EditFailure) {
 	var text strings.Builder
 	switch value.kind {
@@ -1167,7 +1167,7 @@ func encodeXMLElement(value *EditValue, encoding document.SourceEncoding) ([]byt
 	return encodeText(text.String(), encoding), nil
 }
 
-// encodeXMLKey writes one key element as markup (edit.rs:1311-1321).
+// encodeXMLKey writes one key element as markup (edit.rs).
 func encodeXMLKey(key *PlistKey, encoding document.SourceEncoding) ([]byte, *EditFailure) {
 	unicode, err := key.ToUnicode()
 	if err != nil {
@@ -1180,7 +1180,7 @@ func encodeXMLKey(key *PlistKey, encoding document.SourceEncoding) ([]byte, *Edi
 	return encodeText(text.String(), encoding), nil
 }
 
-// encodeKeyText writes the escaped key content only (edit.rs:1324-1333).
+// encodeKeyText writes the escaped key content only (edit.rs).
 func encodeKeyText(key *PlistKey, encoding document.SourceEncoding) ([]byte, *EditFailure) {
 	unicode, err := key.ToUnicode()
 	if err != nil {
@@ -1190,7 +1190,7 @@ func encodeKeyText(key *PlistKey, encoding document.SourceEncoding) ([]byte, *Ed
 }
 
 // encodeText appends one decoded string under the source encoding
-// (edit.rs:1336-1350).
+// (edit.rs).
 func encodeText(text string, encoding document.SourceEncoding) []byte {
 	switch encoding.Kind() {
 	case document.EncodingUtf16Le:
@@ -1212,7 +1212,7 @@ func encodeText(text string, encoding document.SourceEncoding) []byte {
 }
 
 // checkXMLValue validates one typed value for the XML representation
-// (edit.rs:1353-1377).
+// (edit.rs).
 func checkXMLValue(value *EditValue) *EditFailure {
 	switch value.kind {
 	case EditValueString:
@@ -1264,7 +1264,7 @@ func checkXMLString(string *PlistString) *EditFailure {
 
 // commitXML is the XML byte-level commit: each operation resolves against
 // the current reparse, replaces only operation-owned spans of the raw
-// source, and reparses after every operation (edit.rs:507-539).
+// source, and reparses after every operation (edit.rs).
 func (d *Document) commitXML(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	selection := PlistEncodingProfileDefault()
 	if override := d.source.EncodingFacts().CallerOverride(); override != nil {
@@ -1309,7 +1309,7 @@ func (d *Document) commitXML(tx *EditTransaction) (*EditCommit, *EditFailure) {
 // Binary structural operations
 // ---------------------------------------------------------------------------
 
-// binaryPlan is one binary operation's structural changes (edit.rs:1405-
+// binaryPlan is one binary operation's structural changes (edit.rs
 // 1419).
 type binaryPlan struct {
 	// refs are the final flattened reference lists per object: for a
@@ -1328,7 +1328,7 @@ type binaryPlan struct {
 }
 
 // binaryStep computes one binary operation's structural changes against the
-// current formed state (edit.rs:1422-1568). All arithmetic is checked
+// current formed state (edit.rs). All arithmetic is checked
 // before any splice exists.
 func binaryStep(formed *Document, operation *EditOperation,
 	limits PlistParseLimits) ([]appliedEdit, *EditFailure) {
@@ -1485,7 +1485,7 @@ func binaryStep(formed *Document, operation *EditOperation,
 }
 
 // shift shifts one base position by the accumulated length delta of
-// earlier splices (edit.rs:1570-1581).
+// earlier splices (edit.rs).
 func shift(base, delta int) (int, *EditFailure) {
 	shifted := base + delta
 	if (delta > 0 && shifted < base) || (delta < 0 && shifted > base) {
@@ -1501,7 +1501,7 @@ func addLengthDelta(delta, newLen, oldLen int) (int, bool) {
 }
 
 // binaryPlanFor computes one operation's structural changes over the
-// current arena (edit.rs:1595-1762).
+// current arena (edit.rs).
 func binaryPlanFor(native *PlistDocument, facts *BinaryFacts,
 	operation *EditOperation) (*binaryPlan, *EditFailure) {
 	nodeCount := native.NodeCount()
@@ -1796,7 +1796,7 @@ func encodeBinaryString(string PlistString) []byte {
 // commitBinary is the binary structural commit: each operation rewrites the
 // owning object bytes, appends fresh objects for new values, regenerates
 // the offset table and trailer, and reparses after every operation
-// (edit.rs:544-575).
+// (edit.rs).
 func (d *Document) commitBinary(tx *EditTransaction) (*EditCommit, *EditFailure) {
 	bytes := d.Render()
 	var edits []appliedEdit
@@ -1829,7 +1829,7 @@ func (d *Document) commitBinary(tx *EditTransaction) (*EditCommit, *EditFailure)
 }
 
 // buildCommit builds the commit facts: ChangeSet, replayable SourcePatch,
-// and the untouched-byte proof (edit.rs:1935-2033). The recorded edits are
+// and the untouched-byte proof (edit.rs). The recorded edits are
 // merged into maximal non-overlapping base runs; each run's replacement is
 // the exact target bytes at its new span.
 func buildCommit(base *Document, tx *EditTransaction, finalDocument *Document,
@@ -1921,7 +1921,7 @@ func buildCommit(base *Document, tx *EditTransaction, finalDocument *Document,
 }
 
 // buildMappings builds one old-to-new mapping per operation whose target
-// resolves in the base snapshot; insertions carry no mapping (edit.rs:2037-
+// resolves in the base snapshot; insertions carry no mapping (edit.rs
 // 2065).
 func buildMappings(base *Document, tx *EditTransaction,
 	finalDocument *Document) []document.NodeMapping {
@@ -1998,7 +1998,7 @@ func buildMappings(base *Document, tx *EditTransaction,
 }
 
 // sourcePatchLimits derives the patch construction bounds from the parse
-// limits (edit.rs:2097-2107).
+// limits (edit.rs).
 func sourcePatchLimits(limits PlistParseLimits) document.SourcePatchLimits {
 	patchLimits := document.DefaultSourcePatchLimits()
 	patchLimits.Source = document.SourceLimits{

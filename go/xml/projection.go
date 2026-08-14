@@ -16,7 +16,7 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// ProjectionTarget is a versioned XML projection target (projection.rs:20-29).
+// ProjectionTarget is a versioned XML projection target (projection.rs).
 type ProjectionTarget uint8
 
 // The three frozen targets.
@@ -33,7 +33,7 @@ const (
 )
 
 // TextContentInclude is the descendant text inclusion for TextContentV1
-// (projection.rs:31-38).
+// (projection.rs).
 type TextContentInclude uint8
 
 // The two frozen inclusion modes.
@@ -47,7 +47,7 @@ const (
 )
 
 // AttributePolicy is the attribute handling for SimpleEntryMappingV1
-// (projection.rs:40-49).
+// (projection.rs).
 type AttributePolicy uint8
 
 // The three frozen attribute policies.
@@ -63,7 +63,7 @@ const (
 )
 
 // TextKeyPolicy is the text child handling for SimpleEntryMappingV1
-// (projection.rs:51-58).
+// (projection.rs).
 type TextKeyPolicy uint8
 
 // The two frozen text policies.
@@ -76,7 +76,7 @@ const (
 )
 
 // RepeatedChildPolicy is the repeated expanded-child-name handling for
-// SimpleEntryMappingV1 (projection.rs:60-68).
+// SimpleEntryMappingV1 (projection.rs).
 type RepeatedChildPolicy uint8
 
 // The three frozen repeated-child policies.
@@ -91,7 +91,7 @@ const (
 )
 
 // ExpandedNameKeyPolicy is the entry-key spelling for SimpleEntryMappingV1
-// (projection.rs:70-81).
+// (projection.rs).
 type ExpandedNameKeyPolicy uint8
 
 // The three frozen key spellings.
@@ -109,7 +109,7 @@ const (
 )
 
 // CollisionPolicy is the collision resolution direction shared by both
-// entry policies (projection.rs:116-124).
+// entry policies (projection.rs).
 type CollisionPolicy uint8
 
 // The three frozen collision policies.
@@ -123,7 +123,7 @@ const (
 )
 
 // ProjectionRequest is the explicit XML projection request; every policy
-// is mandatory (projection.rs:126-213).
+// is mandatory (projection.rs).
 type ProjectionRequest struct {
 	target        ProjectionTarget
 	subtree       *uint64
@@ -137,7 +137,7 @@ type ProjectionRequest struct {
 }
 
 // ElementTreeRequest is the exact `xml.element-tree@1` record request for
-// the document root (projection.rs:143-155).
+// the document root (projection.rs).
 func ElementTreeRequest() ProjectionRequest {
 	return ProjectionRequest{
 		target:        ProjectionTargetElementTreeV1,
@@ -152,7 +152,7 @@ func ElementTreeRequest() ProjectionRequest {
 }
 
 // SimpleEntryMappingRequest is the explicit SimpleEntryMappingV1 request
-// over one subtree (projection.rs:157-178).
+// over one subtree (projection.rs).
 func SimpleEntryMappingRequest(subtree document.NodeRef, attributes AttributePolicy,
 	textKey TextKeyPolicy, repeatedChild RepeatedChildPolicy, keySpelling ExpandedNameKeyPolicy,
 	collision CollisionPolicy) ProjectionRequest {
@@ -171,7 +171,7 @@ func SimpleEntryMappingRequest(subtree document.NodeRef, attributes AttributePol
 }
 
 // TextContentRequest is the explicit TextContentV1 request over one
-// subtree (projection.rs:180-194).
+// subtree (projection.rs).
 func TextContentRequest(subtree document.NodeRef, include TextContentInclude) ProjectionRequest {
 	index := subtree.Index()
 	return ProjectionRequest{
@@ -198,7 +198,7 @@ func (r *ProjectionRequest) Subtree() *uint64 { return r.subtree }
 func (r *ProjectionRequest) Limits() ProjectionLimits { return r.limits }
 
 // ProjectionLimits are the XML projection resource limits
-// (projection.rs:216-237).
+// (projection.rs).
 type ProjectionLimits struct {
 	// MaxSourceNodes is the maximum inspected source nodes.
 	MaxSourceNodes int
@@ -221,7 +221,7 @@ func DefaultProjectionLimits() ProjectionLimits {
 	}
 }
 
-// Fidelity is the projection fidelity classification (projection.rs:239-248).
+// Fidelity is the projection fidelity classification (projection.rs).
 type Fidelity uint8
 
 // The three frozen fidelity classes.
@@ -251,7 +251,7 @@ func (f Fidelity) String() string {
 }
 
 // ProjectedLocation is a projected value or association location
-// (projection.rs:250-259).
+// (projection.rs).
 type ProjectedLocation struct {
 	// IsAssociation reports whether the location is an association.
 	IsAssociation bool
@@ -263,7 +263,7 @@ type ProjectedLocation struct {
 }
 
 // ProvenanceRelation is the source-to-projection relation
-// (projection.rs:260-272).
+// (projection.rs).
 type ProvenanceRelation uint8
 
 // The four frozen relations.
@@ -296,7 +296,7 @@ func (r ProvenanceRelation) String() string {
 	return "Direct"
 }
 
-// SourceOrigin is one exact source origin (projection.rs:274-283).
+// SourceOrigin is one exact source origin (projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source document snapshot.
 	Snapshot document.SnapshotIdentity
@@ -308,7 +308,7 @@ type SourceOrigin struct {
 	Relation ProvenanceRelation
 }
 
-// ProvenanceEntry is one many-valued provenance entry (projection.rs:285-292).
+// ProvenanceEntry is one many-valued provenance entry (projection.rs).
 type ProvenanceEntry struct {
 	// Projected is the projected value or association.
 	Projected ProjectedLocation
@@ -317,7 +317,7 @@ type ProvenanceEntry struct {
 }
 
 // ProvenanceMap is the immutable many-valued provenance mapping
-// (projection.rs:294-323).
+// (projection.rs).
 type ProvenanceMap struct {
 	entries []ProvenanceEntry
 }
@@ -337,7 +337,7 @@ func (m *ProvenanceMap) push(entry ProvenanceEntry, limits ProjectionLimits) *Pr
 }
 
 // ProjectionEventKind is the projection report category
-// (projection.rs:325-346).
+// (projection.rs).
 type ProjectionEventKind uint8
 
 // The nine frozen event kinds.
@@ -391,7 +391,7 @@ func (k ProjectionEventKind) String() string {
 	return "ElementDiscarded"
 }
 
-// ProjectionEvent is one explicit transformation event (projection.rs:348-357).
+// ProjectionEvent is one explicit transformation event (projection.rs).
 type ProjectionEvent struct {
 	// Kind is the stable event kind.
 	Kind ProjectionEventKind
@@ -402,7 +402,7 @@ type ProjectionEvent struct {
 }
 
 // ProjectionReport is the complete ordered projection report
-// (projection.rs:359-388).
+// (projection.rs).
 type ProjectionReport struct {
 	events []ProjectionEvent
 }
@@ -422,7 +422,7 @@ func (r *ProjectionReport) push(event ProjectionEvent, limits ProjectionLimits) 
 }
 
 // CompleteProjection is the complete successful projection
-// (projection.rs:390-401).
+// (projection.rs).
 type CompleteProjection struct {
 	// Value is the complete immutable projected value.
 	Value core.Value
@@ -435,7 +435,7 @@ type CompleteProjection struct {
 }
 
 // FailedProjectionAttempt is a failed projection attempt without a partial
-// value (projection.rs:403-410).
+// value (projection.rs).
 type FailedProjectionAttempt struct {
 	// Diagnostics are the stable ordered diagnostics.
 	Diagnostics []*protocol.Diagnostic
@@ -445,7 +445,7 @@ type FailedProjectionAttempt struct {
 }
 
 // ProjectionResult is the sealed projection outcome: exactly one of
-// Complete or Failed is set (projection.rs:412-419).
+// Complete or Failed is set (projection.rs).
 type ProjectionResult struct {
 	// Complete is the complete success outcome.
 	Complete *CompleteProjection
@@ -454,7 +454,7 @@ type ProjectionResult struct {
 }
 
 // ProjectionFailureKind classifies a stable XML projection failure
-// (projection.rs:421-441).
+// (projection.rs).
 type ProjectionFailureKind uint8
 
 // The closed projection failure classes.
@@ -513,7 +513,7 @@ func (e *ProjectionFailure) Error() string {
 }
 
 // Code returns the frozen registered code for the failure
-// (projection.rs:459-469).
+// (projection.rs).
 func (e *ProjectionFailure) Code() string {
 	switch e.Kind {
 	case ProjectionFailureRecoveredDocument:
@@ -533,7 +533,7 @@ func (e *ProjectionFailure) Code() string {
 }
 
 // Project projects this snapshot under one explicit target and policy
-// contract (projection.rs:471-503).
+// contract (projection.rs).
 func (d *Document) Project(request ProjectionRequest) ProjectionResult {
 	if d.status != document.FormationStatusComplete {
 		return failedProjection(&ProjectionFailure{Kind: ProjectionFailureRecoveredDocument})
@@ -627,7 +627,7 @@ func itemPath(container protocol.ValuePath, field string, index int) protocol.Va
 }
 
 // projectElementTree projects the exact `xml.element-tree@1` record for
-// the document root (projection.rs:600-644).
+// the document root (projection.rs).
 func (c *projectionContext) projectElementTree() (core.Value, Fidelity, *ProjectionFailure) {
 	root := c.document.Root()
 	if root == nil {
@@ -688,7 +688,7 @@ func declarationValue(declared *XmlDeclarationData) (core.Value, *ProjectionFail
 	return builder.Build(), nil
 }
 
-// elementValue builds one recursive element record (projection.rs:671-797).
+// elementValue builds one recursive element record (projection.rs).
 func (c *projectionContext) elementValue(index int, path protocol.ValuePath) (core.Value, *ProjectionFailure) {
 	if failure := c.step(); failure != nil {
 		return nil, failure
@@ -783,7 +783,7 @@ func (c *projectionContext) elementValue(index int, path protocol.ValuePath) (co
 }
 
 // contentValue builds one ordered content item record
-// (projection.rs:800-973).
+// (projection.rs).
 func (c *projectionContext) contentValue(index int, path protocol.ValuePath) (core.Value, *ProjectionFailure) {
 	if failure := c.step(); failure != nil {
 		return nil, failure
@@ -890,7 +890,7 @@ func (c *projectionContext) contentValue(index int, path protocol.ValuePath) (co
 }
 
 // projectTextContent projects the always-transformed descendant text
-// content (projection.rs:975-1007).
+// content (projection.rs).
 func (c *projectionContext) projectTextContent(request ProjectionRequest) (core.Value, Fidelity, *ProjectionFailure) {
 	root := c.document.Root()
 	if root == nil {
@@ -918,7 +918,7 @@ func (c *projectionContext) projectTextContent(request ProjectionRequest) (core.
 }
 
 // collectText gathers descendant text under the include policy and reports
-// every discarded occurrence (projection.rs:1009-1095).
+// every discarded occurrence (projection.rs).
 func (c *projectionContext) collectText(index int, include TextContentInclude,
 	out *strings.Builder) *ProjectionFailure {
 	data := c.elementData(index)
@@ -982,7 +982,7 @@ func (c *projectionContext) collectText(index int, include TextContentInclude,
 }
 
 // entrySet is the ordered mapping entries with their expanded-name
-// identities (projection.rs:91-113).
+// identities (projection.rs).
 type entrySet struct {
 	ordered []entryPair
 	seen    map[string]entrySeen
@@ -1003,7 +1003,7 @@ func newEntrySet() *entrySet {
 }
 
 // projectEntryMapping projects the explicit-policy entry mapping of one
-// selected subtree (projection.rs:1097-1126).
+// selected subtree (projection.rs).
 func (c *projectionContext) projectEntryMapping(request ProjectionRequest) (core.Value, Fidelity, *ProjectionFailure) {
 	root := c.document.Root()
 	if root == nil {
@@ -1061,7 +1061,7 @@ func keepFromCollision(policy CollisionPolicy) keepPolicy {
 }
 
 // entryOrdinal resolves the entry ordinal under the explicit request
-// policies (projection.rs:1144-1200).
+// policies (projection.rs).
 func (c *projectionContext) entryOrdinal(entries *entrySet, key string,
 	candidate *ExpandedName, request *ProjectionRequest, origin document.NodeRef,
 	collapse ProjectionEventKind) (int, *ProjectionFailure) {
@@ -1098,7 +1098,7 @@ func (c *projectionContext) entryOrdinal(entries *entrySet, key string,
 }
 
 // commitEntry records one committed entry and its value/association
-// provenance (projection.rs:1202-1236).
+// provenance (projection.rs).
 func (c *projectionContext) commitEntry(entries *entrySet, key string, value core.Value,
 	ordinal int, source document.NodeRef, sourceSpan document.Span,
 	container protocol.ValuePath) *ProjectionFailure {
@@ -1121,7 +1121,7 @@ func (c *projectionContext) commitEntry(entries *entrySet, key string, value cor
 }
 
 // mapChildren maps one element's attributes and children into entries
-// (projection.rs:1238-1402).
+// (projection.rs).
 func (c *projectionContext) mapChildren(element int, container protocol.ValuePath,
 	entries *entrySet, request *ProjectionRequest) *ProjectionFailure {
 	data := c.elementData(element)
@@ -1253,7 +1253,7 @@ func (c *projectionContext) mapChildren(element int, container protocol.ValuePat
 }
 
 // leafValue builds the leaf value of one element without element children
-// (projection.rs:1404-1457).
+// (projection.rs).
 func (c *projectionContext) leafValue(element int, request *ProjectionRequest) (core.Value, *ProjectionFailure) {
 	data := c.elementData(element)
 	var text strings.Builder
@@ -1293,7 +1293,7 @@ func (c *projectionContext) leafValue(element int, request *ProjectionRequest) (
 }
 
 // failedProjection builds the failed projection result with the stable
-// diagnostic (projection.rs:1460-1475).
+// diagnostic (projection.rs).
 func failedProjection(failure *ProjectionFailure) ProjectionResult {
 	diagnostic := &protocol.Diagnostic{
 		Code:      failure.Code(),

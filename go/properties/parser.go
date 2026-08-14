@@ -386,7 +386,7 @@ func (p *parser) addLogicalLine(firstLine int) (int, *FormationFailure) {
 }
 
 // splitProperty locates the raw key end, the value start, and whether any
-// separator followed the key (parser.rs:471-507; RFC 0010 §6).
+// separator followed the key (parser.rs; RFC 0010 §6).
 func (p *parser) splitProperty(logicalAtoms []int, keyStart int) (int, int, int, bool) {
 	cursor := keyStart
 	escaped := false
@@ -588,7 +588,7 @@ func (p *parser) recoverLogicalLine(logicalNode document.NodeRef, naturalNodes [
 }
 
 // assignDuplicateGroups numbers every exact-key group with more than one
-// member in deterministic code-unit key order (parser.rs:668-696).
+// member in deterministic code-unit key order (parser.rs).
 func (p *parser) assignDuplicateGroups() *FormationFailure {
 	type group struct {
 		indices []int
@@ -802,7 +802,7 @@ func buildAtoms(source *document.SourceSnapshot, authority document.DocumentAuth
 }
 
 // decodeJavaString decodes one raw key or value exactly left-to-right
-// (parser.rs:909-996; RFC 0010 §7).
+// (parser.rs; RFC 0010 §7).
 func decodeJavaString(atoms []atom, atomIndices []int) (decodedJavaString, *decodeError) {
 	var units []uint16
 	var escapes []escapeSpec

@@ -64,7 +64,7 @@ type parser struct {
 }
 
 // newParser scans the physical lines and prepares the parser
-// (parser.rs:149-181).
+// (parser.rs).
 func newParser(source *document.SourceSnapshot, profile IniProfile,
 	limits IniParseLimits) *parser {
 	p := &parser{
@@ -81,7 +81,7 @@ func newParser(source *document.SourceSnapshot, profile IniProfile,
 }
 
 // parse completes the formation and returns the immutable Document
-// (parser.rs:183-226).
+// (parser.rs).
 func (p *parser) parse() (*Document, *FormationFailure) {
 	if p.failed != nil {
 		return nil, p.failed
@@ -142,7 +142,7 @@ func (p *parser) parse() (*Document, *FormationFailure) {
 }
 
 // scanPhysicalLines scans the decoded text into physical lines and issues
-// their identities (parser.rs:228-301).
+// their identities (parser.rs).
 func (p *parser) scanPhysicalLines() {
 	text, ok := p.source.DecodedText()
 	if !ok {
@@ -221,7 +221,7 @@ func (p *parser) scanPhysicalLines() {
 	}
 }
 
-// parseLine classifies one physical line (parser.rs:303-346).
+// parseLine classifies one physical line (parser.rs).
 func (p *parser) parseLine(lineIndex int) {
 	line := p.lines[lineIndex]
 	content := p.decodedContent(&line)
@@ -274,7 +274,7 @@ func (p *parser) parseLine(lineIndex int) {
 	}
 }
 
-// parsePortableLine parses one portable profile line (parser.rs:348-399).
+// parsePortableLine parses one portable profile line (parser.rs).
 func (p *parser) parsePortableLine(lineIndex int) {
 	p.pythonEntry = nil
 	line := p.lines[lineIndex]
@@ -334,7 +334,7 @@ func (p *parser) parsePortableLine(lineIndex int) {
 		key, value, QuoteStyleNone)
 }
 
-// parseWindowsLine parses one Windows profile line (parser.rs:401-467).
+// parseWindowsLine parses one Windows profile line (parser.rs).
 func (p *parser) parseWindowsLine(lineIndex int) {
 	p.pythonEntry = nil
 	line := p.lines[lineIndex]
@@ -420,7 +420,7 @@ func (p *parser) parseWindowsLine(lineIndex int) {
 		key, value, quoteStyle)
 }
 
-// parsePythonLine parses one Python ConfigParser line (parser.rs:469-578).
+// parsePythonLine parses one Python ConfigParser line (parser.rs).
 func (p *parser) parsePythonLine(lineIndex int) {
 	line := p.lines[lineIndex]
 	content := p.decodedContent(&line)
@@ -534,7 +534,7 @@ func (p *parser) parsePythonLine(lineIndex int) {
 }
 
 // addPythonContinuation joins one more-indented physical line into the
-// active Python entry (parser.rs:580-747).
+// active Python entry (parser.rs).
 func (p *parser) addPythonContinuation(lineIndex int, indent int) {
 	line := p.lines[lineIndex]
 	content := p.decodedContent(&line)
@@ -615,7 +615,7 @@ func (p *parser) addPythonContinuation(lineIndex int, indent int) {
 	p.pythonEntry = state
 }
 
-// addSection records one section-header occurrence (parser.rs:749-785).
+// addSection records one section-header occurrence (parser.rs).
 func (p *parser) addSection(lineIndex int, nameStart, nameEnd int, name string, isDefault bool) {
 	p.checkLimit("sections", len(p.sections)+1, p.limits.MaxSections)
 	if p.failed != nil {
@@ -652,7 +652,7 @@ func (p *parser) addSection(lineIndex int, nameStart, nameEnd int, name string, 
 	p.pythonEntry = nil
 }
 
-// addEntry records one key/value occurrence (parser.rs:788-834).
+// addEntry records one key/value occurrence (parser.rs).
 func (p *parser) addEntry(lineIndex, sectionIndex, keyStart, keyEnd, valueStart, valueEnd int,
 	key, value string, quoteStyle IniQuoteStyle) int {
 	p.checkLimit("entries", len(p.entries)+1, p.limits.MaxEntries)
@@ -699,7 +699,7 @@ func (p *parser) addEntry(lineIndex, sectionIndex, keyStart, keyEnd, valueStart,
 	return entryIndex
 }
 
-// addLogical records one logical record (parser.rs:836-867).
+// addLogical records one logical record (parser.rs).
 func (p *parser) addLogical(lineIndex int, kind IniLogicalLineKind) int {
 	p.checkLimit("logical-lines", len(p.logicalLines)+1, p.limits.MaxLogicalLines)
 	if p.failed != nil {
@@ -728,7 +728,7 @@ func (p *parser) addLogical(lineIndex int, kind IniLogicalLineKind) int {
 }
 
 // recoverLine retains one physical line as an error record with a stable
-// diagnostic (parser.rs:869-905).
+// diagnostic (parser.rs).
 func (p *parser) recoverLine(lineIndex int, code string) {
 	p.checkLimit("recovery-regions", len(p.errorLines)+1, p.limits.MaxRecoveryRegions)
 	if p.failed != nil {
@@ -774,7 +774,7 @@ func recoveryCategory(code string) protocol.DiagnosticCategory {
 }
 
 // pushBom emits the BOM trivia piece when the source carries one
-// (parser.rs:907-919).
+// (parser.rs).
 func (p *parser) pushBom() {
 	if p.source.EncodingFacts().Bom() != nil {
 		text, ok := p.source.DecodedText()
@@ -801,7 +801,7 @@ func (p *parser) pushComment(line *scannedLine, leading int) {
 	}
 }
 
-// pushSectionSyntax emits the three section pieces (parser.rs:945-971).
+// pushSectionSyntax emits the three section pieces (parser.rs).
 func (p *parser) pushSectionSyntax(line *scannedLine, open, nameStart, nameEnd, closeEnd int) {
 	p.pushPieceLocal(line, open, nameStart, PieceToken, SyntaxKindSectionOpen)
 	if p.failed != nil {
@@ -815,7 +815,7 @@ func (p *parser) pushSectionSyntax(line *scannedLine, open, nameStart, nameEnd, 
 }
 
 // pushEntrySyntax emits the key, delimiter, value, and optional quote
-// pieces (parser.rs:973-1018).
+// pieces (parser.rs).
 func (p *parser) pushEntrySyntax(line *scannedLine, keyStart, keyEnd, delimiterStart,
 	delimiterEnd, valueStart, valueEnd int, quote *[2]int) {
 	p.pushPieceLocal(line, keyStart, keyEnd, PieceToken, SyntaxKindEntryKey)
@@ -846,7 +846,7 @@ func (p *parser) pushEntrySyntax(line *scannedLine, keyStart, keyEnd, delimiterS
 }
 
 // pushWindowsValueSyntax emits the value pieces of a Windows entry
-// (parser.rs:1020-1037).
+// (parser.rs).
 func (p *parser) pushWindowsValueSyntax(line *scannedLine, literalStart, literalEnd,
 	valueStart, valueEnd int, quoteStyle IniQuoteStyle) {
 	if quoteStyle == QuoteStyleNone {
@@ -857,7 +857,7 @@ func (p *parser) pushWindowsValueSyntax(line *scannedLine, literalStart, literal
 		&[2]int{literalStart, valueEnd})
 }
 
-// pushLineBreak emits the line-break trivia piece (parser.rs:1039-1049).
+// pushLineBreak emits the line-break trivia piece (parser.rs).
 func (p *parser) pushLineBreak(lineIndex int) {
 	line := p.lines[lineIndex]
 	if line.decodedBreakStart < line.decodedEnd {
@@ -866,7 +866,7 @@ func (p *parser) pushLineBreak(lineIndex int) {
 }
 
 // pushOptionalWhitespace emits one whitespace piece when non-empty
-// (parser.rs:1051-1065).
+// (parser.rs).
 func (p *parser) pushOptionalWhitespace(line *scannedLine, start, end int) {
 	if start < end {
 		p.pushPieceLocal(line, start, end, PieceTrivia, SyntaxKindWhitespace)
@@ -874,7 +874,7 @@ func (p *parser) pushOptionalWhitespace(line *scannedLine, start, end int) {
 }
 
 // pushPieceLocal emits one piece with decoded offsets relative to the line
-// start (parser.rs:1067-1082).
+// start (parser.rs).
 func (p *parser) pushPieceLocal(line *scannedLine, start, end int, kind StructuralPieceKind,
 	syntax IniSyntaxKind) {
 	if start == end {
@@ -883,7 +883,7 @@ func (p *parser) pushPieceLocal(line *scannedLine, start, end int, kind Structur
 	p.pushPiece(line.decodedStart+start, line.decodedStart+end, kind, syntax)
 }
 
-// pushPiece emits one exhaustive source piece (parser.rs:1084-1107).
+// pushPiece emits one exhaustive source piece (parser.rs).
 func (p *parser) pushPiece(decodedStart, decodedEnd int, kind StructuralPieceKind,
 	syntax IniSyntaxKind) {
 	observed := len(p.pieces) + 1
@@ -904,7 +904,7 @@ func (p *parser) pushPiece(decodedStart, decodedEnd int, kind StructuralPieceKin
 }
 
 // rawSpan converts one decoded UTF-8 byte range into an exact raw span
-// (parser.rs:1109-1125).
+// (parser.rs).
 func (p *parser) rawSpan(decodedStart, decodedEnd int) (document.Span, bool) {
 	rawStart, err := p.source.RawByteAt(document.NewUtf8ByteOffset(decodedStart))
 	if err != nil {
@@ -931,7 +931,7 @@ func (p *parser) decodedContent(line *scannedLine) string {
 }
 
 // issueNode issues one node identity with a fresh ordinal
-// (parser.rs:1132-1142).
+// (parser.rs).
 func (p *parser) issueNode(role document.NodeRole) (document.NodeRef, bool) {
 	observed := int(p.nextNode) + 1
 	p.checkLimit("nodes", observed, p.limits.Common.MaxNodeCount)
@@ -943,7 +943,7 @@ func (p *parser) issueNode(role document.NodeRole) (document.NodeRef, bool) {
 	return node, true
 }
 
-// checkLimit records a fatal resource-limit failure (parser.rs:1144-1156).
+// checkLimit records a fatal resource-limit failure (parser.rs).
 func (p *parser) checkLimit(name string, observed, limit int) {
 	if p.failed != nil {
 		return
@@ -954,7 +954,7 @@ func (p *parser) checkLimit(name string, observed, limit int) {
 }
 
 // diagnostic records one ordered non-fatal or recovery diagnostic
-// (parser.rs:1158-1195).
+// (parser.rs).
 func (p *parser) diagnostic(code string, category protocol.DiagnosticCategory,
 	start, end int, recovered bool) {
 	p.checkLimit("diagnostics", len(p.diagnostics)+1, p.limits.Common.MaxDiagnostics)
@@ -979,7 +979,7 @@ func (p *parser) diagnostic(code string, category protocol.DiagnosticCategory,
 }
 
 // sectionComparison applies the profile comparison rule to one section
-// name (parser.rs:1197-1202).
+// name (parser.rs).
 func (p *parser) sectionComparison(name string) string {
 	if p.profile.isWindows() {
 		return strings.ToLower(name)
@@ -988,7 +988,7 @@ func (p *parser) sectionComparison(name string) string {
 }
 
 // keyComparison applies the profile comparison rule to one entry key
-// (parser.rs:1204-1210).
+// (parser.rs).
 func (p *parser) keyComparison(key string) string {
 	switch {
 	case p.profile.isWindows():
@@ -1000,7 +1000,7 @@ func (p *parser) keyComparison(key string) string {
 }
 
 // assignDuplicateGroups marks duplicate and case-equivalence groups
-// deterministically (parser.rs:1212-1304).
+// deterministically (parser.rs).
 func (p *parser) assignDuplicateGroups() {
 	sectionGroups := map[string][]int{}
 	sectionOrder := []string{}
@@ -1090,7 +1090,7 @@ func (p *parser) assignDuplicateGroups() {
 }
 
 // sortDiagnostics applies the deterministic diagnostic ordering
-// (consema-core diagnostic.rs:107-123): primary start, category, code,
+// (consema-core diagnostic.rs): primary start, category, code,
 // occurrence.
 func sortDiagnostics(diagnostics []*protocol.Diagnostic) {
 	sort.SliceStable(diagnostics, func(i, j int) bool {
@@ -1120,7 +1120,7 @@ func sortDiagnostics(diagnostics []*protocol.Diagnostic) {
 }
 
 // categoryOrder is the frozen diagnostic category discriminant order
-// (consema-core diagnostic.rs:7-30).
+// (consema-core diagnostic.rs).
 func categoryOrder(category protocol.DiagnosticCategory) int {
 	switch category {
 	case protocol.CategoryLexical:
@@ -1236,7 +1236,7 @@ func isWindowsName(byte byte) bool {
 }
 
 // quotedWindowsValue returns the semantic value range and quote style of
-// one Windows literal (parser.rs:1341-1358).
+// one Windows literal (parser.rs).
 func quotedWindowsValue(value string, absoluteStart int) (int, int, IniQuoteStyle) {
 	if len(value) >= 2 {
 		first := value[0]

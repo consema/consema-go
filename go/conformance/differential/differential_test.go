@@ -40,7 +40,9 @@ const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
 
 // resolveCasesDir locates the shared differential case directory: the
 // CONSEMA_DIFFERENTIAL_CASES_DIR environment variable, or — like the Kotlin
-// runner's resolveRepoRoot probe (Runner.kt:447-460) — the nearest ancestor
+// runner's resolveRepoRoot probe
+// (https://github.com/consema/consema-kt/blob/main/kotlin/src/main/kotlin/consema/conformance/Runner.kt
+// 的 resolveRepoRoot) — the nearest ancestor
 // of the package directory that carries a `conformance/differential`
 // directory, either in this checkout or in a sibling consema checkout
 // (consema and consema-go side by side). Without either the harness skips

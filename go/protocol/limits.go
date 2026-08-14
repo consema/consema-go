@@ -22,7 +22,7 @@ type ProtocolLimits struct {
 }
 
 // DefaultProtocolLimits returns the frozen defaults (Rust
-// consema-rs/consema-protocol/src/limits.rs:20-31).
+// consema-rs/consema-protocol/src/limits.rs).
 func DefaultProtocolLimits() ProtocolLimits {
 	return ProtocolLimits{
 		MaxBytes:            64 << 20, // 64 MiB

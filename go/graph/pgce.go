@@ -8,12 +8,12 @@ import (
 // codec, consema-rs/consema-graph/src/pgce.rs (RFC 0006 §5; RFC 0016 §4.1:
 // 144-146):
 //
-//   - stream magic is the ASCII octets "PGCE" (pgce.rs:12);
-//   - version is minimal unsigned LEB128 1 (pgce.rs:14);
+//   - stream magic is the ASCII octets "PGCE" (pgce.rs);
+//   - version is minimal unsigned LEB128 1 (pgce.rs);
 //   - node records are 0x20 Scalar, 0x40 Sequence, 0x41 Mapping
-//     (pgce.rs:16-18);
+//     (pgce.rs);
 //   - all unsigned lengths/counts/IDs are minimal unsigned LEB128
-//     (pgce.rs:398-419).
+//     (pgce.rs).
 //
 // The encoder applies the canonical numbering of RFC 0006 §4 first, so
 // isomorphic graphs have byte-identical PGCE. The decoder is strict: it
@@ -21,14 +21,14 @@ import (
 // stream whose re-encoding differs from the input (defense-in-depth).
 
 // magicPGCE is the PGCE/1 stream magic (ASCII "PGCE",
-// consema-rs/consema-graph/src/pgce.rs:12).
+// consema-rs/consema-graph/src/pgce.rs).
 var magicPGCE = [4]byte{'P', 'G', 'C', 'E'}
 
 // pgceVersion is the frozen PGCE/1 version
-// (consema-rs/consema-graph/src/pgce.rs:14).
+// (consema-rs/consema-graph/src/pgce.rs).
 const pgceVersion = 1
 
-// Node record octets (consema-rs/consema-graph/src/pgce.rs:16-18).
+// Node record octets (consema-rs/consema-graph/src/pgce.rs).
 const (
 	nodeScalar   byte = 0x20
 	nodeSequence byte = 0x40
@@ -36,7 +36,7 @@ const (
 )
 
 // PGCELimits are the bounded PGCE/1 encode/decode resource limits (RFC 0006
-// §6; the Rust PgceLimits, consema-rs/consema-graph/src/pgce.rs:21-54). The zero
+// §6; the Rust PgceLimits, consema-rs/consema-graph/src/pgce.rs). The zero
 // value rejects every stream; use DefaultPGCELimits.
 type PGCELimits struct {
 	// MaxStreamBytes is the maximum complete PGCE stream bytes.
@@ -78,7 +78,7 @@ func DefaultPGCELimits() PGCELimits {
 }
 
 // graphLimits is the construction-limits subset of the codec limits (the
-// Rust PgceLimits::graph_limits, consema-rs/consema-graph/src/pgce.rs:56-68).
+// Rust PgceLimits::graph_limits, consema-rs/consema-graph/src/pgce.rs).
 func (l PGCELimits) graphLimits() Limits {
 	return Limits{
 		MaxRoots:            l.MaxRoots,
@@ -93,7 +93,7 @@ func (l PGCELimits) graphLimits() Limits {
 
 // EncodePGCE encodes one graph as a complete canonical PGCE/1 stream with
 // the default bounded policy (RFC 0016 §4.2). The bytes are byte-identical
-// to the Rust codec's output (consema-rs/consema-graph/src/pgce.rs:219-221); a
+// to the Rust codec's output (consema-rs/consema-graph/src/pgce.rs); a
 // nil graph returns an ErrInvalidValue error.
 func EncodePGCE(g *Graph) ([]byte, error) {
 	return EncodePGCEBounded(g, DefaultPGCELimits())
@@ -101,7 +101,7 @@ func EncodePGCE(g *Graph) ([]byte, error) {
 
 // EncodePGCEBounded encodes one complete canonical PGCE/1 stream after exact
 // size measurement (the Rust encode_pgce_bounded,
-// consema-rs/consema-graph/src/pgce.rs:224-275). It never truncates: exceeding
+// consema-rs/consema-graph/src/pgce.rs). It never truncates: exceeding
 // any limit returns a resource-limit error with no partial output (RFC 0006
 // §6).
 func EncodePGCEBounded(g *Graph, limits PGCELimits) ([]byte, error) {
@@ -156,7 +156,7 @@ func EncodePGCEBounded(g *Graph, limits PGCELimits) ([]byte, error) {
 
 // validateGraphLimits checks the whole-graph limits and the traversal depth
 // before any encoding work (the Rust validate_graph_limits,
-// consema-rs/consema-graph/src/pgce.rs:277-284).
+// consema-rs/consema-graph/src/pgce.rs).
 func validateGraphLimits(g *Graph, limits PGCELimits) error {
 	if err := checkEncodeLimit("graph-roots", len(g.roots), limits.MaxRoots); err != nil {
 		return err
@@ -177,7 +177,7 @@ func validateGraphLimits(g *Graph, limits PGCELimits) error {
 
 // measure computes the exact encoded size of one graph under canonical
 // numbering, enforcing the per-node limits (the Rust measure,
-// consema-rs/consema-graph/src/pgce.rs:286-339). Go int arithmetic cannot
+// consema-rs/consema-graph/src/pgce.rs). Go int arithmetic cannot
 // overflow for any graph whose sizes pass the checks above (all blobs and
 // counts are bounded by the limits), so the Rust SizeOverflow paths are
 // unreachable here.
@@ -225,13 +225,13 @@ func measure(g *Graph, canonicalIDs, order []int, limits PGCELimits) (int, error
 }
 
 // blobSize returns the encoded size of one length-prefixed byte string (the
-// Rust blob_size, consema-rs/consema-graph/src/pgce.rs:348-350).
+// Rust blob_size, consema-rs/consema-graph/src/pgce.rs).
 func blobSize(length int) int {
 	return varintSize(uint64(length)) + length
 }
 
 // checkEncodeLimit reports ErrResourceLimit when observed exceeds limit (the
-// Rust check_encode_limit, consema-rs/consema-graph/src/pgce.rs:360-374).
+// Rust check_encode_limit, consema-rs/consema-graph/src/pgce.rs).
 func checkEncodeLimit(name string, observed, limit int) error {
 	if observed > limit {
 		return &PGCEError{Kind: ErrResourceLimit, Field: name}
@@ -240,7 +240,7 @@ func checkEncodeLimit(name string, observed, limit int) error {
 }
 
 // mapBuildToEncode maps traversal failures onto encode failures (the Rust
-// map_build_to_encode, consema-rs/consema-graph/src/pgce.rs:376-390). Only the
+// map_build_to_encode, consema-rs/consema-graph/src/pgce.rs). Only the
 // resource-limit path can occur on a completed graph.
 func mapBuildToEncode(err error) error {
 	graphErr, ok := err.(*GraphError)
@@ -251,14 +251,14 @@ func mapBuildToEncode(err error) error {
 }
 
 // appendBlob writes a length-prefixed byte string (the Rust write_blob,
-// consema-rs/consema-graph/src/pgce.rs:392-396).
+// consema-rs/consema-graph/src/pgce.rs).
 func appendBlob(out []byte, value []byte) []byte {
 	out = appendVarint(out, uint64(len(value)))
 	return append(out, value...)
 }
 
 // appendVarint writes the minimal unsigned LEB128 encoding of value (the
-// Rust write_varint, consema-rs/consema-graph/src/pgce.rs:398-410).
+// Rust write_varint, consema-rs/consema-graph/src/pgce.rs).
 func appendVarint(out []byte, value uint64) []byte {
 	for {
 		octet := byte(value & 0x7f)
@@ -286,7 +286,7 @@ func varintSize(value uint64) int {
 }
 
 // DecodePGCE strictly decodes one canonical PGCE/1 stream (RFC 0016 §4.2),
-// mirroring the Rust decode (consema-rs/consema-graph/src/pgce.rs:422-507). The
+// mirroring the Rust decode (consema-rs/consema-graph/src/pgce.rs). The
 // decoder rejects every non-canonical form of RFC 0006 §5: wrong magic or
 // version, non-minimal or overflowing or truncated varints, unknown node
 // records, trailing bytes, invalid UTF-8, empty or invalid tags, counts or
@@ -391,7 +391,7 @@ func DecodePGCE(stream []byte, limits PGCELimits) (*Graph, error) {
 			// A mapping association contributes a key and a value edge;
 			// count is bounded by the container limit, so this product
 			// cannot overflow (the Rust checked_mul,
-			// consema-rs/consema-graph/src/pgce.rs:477-480).
+			// consema-rs/consema-graph/src/pgce.rs).
 			if err := d.addEdges(count * 2); err != nil {
 				return nil, err
 			}
@@ -438,7 +438,7 @@ func DecodePGCE(stream []byte, limits PGCELimits) (*Graph, error) {
 }
 
 // decoder is the strict streaming PGCE/1 decoder (the Rust Decoder,
-// consema-rs/consema-graph/src/pgce.rs:509-595).
+// consema-rs/consema-graph/src/pgce.rs).
 type decoder struct {
 	bytes  []byte
 	offset int
@@ -446,7 +446,7 @@ type decoder struct {
 	edges  int
 }
 
-// byte consumes one octet (the Rust Decoder::byte, pgce.rs:517-524).
+// byte consumes one octet (the Rust Decoder::byte, pgce.rs).
 func (d *decoder) byte() (byte, error) {
 	if d.offset >= len(d.bytes) {
 		return 0, &PGCEError{Kind: ErrUnexpectedEnd}
@@ -456,7 +456,7 @@ func (d *decoder) byte() (byte, error) {
 	return b, nil
 }
 
-// take consumes n octets (the Rust Decoder::take, pgce.rs:526-537).
+// take consumes n octets (the Rust Decoder::take, pgce.rs).
 func (d *decoder) take(count int) ([]byte, error) {
 	if count < 0 || d.offset+count > len(d.bytes) {
 		return nil, &PGCEError{Kind: ErrUnexpectedEnd}
@@ -493,7 +493,7 @@ func (d *decoder) varint() (uint64, error) {
 }
 
 // count reads one varint count, converts it to the host int, and enforces
-// the named limit (the Rust Decoder::count, pgce.rs:559-564).
+// the named limit (the Rust Decoder::count, pgce.rs).
 func (d *decoder) count(name string, limit int) (int, error) {
 	value, err := d.varint()
 	if err != nil {
@@ -510,7 +510,7 @@ func (d *decoder) count(name string, limit int) (int, error) {
 }
 
 // reference reads one node reference and rejects out-of-range IDs (the Rust
-// Decoder::reference, pgce.rs:566-574).
+// Decoder::reference, pgce.rs).
 func (d *decoder) reference(nodeCount int) (int, error) {
 	value, err := d.varint()
 	if err != nil {
@@ -527,7 +527,7 @@ func (d *decoder) reference(nodeCount int) (int, error) {
 }
 
 // string reads one length-delimited string (the Rust Decoder::string,
-// pgce.rs:576-586). UTF-8 validity is enforced by the builder layer
+// pgce.rs). UTF-8 validity is enforced by the builder layer
 // (DefineScalar and validateTag return ErrGraphInvalidUTF8, mapped back to
 // the codec's ErrInvalidUTF8 by mapBuildToDecode), so the invalid-UTF-8
 // interception happens exactly where graph invariants are enforced.
@@ -544,7 +544,7 @@ func (d *decoder) string(name string, limit int) (string, error) {
 }
 
 // addEdges accumulates decoded edges under the graph-edges limit (the Rust
-// Decoder::add_edges, pgce.rs:588-594). The accumulated total cannot
+// Decoder::add_edges, pgce.rs). The accumulated total cannot
 // overflow Go int arithmetic because every decoded count already passed the
 // container limit.
 func (d *decoder) addEdges(count int) error {
@@ -556,7 +556,7 @@ func (d *decoder) addEdges(count int) error {
 }
 
 // checkDecodeLimit reports ErrResourceLimit when observed exceeds limit (the
-// Rust check_decode_limit, consema-rs/consema-graph/src/pgce.rs:597-611).
+// Rust check_decode_limit, consema-rs/consema-graph/src/pgce.rs).
 func checkDecodeLimit(name string, observed, limit int) error {
 	if observed > limit {
 		return &PGCEError{Kind: ErrResourceLimit, Field: name}
@@ -581,14 +581,14 @@ func mapBuildToDecode(err error) error {
 	case ErrGraphInvalidUTF8:
 		// The builder is the single UTF-8 enforcement point; the codec maps
 		// its typed error back to the strict wire failure (the Rust
-		// Decoder::string InvalidUtf8, pgce.rs:576-586).
+		// Decoder::string InvalidUtf8, pgce.rs).
 		return &PGCEError{Kind: ErrInvalidUTF8}
 	}
 	return &PGCEError{Kind: ErrInvalidGraph, Cause: graphErr}
 }
 
 // mapEncodeToDecode maps re-encoding failures onto strict decode failures
-// (the Rust map_encode_to_decode, consema-rs/consema-graph/src/pgce.rs:629-642):
+// (the Rust map_encode_to_decode, consema-rs/consema-graph/src/pgce.rs):
 // resource limits pass through; any other encode failure (unreachable here)
 // reports as a varint overflow.
 func mapEncodeToDecode(err error) error {

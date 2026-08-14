@@ -1,7 +1,7 @@
 package document
 
 // MaterializationRequest is the complete immutable request for creating
-// one new target document (materialization.rs:107-203; RFC 0016 §5.2).
+// one new target document (materialization.rs; RFC 0016 §5.2).
 type MaterializationRequest struct {
 	targetProfile    ProfileId
 	style            MaterializationStyleId

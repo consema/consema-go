@@ -10,7 +10,7 @@ import (
 )
 
 // ProjectionTarget is the versioned TOML projection target contract
-// (consema-toml projection.rs:9-14). The unexported field makes the set
+// (consema-toml projection.rs). The unexported field makes the set
 // closed.
 type ProjectionTarget struct {
 	name string
@@ -24,7 +24,7 @@ var ProjectionTargetBestExactCoreV1 = ProjectionTarget{name: "BestExactCore@1"}
 func (t ProjectionTarget) String() string { return t.name }
 
 // ProjectionLimits are the projection resource limits (consema-toml
-// projection.rs:53-75).
+// projection.rs).
 type ProjectionLimits struct {
 	// MaxValueNodes is the maximum produced PortableValue nodes.
 	MaxValueNodes int
@@ -49,7 +49,7 @@ func DefaultProjectionLimits() ProjectionLimits {
 }
 
 // ProjectionRequest is the immutable explicit projection request
-// (consema-toml projection.rs:16-51).
+// (consema-toml projection.rs).
 type ProjectionRequest struct {
 	target ProjectionTarget
 	limits ProjectionLimits
@@ -74,7 +74,7 @@ func (r ProjectionRequest) Target() ProjectionTarget { return r.target }
 func (r ProjectionRequest) Limits() ProjectionLimits { return r.limits }
 
 // Fidelity is the projection fidelity classification (consema-toml
-// projection.rs:77-86).
+// projection.rs).
 type Fidelity string
 
 // The three frozen fidelity levels.
@@ -90,7 +90,7 @@ const (
 )
 
 // ProjectedLocation is a projected value or association location
-// (consema-toml projection.rs:88-96).
+// (consema-toml projection.rs).
 type ProjectedLocation struct {
 	// Path is the portable value location of Value locations.
 	Path protocol.ValuePath
@@ -102,7 +102,7 @@ type ProjectedLocation struct {
 }
 
 // ProvenanceRelation is the source-to-projection relation
-// (consema-toml projection.rs:98-105).
+// (consema-toml projection.rs).
 type ProvenanceRelation string
 
 // The two frozen relations.
@@ -114,7 +114,7 @@ const (
 	ProvenanceRelationDerived ProvenanceRelation = "Derived"
 )
 
-// SourceOrigin is one exact source origin (consema-toml projection.rs:106-118).
+// SourceOrigin is one exact source origin (consema-toml projection.rs).
 type SourceOrigin struct {
 	// Snapshot is the source document snapshot.
 	Snapshot document.SnapshotIdentity
@@ -127,7 +127,7 @@ type SourceOrigin struct {
 }
 
 // ProvenanceEntry is one many-valued provenance mapping entry
-// (consema-toml projection.rs:119-127).
+// (consema-toml projection.rs).
 type ProvenanceEntry struct {
 	// Projected is the projected value or association.
 	Projected ProjectedLocation
@@ -136,7 +136,7 @@ type ProvenanceEntry struct {
 }
 
 // ProvenanceMap is the immutable multi-map from projected locations to
-// source origins (consema-toml projection.rs:129-140).
+// source origins (consema-toml projection.rs).
 type ProvenanceMap struct {
 	entries []ProvenanceEntry
 }
@@ -147,7 +147,7 @@ func (m ProvenanceMap) Entries() []ProvenanceEntry {
 }
 
 // ProjectionReport is the complete ordered projection report
-// (consema-toml projection.rs:142-155). Exact TOML 1.0 projections emit no
+// (consema-toml projection.rs). Exact TOML 1.0 projections emit no
 // transformation or loss events.
 type ProjectionReport struct {
 	events []*protocol.Diagnostic
@@ -159,7 +159,7 @@ func (r ProjectionReport) Events() []*protocol.Diagnostic {
 }
 
 // CompleteProjection is the complete successful projection; its value is
-// never partial (consema-toml projection.rs:158-171).
+// never partial (consema-toml projection.rs).
 type CompleteProjection struct {
 	// Value is the complete immutable public value.
 	Value core.Value
@@ -172,7 +172,7 @@ type CompleteProjection struct {
 }
 
 // FailedProjectionAttempt is the failed attempt without a partial
-// PortableValue (consema-toml projection.rs:172-181).
+// PortableValue (consema-toml projection.rs).
 type FailedProjectionAttempt struct {
 	// Diagnostics are the ordered diagnostics explaining the failure.
 	Diagnostics []*protocol.Diagnostic
@@ -185,7 +185,7 @@ type FailedProjectionAttempt struct {
 }
 
 // ProjectionResult is the projection completion algebra (consema-toml
-// projection.rs:183-189). Exactly one outcome is non-nil.
+// projection.rs). Exactly one outcome is non-nil.
 type ProjectionResult struct {
 	// Complete is the complete success outcome.
 	Complete *CompleteProjection
@@ -194,7 +194,7 @@ type ProjectionResult struct {
 }
 
 // ProjectionFailureKind classifies a stable projection failure
-// (consema-toml projection.rs:192-200).
+// (consema-toml projection.rs).
 type ProjectionFailureKind uint8
 
 // The three stable projection failure classes.
@@ -246,7 +246,7 @@ func (f *ProjectionFailure) Error() string {
 }
 
 // Project applies one immutable explicit projection request
-// (consema-toml projection.rs:202-227). A failure never returns a partial
+// (consema-toml projection.rs). A failure never returns a partial
 // value.
 func (d *Document) Project(request ProjectionRequest) ProjectionResult {
 	context := projectionContext{
@@ -276,7 +276,7 @@ type projectionContext struct {
 }
 
 // projectItem mirrors the Rust project_item (consema-toml
-// projection.rs:238-331).
+// projection.rs).
 func (c *projectionContext) projectItem(index int, path protocol.ValuePath,
 	depth int) (core.Value, *ProjectionFailure) {
 	if depth > c.limits.MaxDepth {
@@ -397,7 +397,7 @@ func sameProjectedLocation(left, right ProjectedLocation) bool {
 }
 
 // projectDateTime maps one TOML temporal datum onto the PortableValue v1
-// closure (consema-toml projection.rs:367-408; RFC 0001 §5).
+// closure (consema-toml projection.rs; RFC 0001 §5).
 func projectDateTime(value TomlDateTime) (core.Value, *ProjectionFailure) {
 	unrepresentable := &ProjectionFailure{Kind: ProjectionFailureUnrepresentableDateTime}
 	switch {
@@ -451,7 +451,7 @@ func coreTimeOf(value TomlTime) (core.Time, error) {
 }
 
 // projectionFailureDiagnostic maps the failure onto the frozen diagnostic
-// (consema-toml projection.rs:410-435).
+// (consema-toml projection.rs).
 func projectionFailureDiagnostic(document *Document, failure *ProjectionFailure) *protocol.Diagnostic {
 	var code string
 	var category protocol.DiagnosticCategory

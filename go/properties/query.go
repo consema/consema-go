@@ -16,7 +16,7 @@ import (
 // code units encoded as `UTF16BE/1` and never normalizes Unicode or case;
 // duplicate matches remain distinct and ordered.
 
-// PropertiesMatchKind is the closed native match variant (query.rs:13-74).
+// PropertiesMatchKind is the closed native match variant (query.rs).
 type PropertiesMatchKind string
 
 // The five frozen native match variants.
@@ -36,7 +36,7 @@ const (
 )
 
 // PropertiesMatch is one snapshot-bound Java Properties native semantic
-// query match (query.rs:13-74). Only the fields of the declared Kind are
+// query match (query.rs). Only the fields of the declared Kind are
 // meaningful.
 type PropertiesMatch struct {
 	// Kind is the match variant.
@@ -79,7 +79,7 @@ type PropertiesMatch struct {
 func (m *PropertiesMatch) NodeRef() document.NodeRef { return m.identity }
 
 // PropertiesSyntaxMatch is one snapshot-bound Java Properties lossless
-// syntax query match (query.rs:88-121).
+// syntax query match (query.rs).
 type PropertiesSyntaxMatch struct {
 	node    document.NodeRef
 	span    document.Span
@@ -114,7 +114,7 @@ const (
 )
 
 // ExecutePropertiesQuery executes a validated Properties native semantic
-// query against one immutable snapshot (query.rs:124-150). The context is
+// query against one immutable snapshot (query.rs). The context is
 // used for cancellation and deadlines only. Steps and result counts are
 // bounded by limits; exceeding either is core.query.resource-limit@1.
 func ExecutePropertiesQuery(ctx context.Context, executable *protocol.ExecutableQuery,
@@ -145,7 +145,7 @@ func ExecutePropertiesQuery(ctx context.Context, executable *protocol.Executable
 
 // ExecutePropertiesQueryCursor executes a validated Properties native
 // query and exposes the complete result through an ordered cursor with
-// cancellation (query.rs:152-164).
+// cancellation (query.rs).
 func ExecutePropertiesQueryCursor(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) (*PropertiesQueryCursor, *protocol.QueryFailure) {
 	matches, failure := ExecutePropertiesQuery(ctx, executable, doc, limits)
@@ -156,7 +156,7 @@ func ExecutePropertiesQueryCursor(ctx context.Context, executable *protocol.Exec
 }
 
 // ExecutePropertiesSyntaxQuery executes a validated Properties lossless
-// syntax query in raw source order (query.rs:166-211).
+// syntax query in raw source order (query.rs).
 func ExecutePropertiesSyntaxQuery(ctx context.Context, executable *protocol.ExecutableQuery,
 	doc *Document, limits protocol.QueryLimits) ([]PropertiesSyntaxMatch, *protocol.QueryFailure) {
 	domain := executable.Definition().Domain()
@@ -201,7 +201,7 @@ func ExecutePropertiesSyntaxQueryCursor(ctx context.Context, executable *protoco
 	return &PropertiesSyntaxQueryCursor{ctx: ctx, matches: matches}, nil
 }
 
-// PropertiesQueryCursor is the ordered native match cursor (query.rs:152-164).
+// PropertiesQueryCursor is the ordered native match cursor (query.rs).
 type PropertiesQueryCursor struct {
 	ctx      context.Context
 	matches  []PropertiesMatch
@@ -376,7 +376,7 @@ func (c *propertiesQueryContext) escapeMatch(ordinal int) PropertiesMatch {
 }
 
 // logicalLineSpan resolves the raw span of one logical-line match for
-// structure-order merging (query.rs:622-632).
+// structure-order merging (query.rs).
 func (c *propertiesQueryContext) logicalLineSpan(node document.NodeRef) int {
 	for _, line := range c.document.logicalLines {
 		if line.node != node {
@@ -448,7 +448,7 @@ func executePropertiesExpression(ctx context.Context, expression *protocol.Query
 }
 
 // propertiesSourceOrder resolves the deterministic source-order key of one
-// native match (query.rs:609-634).
+// native match (query.rs).
 func propertiesSourceOrder(context *propertiesQueryContext, match *PropertiesMatch) (int, int) {
 	switch match.Kind {
 	case PropertiesMatchDocument:
@@ -463,7 +463,7 @@ func propertiesSourceOrder(context *propertiesQueryContext, match *PropertiesMat
 	return 0, 0
 }
 
-// applyPropertiesOperator evaluates one native operator (query.rs:398-532).
+// applyPropertiesOperator evaluates one native operator (query.rs).
 func applyPropertiesOperator(ctx context.Context, operator *protocol.OperatorCall,
 	input []PropertiesMatch, context *propertiesQueryContext) ([]PropertiesMatch, *protocol.QueryFailure) {
 	if failure := checkCancelled(ctx); failure != nil {
@@ -777,7 +777,7 @@ func applySyntaxOperator(ctx context.Context, operator *protocol.OperatorCall,
 }
 
 // decodedSpanText resolves one syntax span into decoded UTF-8 text
-// (query.rs:636-651).
+// (query.rs).
 func decodedSpanText(document *Document, span document.Span, text string) string {
 	start, err := document.source.DecodedPosition(span.StartByte())
 	if err != nil {
@@ -791,7 +791,7 @@ func decodedSpanText(document *Document, span document.Span, text string) string
 }
 
 // javaStringEqualsUTF16BE compares exact Java code units against `UTF16BE/1`
-// bytes (query.rs:653-661).
+// bytes (query.rs).
 func javaStringEqualsUTF16BE(value *JavaString, expected []byte) bool {
 	if len(value.units)*2 != len(expected) {
 		return false
@@ -805,7 +805,7 @@ func javaStringEqualsUTF16BE(value *JavaString, expected []byte) bool {
 }
 
 // unicodeTextEqualsUTF16BE compares one well-formed decoded text against
-// `UTF16BE/1` bytes (query.rs:662-673).
+// `UTF16BE/1` bytes (query.rs).
 func unicodeTextEqualsUTF16BE(value string, expected []byte) bool {
 	if len(expected)%2 != 0 {
 		return false
