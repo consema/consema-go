@@ -43,15 +43,14 @@ jobs:
       # G070/G080): the spec-repository checkout is pinned to the commit
       # that carries the cfd6e296 vector inventory, so the release-time
       # provision and the go-module pinned digest always agree. The pin is
-      # 096e5f8 — its vectors are byte-identical to the prior pins
-      # ad667021/6cfd389 (same cfd6e296 manifest digest) and it carries
-      # the fixed conformance doc copies (conformance/README.md,
-      # corpora/README.md, oracle manifests) plus the 2026-08-14 wave-2
-      # audit fixes (all five language repos pin it).
+      # 9aa6597 (wave-4 R5, 2026-08-15) — the mother-repo HEAD carrying
+      # all wave-3/wave-4 manifest+conformance fixes (same cfd6e296
+      # aggregate digest; fc-manifest sha256 3fdf9a77… asserted after
+      # provision) and all four language repos pin it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: consema/consema
-          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
+          ref: 9aa65976d51d27f93afcffca957475368a69e93b # wave-4 unified provision pin (mother-repo HEAD; fc-manifest sha256 3fdf9a77 asserted)
           path: consema-repo
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
@@ -71,6 +70,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $source)) {
             throw "conformance data not found in the consema checkout: $source"
           }
+          if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
           Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
           New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
@@ -78,6 +78,14 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          # Wave-4 R5 manifest sha256 assertion (unified provision pin
+          # 9aa6597): the pinned checkout must carry exactly the digest
+          # recorded at the pin — silent manifest drift fails the job.
+          $expectedDigest = '3fdf9a77323705dfaf24e8f3a822b9217da20dd243e668165f4d06a9ea64676d'
+          $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
+          }
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
       # Release guard (rc 前六角色审计 P1, 2026-08-12; G106 extension,
@@ -137,8 +145,7 @@ jobs:
   # ci-go.yml's go-differential job exactly (same checkouts, provision and
   # harness steps) so a released tag carries the same cross-language parity
   # evidence as a merged PR. The spec-repository checkout is pinned to
-  # 096e5f8 (the cfd6e296 inventory commit with the fixed conformance doc
-  # copies, G111/G070/G080).
+  # 9aa6597 (the wave-4 unified provision pin, G111/G070/G080/R5).
   differential:
     name: go differential on tag (byte parity + normalized + protocol exchange + shared conformance)
     needs: verify
@@ -161,7 +168,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
+          ref: 9aa65976d51d27f93afcffca957475368a69e93b # wave-4 unified provision pin (mother-repo HEAD; fc-manifest sha256 3fdf9a77 asserted)
           path: consema-repo
       # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
       # pinned to 1.97.1 — the version this harness was locally verified
@@ -195,6 +202,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $source)) {
             throw "conformance data not found in the consema checkout: $source"
           }
+          if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
           Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
           New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
@@ -202,6 +210,14 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          # Wave-4 R5 manifest sha256 assertion (unified provision pin
+          # 9aa6597): the pinned checkout must carry exactly the digest
+          # recorded at the pin — silent manifest drift fails the job.
+          $expectedDigest = '3fdf9a77323705dfaf24e8f3a822b9217da20dd243e668165f4d06a9ea64676d'
+          $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
+          }
           $count = @(Get-ChildItem -LiteralPath $target -Recurse -File).Count
           Write-Output "provisioned conformance/: $count files + docs/fc-manifest-0.13.0.json"
       - name: scripts/go-verify-byte-parity.ps1

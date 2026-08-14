@@ -104,15 +104,16 @@ jobs:
       # G070 (adversarial audit, 2026-08-14): the spec-repository checkout
       # is ref-pinned — the provisioned conformance data must be
       # reproducible, not whatever live HEAD happens to carry when the job
-      # runs. The pin is 096e5f8: its vectors are byte-identical to the
-      # prior pins ad667021/6cfd389 (same cfd6e296 manifest digest) and it
-      # carries the fixed conformance doc copies (G080) plus the
-      # 2026-08-14 wave-2 audit fixes (all five language repos pin it).
+      # runs. The pin is 9aa6597 (wave-4 R5, 2026-08-15): the mother-repo
+      # HEAD carrying all wave-3/wave-4 manifest+conformance fixes (incl.
+      # the plist-macos-v1 skip truthing, W3-02); same cfd6e296 aggregate
+      # digest; fc-manifest sha256 3fdf9a77… asserted after every provision
+      # (R5). All four language repos pin it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
+          ref: 9aa65976d51d27f93afcffca957475368a69e93b # wave-4 unified provision pin (mother-repo HEAD; fc-manifest sha256 3fdf9a77 asserted)
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -126,6 +127,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $source)) {
             throw "conformance data not found in the consema checkout: $source"
           }
+          if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
           Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
           New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
@@ -133,6 +135,14 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          # Wave-4 R5 manifest sha256 assertion (unified provision pin
+          # 9aa6597): the pinned checkout must carry exactly the digest
+          # recorded at the pin — silent manifest drift fails the job.
+          $expectedDigest = '3fdf9a77323705dfaf24e8f3a822b9217da20dd243e668165f4d06a9ea64676d'
+          $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
+          }
           # The toml.corpus.cargo-manifest case reads the committed fixture
           # conformance/fixtures/toml/Cargo.toml (single authority), which is
           # included in the conformance/ copy above; no workspace-root
@@ -174,7 +184,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
+          ref: 9aa65976d51d27f93afcffca957475368a69e93b # wave-4 unified provision pin (mother-repo HEAD; fc-manifest sha256 3fdf9a77 asserted)
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -188,6 +198,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $source)) {
             throw "conformance data not found in the consema checkout: $source"
           }
+          if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
           Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
           New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
@@ -195,6 +206,14 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          # Wave-4 R5 manifest sha256 assertion (unified provision pin
+          # 9aa6597): the pinned checkout must carry exactly the digest
+          # recorded at the pin — silent manifest drift fails the job.
+          $expectedDigest = '3fdf9a77323705dfaf24e8f3a822b9217da20dd243e668165f4d06a9ea64676d'
+          $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
+          }
           # The toml.corpus.cargo-manifest case reads the committed fixture
           # conformance/fixtures/toml/Cargo.toml (single authority), which is
           # included in the conformance/ copy above; no workspace-root
@@ -234,9 +253,8 @@ jobs:
           persist-credentials: false
       # G070 (adversarial audit, 2026-08-14): ref-pinned checkouts — the
       # Rust emitter workspace (same pin as the py/ts/kt repos) and the
-      # spec repository (096e5f8, the cfd6e296 inventory with the fixed
-      # conformance doc copies, see go-matrix) must be reproducible, not
-      # whatever live HEAD carries.
+      # spec repository (9aa6597, the wave-4 unified provision pin, see
+      # go-matrix) must be reproducible, not whatever live HEAD carries.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
@@ -247,7 +265,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: 096e5f840ecc714912db779706fd881405b92308 # cfd6e296 inventory + fixed conformance docs (G070/G080)
+          ref: 9aa65976d51d27f93afcffca957475368a69e93b # wave-4 unified provision pin (mother-repo HEAD; fc-manifest sha256 3fdf9a77 asserted)
           path: consema-repo
       # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
       # pinned to 1.97.1 — the version this harness was locally verified
@@ -273,6 +291,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $source)) {
             throw "conformance data not found in the consema checkout: $source"
           }
+          if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
           Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
           New-Item -ItemType Directory -Force (Join-Path $env:GITHUB_WORKSPACE 'docs') | Out-Null
           $manifest = Join-Path $env:GITHUB_WORKSPACE 'consema-repo\docs\fc-manifest-0.13.0.json'
@@ -280,6 +299,14 @@ jobs:
             throw "fc-manifest not found in the consema checkout: $manifest"
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
+          # Wave-4 R5 manifest sha256 assertion (unified provision pin
+          # 9aa6597): the pinned checkout must carry exactly the digest
+          # recorded at the pin — silent manifest drift fails the job.
+          $expectedDigest = '3fdf9a77323705dfaf24e8f3a822b9217da20dd243e668165f4d06a9ea64676d'
+          $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
+          if ($actualDigest -ne $expectedDigest) {
+            throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
+          }
           # The toml.corpus.cargo-manifest case reads the committed fixture
           # conformance/fixtures/toml/Cargo.toml (single authority), which is
           # included in the conformance/ copy above; no workspace-root
