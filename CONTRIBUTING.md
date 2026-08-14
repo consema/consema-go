@@ -29,8 +29,12 @@ go test -race ./...
 conformance 套件用例（go/conformance，固定仓库相对路径）在干净克隆上
 直接失败；差分 harness 用例（go/conformance/differential*）在 case 集
 不可达时跳过（G058，对抗审计 2026-08-13——两条路径口径不同，均不伪造
-成功）——先按下方「Conformance 数据同步」provision（并排检出母仓
-conformance 数据），或直接运行 CI 同款脚本
+成功）；**第三条路径（R35，波 4 裁决 2026-08-15）**：`go/json`、
+`go/toml`、`go/yaml`、`go/properties`、`go/pilot` 五个包的测试硬读
+`../../conformance/...` 且无任何 skip 守卫，未 provision 的干净克隆上
+这些包同样直接 `t.Fatal` 失败——三条路径中，只有差分 harness 会跳过，
+其余均大声失败。先按下方「Conformance 数据同步」provision（并排检出
+母仓 conformance 数据），或直接运行 CI 同款脚本
 （`scripts/go-verify-shared-conformance.ps1` 等，见「贡献点」）。
 
 ## 贡献点
@@ -44,8 +48,13 @@ conformance 数据），或直接运行 CI 同款脚本
   脚本构建 consema-rs 的 Rust emitter 对拍本实现。
 - **Conformance 数据同步**：conformance 数据来自规范仓 checkout（CI 多仓
   模式），权威在规范仓，改动必须回规范仓提交后再同步。本地手动 provision：
-  从规范仓拷贝 `conformance/` 至本仓根、`docs/fc-manifest-0.13.0.json` 至
-  `docs/`（不入库，见 `.gitignore`）。
+  从规范仓 checkout 拷贝 `conformance/` 至本仓根、
+  `docs/fc-manifest-0.13.0.json` 至 `docs/`（不入库，见 `.gitignore`）；
+  **checkout 必须钉定与 ci-go.yml provision 步骤相同的 ref**（R5，波 4
+  2026-08-15：CI 验证的就是该 ref 的 conformance 数据与 manifest，母仓
+  main 前进不影响本地与 CI 的一致性；ref 变更以 ci-go.yml 的
+  provision 步骤为准，不要从移动目标 HEAD 拷贝——否则本地数据与 CI
+  实际验证的数据静默分叉）。
 
 ## CI 门禁
 

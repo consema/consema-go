@@ -94,7 +94,7 @@ func main() {
 }
 ```
 
-完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。上方快速开始代码的仓库副本在 [`go/examples/quickstart`](go/examples/quickstart)，与 README 栅栏**人工同步**（CI examples job 编译并运行该副本，只保证示例可运行，不比对栅栏文本——G032，对抗审计 2026-08-14：旧文「防止文档示例漂移」过强，examples job 从不比对 README 栅栏）。
+完整链示例（parse → 操作符式原生语义查询 → best-exact 投影 → 结构编辑 → canonical 物化 → 跨格式转换到 TOML）：[`go/examples/sdk_chain`](go/examples/sdk_chain)，运行 `cd go && go run ./examples/sdk_chain`。上方快速开始代码的仓库副本在 [`go/examples/quickstart`](go/examples/quickstart)，与 README 栅栏**逐字节比对**（CI examples job 编译并运行该副本，并比对栅栏代码体与副本——R6，波 4 裁决 2026-08-15：补齐 kt 式 fence 比对门禁，旧机制「人工同步、不比对栅栏文本」已证漂移，G032/G053 注记见 ci-go.yml examples job）。
 
 ## API 摘要
 
@@ -123,12 +123,15 @@ func main() {
   conformance 数据来自规范仓 checkout。
 - `.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
   旧文 6 个 job 漏 govulncheck）——go-matrix（1.26.0 声明最小版本 /
-  1.26.5 当前稳定两版本 gofmt/vet/build/test/race，与 go.mod 声明的
-  `go 1.26` 最小版本真实对齐，RFC 0020 §9.2）、coverage（≥60% 语句覆盖）、
+  1.26.5 矩阵钉定两版本 gofmt/vet/build/test/race，与 go.mod 声明的
+  `go 1.26` 最小版本真实对齐，RFC 0020 §9.2；R19，波 4 裁决
+  2026-08-15：'当前稳定'腿按 RFC 0020 §9.2 从未满足，go.dev 当前
+  stable 已是 1.26.6，矩阵升级 post-1.0.0）、coverage（≥60% 语句覆盖）、
   go-differential（windows-latest 多仓 checkout，四个跨语言差分
-  harness）、govulncheck（Go 漏洞库每日审计）、check-version-consistency、
-  examples、check（alls-green 聚合门禁，branch protection 唯一必选
-  check）。
+  harness）、govulncheck（Go 漏洞库审计；**每日 cron 在独立
+  audit.yml**——本 job 仅 push/PR 触发，G099 波 4 2026-08-15 归因）、
+  check-version-consistency、examples、check（alls-green 聚合门禁，
+  branch protection 唯一必选 check）。
 
 ## 构建与测试
 
@@ -143,11 +146,17 @@ go test -race ./...
 `go test ./...` 的 conformance 套件用例（go/conformance，仓库相对路径
 `conformance/vectors` 等）在未 provision 时直接失败；差分 harness 用例
 （go/conformance/differential*）在 case 集不可达时 `t.Skipf` 跳过（G058，
-对抗审计 2026-08-13：两条路径口径不同，均不会伪造成功）。需要先按
-[CONTRIBUTING.md](CONTRIBUTING.md)「Conformance 数据同步」并排检出母仓
-conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
-`docs/fc-manifest-0.13.0.json` 至 `docs/`。未 provision 时 conformance
-套件测试会失败（非跳过），这正是 CI 多仓 checkout 模式所 provision 的内容。
+对抗审计 2026-08-13：两条路径口径不同，均不会伪造成功）；**第三条路径
+（R35，波 4 裁决 2026-08-15）**：`go/json`、`go/toml`、`go/yaml`、
+`go/properties`、`go/pilot` 五个包的测试硬读 `../../conformance/...`
+且无 skip 守卫（如 `go/json` 的 `TestJSON5ReferenceCorpus`），未
+provision 时同样直接失败——三条路径中只有差分 harness 会跳过。
+需要先按 [CONTRIBUTING.md](CONTRIBUTING.md)「Conformance 数据同步」并排
+检出母仓 conformance 数据：从规范仓钉定 checkout 拷贝 `conformance/`
+至本仓根、`docs/fc-manifest-0.13.0.json` 至 `docs/`（钉定 ref 与
+ci-go.yml provision 步骤一致，R5 波 4 2026-08-15）。未 provision 时
+conformance 套件测试会失败（非跳过），这正是 CI 多仓 checkout 模式所
+provision 的内容。
 
 ## FAQ
 
@@ -156,7 +165,7 @@ conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
 - **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md`。
 - **零依赖吗？** 是——`go.mod` 零 `require`，只使用标准库（math/big、hash/fnv、crypto/sha256、unicode/utf8 等）。
 - **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与四个 Go-Rust 差分门禁（byte parity / normalized differential / protocol exchange / shared conformance；G029，对抗审计 2026-08-14：旧文只列三个 harness，漏 shared-conformance）。
-- **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.26，RFC 0020 §9.2 冻结）与当前稳定上真实验证；兼容与支持政策见 RFC 0020。
+- **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.26，RFC 0020 §9.2 冻结）与矩阵钉定的 1.26.5 上真实验证（R19，波 4 裁决 2026-08-15：'当前稳定'腿从未满足——go.dev 当前 stable 已是 1.26.6，矩阵升级 post-1.0.0）；兼容与支持政策见 RFC 0020。
 - **如何贡献？** 见本仓 [CONTRIBUTING.md](CONTRIBUTING.md)（规范仓为权威版）；conformance 向量/夹具/oracle/差分数据权威在规范仓——向量变更是五仓同步事件，必须先回规范仓提交再同步五个语言仓。
 - **"默认拒绝信息损失"是什么意思？** 投影/转换/编辑中的任何 loss（如 YAML 共享结构展开、Properties 重复键折叠、数值舍入）必须显式授权；未授权时操作原子失败（`ConversionResult.Failed`；fidelity 三档：Exact / Transformed / Lossy）。
 

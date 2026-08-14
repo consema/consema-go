@@ -39,7 +39,7 @@ Materialization 在递归与输出分配前计算 input node/depth 和增长上�
 
 **依赖门禁（consema-go 注记）。** 本段语义引用规范仓（Rust）的依赖门禁；consema-go 侧对应机制为零第三方依赖（`go.mod` 零 require）+ `govulncheck` 每日审计（`.github/workflows/audit.yml`）。
 
-依赖门禁由 `Cargo.lock`、精确锁定的 TOML/Unicode 依赖、RustSec `cargo audit` 和仓库级 `deny.toml` 共同执行。`cargo deny check` 拒绝已知公告、未知 registry/Git 来源、通配版本和重复版本，并只允许当前实际使用的 MIT/Apache-2.0/Unicode-3.0/BSD-3-Clause 四种许可证（G153，对抗审计 2026-08-13：权威 deny.toml allow 为四，BSD-3-Clause 由 encoding_rs 实际使用）；任何例外都必须携带可审计理由进入版本控制。
+依赖门禁由 `Cargo.lock`、精确锁定的 TOML/Unicode 依赖、RustSec `cargo audit` 和仓库级 `deny.toml` 共同执行。`cargo deny check` 拒绝已知公告、未知 registry/Git 来源、通配版本和重复版本，并只允许当前实际使用的 MIT/Apache-2.0/Unicode-3.0/BSD-3-Clause 四种许可证（G153，对抗审计 2026-08-13：权威 deny.toml allow 为四，BSD-3-Clause 由 encoding_rs 实际使用）；「拒绝重复版本」按 deny.toml bans 图口径成立——bans 图排除 dev-dependencies 与 lockfile-only 包，现存 3 组 justified duplicates（getrandom/syn/r-efi）放行（R8，波 4 裁决 2026-08-15）；任何例外都必须携带可审计理由进入版本控制。
 
 ## 安全披露与支持周期
 
@@ -49,4 +49,4 @@ Materialization 在递归与输出分配前计算 input node/depth 和增长上�
 
 **响应 SLA（按缺陷等级）。** P0（数据破坏、静默损失、RCE/外部访问、错误写文件、跨快照误编辑）：24 小时内确认，7 天内给出修复或缓解方案。P1（panic/crash/hang、错误完成状态、明显语义不一致、limit bypass）：72 小时内确认，14 天内修复。P2（有安全替代路径的功能缺陷、非核心性能回退、诊断位置错误）：随下一个发布窗口修复，发布判断逐项记录。P3（文档、易用性、非稳定 message、低风险边角）：尽力而为。任何等级都不得用降级测试或截断包装来"修复"；资源上限与完成状态语义是安全边界（见本文档开头部分），不能因披露而放松。
 
-**支持窗口。** 1.0.0 发布前，安全修复只承诺两个窗口：最新稳定版本与其上一 minor（当前版本见 README `Version:` 行（本段避免硬编码版本串）；窗口为最新 rc 版本与其前一 rc——G060，对抗审计 2026-08-14：旧文「当前为最新发布 tag 与其前一版本」指向不存在的对象，本仓尚无发布 tag；母仓 v0.1.0-v0.8.0 为拆分前 Rust 发布记录）；更早版本不承诺修复，除非影响面证明必须回移。正式支持的目标以本仓 CI 覆盖为准（Go 门禁在 ubuntu-latest，Go-Rust 差分门禁在 windows-latest，x86_64）；Go 支持窗口为 go.mod 声明的 `go 1.26`（0.14.0 冻结，RFC 0020 §9.2）起的所有版本——每个 Go minor 发布支持当时最新两个 Go minor 版本——CI go-matrix 以 '1.26.0'（声明最小版本，G031 对抗审计 2026-08-14：旧文 '1.26.x' 解析为 minor 线最新补丁，真正最小版本从未被 CI 验证）与 '1.26.5'（当前稳定）两版本真实验证，最低版本提升必须走 go.mod 变更记录；Go 实现（0.14.0 起）的版本窗口在 Go RC 时按当时稳定生态冻结（RFC 0020 §9.2）。公共 API 与 CLI 命令的弃用期至少一个 minor；contract/Profile 退役必须走 RFC 进程，已冻结的 v1-v7 registry 永不删除 code（G058，对抗审计 2026-08-14：旧文 v1-v6 漏 v7），退役只改变新输入的接受行为并在发布记录中列明。
+**支持窗口。** 1.0.0 发布前，安全修复只承诺两个窗口：最新稳定版本与其上一 minor（当前版本见 README `Version:` 行（本段避免硬编码版本串）；窗口为最新 rc 版本与其前一 rc——G060，对抗审计 2026-08-14：旧文「当前为最新发布 tag 与其前一版本」指向不存在的对象，本仓尚无发布 tag；母仓 v0.1.0-v0.8.0 为拆分前 Rust 发布记录）；更早版本不承诺修复，除非影响面证明必须回移。正式支持的目标以本仓 CI 覆盖为准（Go 门禁在 ubuntu-latest，Go-Rust 差分门禁在 windows-latest，x86_64）；Go 支持窗口为 go.mod 声明的 `go 1.26`（0.14.0 冻结，RFC 0020 §9.2）起的所有版本——每个 Go minor 发布支持当时最新两个 Go minor 版本——CI go-matrix 以 '1.26.0'（声明最小版本，G031 对抗审计 2026-08-14：旧文 '1.26.x' 解析为 minor 线最新补丁，真正最小版本从未被 CI 验证）与 '1.26.5'（矩阵钉定——R19，波 4 裁决 2026-08-15：go.dev 当前 stable 已是 1.26.6，'当前稳定'腿按 RFC 0020 §9.2 从未满足，矩阵升级 post-1.0.0，文档以冻结矩阵事实表述）两版本真实验证，最低版本提升必须走 go.mod 变更记录；Go 实现（0.14.0 起）的版本窗口在 Go RC 时按当时稳定生态冻结（RFC 0020 §9.2）。公共 API 与 CLI 命令的弃用期至少一个 minor；contract/Profile 退役必须走 RFC 进程，已冻结的 v1-v7 registry 永不删除 code（G058，对抗审计 2026-08-14：旧文 v1-v6 漏 v7），退役只改变新输入的接受行为并在发布记录中列明。

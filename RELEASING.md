@@ -13,8 +13,9 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
 
 1. **版本 bump**：Go 无 manifest 版本（go.mod 不声明包版本），版本号由
    发布火车承载——改仓根 `README.md` 的 `Version:` 行
-   （`check-version-consistency` 门禁要求该行存在；随六仓同步 bump，
-   当前 1.0.0-rc.1）。
+   （`check-version-consistency` 门禁要求该行存在；随六仓同步 bump；
+   当前版本见该行——R36，波 4 裁决 2026-08-15：本手册不再内联版本
+   字面量，避免火车 bump 后手册行静默陈旧）。
 2. **CHANGELOG 策展**：记录本版本变更；跨语言变更同步到
    consema 仓库根 `CHANGELOG.md`（G156，对抗审计 2026-08-13：旧文指向
    `docs/CHANGELOG.md`，那是 870 字节勘误页而非历史记录——真实历史在根
@@ -34,14 +35,21 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
    2026-08-13：旧文把顺序写成"先校验后 provision"，实际 workflow 先做
    conformance 数据 provision、再跑校验）：
    - `verify` job（ubuntu-latest）：provision conformance 数据（多仓
-     checkout，规范仓钉 096e5f8）→ 校验 tag 提交是 origin/main 的祖先
-     （`git merge-base --is-ancestor` 判定；G071，对抗审计 2026-08-14：
-     不比 job 时刻的 origin/main HEAD——tag 提交在推送时已固定
-     （$GITHUB_SHA），祖先判定无竞态，main 前进不会误拒合法 tag，也不
-     允许 divergent 分支上的 tag 发布）→ 校验 tag↔版本一致（tag 去掉
-     `v` 前缀必须等于仓根 `README.md` 的 `Version:` 行，不一致即 exit 1
-     中止）→ 在 tag 上重跑完整门禁（gofmt + vet + build + test + race，
-     含 conformance 数据，与 ci-go.yml 同款）；
+     checkout，规范仓钉统一 provision ref，见 ci-go.yml provision
+     步骤——R5，波 4 2026-08-15）→ 校验 tag 提交是 origin/main 的祖先
+     （`$GITHUB_SHA^{commit}` peel 后 `git merge-base --is-ancestor`
+     判定——R7，波 4 裁决 2026-08-15：peel 兼容 annotated tag 形态；
+     G071，对抗审计 2026-08-14：不比 job 时刻的 origin/main HEAD——tag
+     提交在推送时已固定，祖先判定无竞态，main 前进不会误拒合法 tag，
+     也不允许 divergent 分支上的 tag 发布）且落在 24 小时 recency
+     window 内（对齐 consema-rs release.yml 的同一 G71 守卫——tag 提交
+     早于 main HEAD 超过 24 小时的陈旧 tag 拒绝发布；R7 波 4 裁决
+     2026-08-15）→ 校验 tag↔版本一致（tag 去掉 `v` 前缀必须等于仓根
+     `README.md` 的 `Version:` 行，不一致即 exit 1 中止）→ 在 tag 上
+     重跑完整门禁（gofmt + vet + build + test + race，含 conformance
+     数据与 `-tags release` 编译腿——R13，波 4 裁决 2026-08-15：
+     G114 声称的 release 变体注入缝编译掉行为由此被 CI 实测，不再只
+     依赖 goreleaser P2 的未接线构建指令；与 ci-go.yml 同款）；
    - `differential` job（windows-latest，G106）：在 tag 上重跑四个跨语言
      差分 harness（byte parity / normalized / protocol exchange / shared
      conformance -StrictSkips，与 ci-go.yml go-differential 同款）；

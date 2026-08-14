@@ -4,9 +4,12 @@
 #
 #   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race,
 #            §21.2 "最低版本 CI 验证"), a 2-version matrix
-#            ('1.26.0' declared minimum + '1.26.5' current stable,
-#            fail-fast: false) per RFC 0020 §9.2 ("CI runs the module on the
-#            declared minimum and on current stable"). go.mod declares
+#            ('1.26.0' declared minimum + '1.26.5' matrix-pinned — R19,
+#            wave-4 2026-08-15: go.dev's current stable is 1.26.6, so the
+#            RFC 0020 §9.2 "current stable" leg was never satisfied; the
+#            docs state the frozen matrix fact and the matrix upgrade is
+#            post-1.0.0 — per RFC 0020 §9.2,
+#            fail-fast: false) per the frozen matrix. go.mod declares
 #            `go 1.26` (frozen at 0.14.0; RFC 0020 §9.2, support-policy.md
 #            §2); the minimum leg is the exact 1.26.0 patch so the declared
 #            minimum is genuinely exercised (G031, adversarial audit
@@ -59,8 +62,13 @@
 #            push/pull_request side by side).
 #   check-version-consistency: asserts the README release-train "Version:"
 #            line (go.mod declares no package version, so the line is the
-#            train bump's CI hook) and that the conformance CLI pins the
-#            same value in go/cmd/consema-conformance/main.go.
+#            train bump's CI hook), that both CLI productVersion pins
+#            (go/cmd/consema-conformance/main.go and go/cmd/consema/
+#            version.go — G127 extension) carry the same value, and that
+#            go/protocol/cli_test.go's constructed-envelope fixture
+#            literals carry the current version at the pinned count
+#            (wave-4 R36: the third grep makes the train bump update the
+#            15 fixture literals too).
 #   examples: vets and runs the committed go/examples/sdk_chain example (no
 #            conformance data, so no multi-repo checkout or provision step).
 #   check: the alls-green aggregate gate ("check (all gates green)", the
@@ -159,8 +167,15 @@ jobs:
       # replay could skip the conformance digest/case-count assertions after
       # provisioning (the race leg already runs -shuffle=on, which bypasses
       # the cache).
-      - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on
-        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./...
+      # R13 (wave-4 ruling, 2026-08-15): the release-tagged build variant
+      # (apply_injections_release.go, //go:build release) is compiled and
+      # tested here — G114's claim that the release build compiles out the
+      # CONSEMA_APPLY_INTERRUPT_AFTER / CONSEMA_APPLY_WRITE_FAILURE
+      # injection seams was previously backed by nothing (no workflow ever
+      # built with -tags release); the release.yml verify chain runs the
+      # same legs.
+      - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
+        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./... && go build -tags release ./... && go test -tags release -count=1 ./...
 
   # Coverage gate (gate plan §4 M3 standing toolchain; roadmap §18.3
   # "Coverage 不替代语义证明"): go test measures the whole module with the
@@ -348,8 +363,13 @@ jobs:
 
   # Dependency audit (govulncheck — the official Go vulnerability scanner),
   # the standing security gate in the aggregate check (rs ci.yml shape; G135,
-  # 2026-08-13). Identical to the audit.yml govulncheck job, which adds the
-  # daily cron that ci-go.yml cannot express. `go run
+  # 2026-08-13). Identical to the audit.yml govulncheck job, which carries
+  # the daily cron (schedule '37 3 * * *' in the separate workflow — G099,
+  # adversarial audit 2026-08-14: "a schedule ci-go.yml cannot express" was
+  # a false causal claim; any workflow may declare schedule and
+  # push/pull_request side by side; the cron lives in audit.yml because the
+  # aggregate check's `needs` must name a job in the same workflow — wave-4
+  # 2026-08-15: the residual "cannot express" wording removed). `go run
   # golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...` downloads the pinned
   # scanner (G136 pin; the module-scoped download does not modify go.mod or
   # go.sum) and audits ./... against the live Go vulnerability database. The
@@ -421,21 +441,38 @@ jobs:
             exit 1
           }
           echo 'main CLI product_version present'
+          # Wave-4 R36 (2026-08-15): the third pin — go/protocol/cli_test.go
+          # constructs CLI envelopes/plan/result fixtures at the current
+          # version (13 quoted literals today); the count must stay exact,
+          # so a train bump forces every fixture literal to move together
+          # (a partial bump leaves the count at the old version and fails).
+          expected_fixture_literals=13
+          actual_fixture_literals="$(grep -oF "\"$version\"" go/protocol/cli_test.go | wc -l)"
+          if [[ "$actual_fixture_literals" -ne "$expected_fixture_literals" ]]; then
+            echo "::error::go/protocol/cli_test.go must carry exactly $expected_fixture_literals quoted fixture literals of \"$version\" (found $actual_fixture_literals) — the constructed-envelope fixtures ride the train (wave-4 R36)"
+            exit 1
+          fi
+          echo "cli_test.go fixture version literals present ($actual_fixture_literals)"
 
   # SDK examples gate: go/examples/sdk_chain is the committed five-language
   # SDK chain example (parse -> native query -> best-exact projection ->
   # semantic edit -> canonical materialization -> TOML conversion;
   # language-neutral contract reference: consema repository cookbook.md).
   # go/examples/quickstart is the repository's copy of the root README
-  # quick-start snippet (parse -> query -> edit -> render), kept in sync by
-  # hand — CI compiles and runs the repository copy only; it never compares
-  # the copy against the README fence text (manual sync, G032-aligned)
-  # (G053: the quick start previously crashed on the typed-nil *EditFailure
-  # error interface trap). Both must stay vet-clean and actually run
-  # (`go run` must exit 0). The examples are pure SDK chains (no conformance
-  # data), so no multi-repo checkout or provision step is needed.
+  # quick-start snippet (parse -> query -> edit -> render); CI compiles and
+  # runs the repository copy AND compares the README fence code body
+  # byte-for-byte against the copy (after the copy's header comment and
+  # package line) — wave-4 R6 (2026-08-15): the fence gate mirrors the
+  # Kotlin repo's knit-style gate (ci-kotlin.yml "README quick-start fence
+  # must match kotlin/examples/Quickstart.kt"), replacing the "manual sync,
+  # never compares the fence" mechanism (G032) whose drift went silently
+  # unnoticed (G053: the quick start previously crashed on the typed-nil
+  # *EditFailure error interface trap). Both examples must stay vet-clean
+  # and actually run (`go run` must exit 0). The examples are pure SDK
+  # chains (no conformance data), so no multi-repo checkout or provision
+  # step is needed.
   examples:
-    name: examples (go vet + run sdk_chain + quickstart)
+    name: examples (fence gate + go vet + run sdk_chain + quickstart)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -447,6 +484,38 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: '1.26.5'
+      # R6 (wave-4 ruling, 2026-08-15): README ```go fence must equal the
+      # committed go/examples/quickstart/main.go code body — the fence's
+      # leading `package main` line is stripped on both sides (the fence
+      # carries it for doc readability; the file's package line is checked
+      # structurally by the split), so the comparison covers the imports
+      # and the code body — the "粘贴版与入库版必须保持一致" claim is
+      # enforced, not asserted.
+      - name: README quick-start fence must match go/examples/quickstart/main.go
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $readme = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'README.md') -Raw
+          $m = [regex]::Match($readme, '(?s)```go\r?\n(.*?)\r?\n```')
+          if (-not $m.Success) {
+            throw 'README.md quick-start fence (```go ... ```) not found'
+          }
+          $fence = ($m.Groups[1].Value -replace "`r", '').Trim()
+          $fenceParts = $fence -split '(?m)^package main\r?\n', 2
+          if ($fenceParts.Count -ne 2) {
+            throw 'README quick-start fence must start with a package main line'
+          }
+          $fence = $fenceParts[1].Trim()
+          $file = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'go/examples/quickstart/main.go') -Raw
+          $normalized = ($file -replace "`r", '') -split '(?m)^package main\r?\n', 2
+          if ($normalized.Count -ne 2) {
+            throw 'go/examples/quickstart/main.go must declare package main'
+          }
+          $body = $normalized[1].Trim()
+          if ($fence -ne $body) {
+            throw 'README quick-start fence must equal go/examples/quickstart/main.go (after the package main line; header comment excluded)'
+          }
+          Write-Output 'README quick-start fence matches go/examples/quickstart/main.go'
       - name: go vet ./examples/... && go run ./examples/sdk_chain ./examples/quickstart (must exit 0)
         run: cd go && go vet ./examples/... && go run ./examples/sdk_chain && go run ./examples/quickstart
 

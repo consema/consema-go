@@ -52,9 +52,9 @@ func main() {
 	builder.SemanticScalar(c.NodeRef(), core.NewInteger(big.NewInt(42)),
 		jsonpkg.RepresentationPolicyCanonicalForProfile)
 	// Commit 返回 (*EditCommit, *EditFailure)：failure 必须用其自身类型
-	// 判空（G053）——若把 *EditFailure 复用进 error 接口变量，成功时的
-	// typed-nil 会被接口包装为非 nil，panic(err) 在 Error() 上对 nil
-	// 接收者解引用。
+	// 判空（G053，对抗审计 2026-08-13）——若把 *EditFailure 复用进 error
+	// 接口变量，成功时的 typed-nil 会被接口包装为非 nil，panic(err) 在
+	// Error() 上对 nil 接收者解引用。
 	commit, failure := jsonDoc.Commit(builder.Build())
 	if failure != nil {
 		panic(failure)

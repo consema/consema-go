@@ -102,16 +102,34 @@ jobs:
       # ($GITHUB_SHA), so the ancestor check is race-free: the tagged commit
       # must be an ancestor of main (on its history), not a divergent
       # branch.
-      - name: verify tag points at a commit on origin/main
+      # R7 (wave-4 ruling, 2026-08-15): the tag object is peeled with
+      # ^{commit} before the ancestor check — for an annotated tag push
+      # $GITHUB_SHA is the tag object's SHA, not the commit's, and the
+      # unpeeled check would wrongly reject it (a lightweight tag push
+      # carries the commit SHA directly, so the peel is a no-op there; the
+      # guard now accepts both tag shapes). The guard also enforces the
+      # same 24 h recency window as the consema-rs release guard: a tag
+      # commit older than 24 h relative to the current main HEAD is a
+      # genuinely stale tag and fails (a stale-but-ancestral commit could
+      # otherwise publish old code).
+      - name: verify tag points at a commit on origin/main (peeled, recency window)
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main --quiet
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
-            echo "::error::tag $GITHUB_REF_NAME does not point at a commit on origin/main"
+          tag_commit="${GITHUB_SHA}^{commit}"
+          if ! git merge-base --is-ancestor "$tag_commit" FETCH_HEAD; then
+            echo "::error::tag $GITHUB_REF_NAME does not point at a commit on origin/main (peeled $tag_commit)"
             exit 1
           fi
-          echo "tag $GITHUB_REF_NAME points at a commit on origin/main"
+          main_head="$(git rev-parse FETCH_HEAD)"
+          tag_ts="$(git show -s --format=%ct "$tag_commit")"
+          main_ts="$(git show -s --format=%ct "$main_head")"
+          if (( main_ts - tag_ts > 86400 )); then
+            echo "::error::tag $GITHUB_REF_NAME is stale: its commit ($tag_commit, $tag_ts) is more than 24 h older than the current main HEAD ($main_head, $main_ts) — a genuinely stale tag must not publish (R7, wave-4 2026-08-15)"
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME points at a commit on origin/main (peeled $tag_commit, within the 24 h recency window)"
       - name: verify tag matches manifest version (README Version line)
         shell: bash
         run: |
@@ -135,8 +153,12 @@ jobs:
       # conformance digest/case-count assertions after provisioning (the
       # race leg already runs -shuffle=on, which bypasses the cache); same
       # form as ci-go.yml go-matrix.
-      - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on
-        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./...
+      # R13 (wave-4 ruling, 2026-08-15): the -tags release legs compile and
+      # test the release-tagged variant (apply_injections_release.go) on
+      # the exact tag — same legs as ci-go.yml go-matrix, so G114's
+      # injection-seam-compiled-out claim is verified on the release path.
+      - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
+        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./... && go build -tags release ./... && go test -tags release -count=1 ./...
 
   # G106 (adversarial audit, 2026-08-13): the release path previously ran
   # only the Go-side gates — the four cross-language differential harnesses
