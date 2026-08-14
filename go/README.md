@@ -1,5 +1,6 @@
 # Consema Go SDK (`go/`)
-The Go implementation of the language-neutral Consema contracts (RFC 0016;
+The Go implementation of the language-neutral Consema contracts
+(RFC 0002/0003/0004/0006 contract family; authority repo `docs/rfcs/`;
 [`docs/go-implementation-plan.md`](https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md)).
 All milestones 0.14.0-0.19.0
 (G0.1-G5.6) are delivered — with the G5.4 three-platform caveat: Windows is

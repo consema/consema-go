@@ -9,7 +9,8 @@ permanently displayed "no tags" instead of the release-train version. The
 authoritative version declaration is the `Version:` line below, which the
 check-version-consistency gate asserts. -->
 
-Consema 语言中立契约（RFC 0016）的 **Go 实现**仓库。本仓库是 Consema 六仓
+Consema 语言中立契约（RFC 0002/0003/0004/0006 契约家族；权威仓
+`docs/rfcs/`）的 **Go 实现**仓库。本仓库是 Consema 六仓
 拆分中的 Go 仓：规范权威（RFC、docs、路线图、跨语言 conformance suites）在
 [github.com/consema/consema](https://github.com/consema/consema)；本仓承载
 Go 实现与跨语言差分验证工具。
@@ -148,7 +149,7 @@ conformance 数据：从规范仓拷贝 `conformance/` 至本仓根、
 ## FAQ
 
 - **支持哪些配置格式？** 八个格式家族、16 个 profiles：JSON（`json.strict@1` / `jsonc.bounded@1` / `json5.standard@1`）、TOML（`toml.1.0@1`）、YAML（`yaml.1.2-core@1` / `yaml.1.1-compat@1`）、INI（`ini.portable@1` / `ini.windows@1` / `ini.python-configparser@1`）、Java Properties（`java-properties.reader@1` / `java-properties.latin1@1`）、XML（`xml.1.0-safe@1`）、Property List（`plist.xml@1` / `plist.binary@1`）、HCL（`hcl.native@1` / `hcl.tfvars@1`）。完整面枚举见 `consema.Profiles()`。
-- **与 encoding/json、gopkg.in/yaml.v3 等的关系？** 互不包装：Consema 是语言中立契约（RFC 0016）的独立 Go 实现，go.mod 零第三方依赖、纯标准库；JSON/YAML 等格式在 Consema 内是"格式内容处理面"（无损文档、查询、投影、原子编辑、跨格式转换），不是类型编解码。
+- **与 encoding/json、gopkg.in/yaml.v3 等的关系？** 互不包装：Consema 是语言中立契约（RFC 0002/0003/0004/0006 契约家族；权威仓 `docs/rfcs/`）的独立 Go 实现，go.mod 零第三方依赖、纯标准库；JSON/YAML 等格式在 Consema 内是"格式内容处理面"（无损文档、查询、投影、原子编辑、跨格式转换），不是类型编解码。
 - **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md`。
 - **零依赖吗？** 是——`go.mod` 零 `require`，只使用标准库（math/big、hash/fnv、crypto/sha256、unicode/utf8 等）。
 - **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与四个 Go-Rust 差分门禁（byte parity / normalized differential / protocol exchange / shared conformance；G029，对抗审计 2026-08-14：旧文只列三个 harness，漏 shared-conformance）。
