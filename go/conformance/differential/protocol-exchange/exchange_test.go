@@ -49,7 +49,9 @@ import (
 // The machine schema of the case file is the RFC 0015 protocol schema
 // discriminator (core.cli-output@1, ...); it contains no Rust type names.
 // Without the environment variables the exchange test skips (documented
-// skip, never silent) and only the case-file integrity checks run.
+// skip, never silent) and the case-file integrity checks run whenever the
+// case set is reachable (they skip with the documented skip in
+// resolveCasesDir when the data is missing — wave-4 R49, 2026-08-15).
 // ---------------------------------------------------------------------------
 
 // casesDirEnv names the shared differential case directory (the directory
@@ -261,9 +263,13 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the provisioned case set. It always runs
-// (no Rust bytes needed), so `go test ./...` guards the file even without
-// the orchestrator.
+// TestCaseFileIntegrity validates the provisioned case set. It runs with
+// no Rust bytes needed, but only when the case set is reachable — on a
+// clean clone without provisioned conformance data it skips with the
+// documented skip in resolveCasesDir (wave-4 R49, 2026-08-15 — the old
+// "It always runs" comment was false; the skip is never silent). When the
+// data is present, `go test ./...` guards the file even without the
+// orchestrator.
 func TestCaseFileIntegrity(t *testing.T) {
 	loadCaseFile(t)
 }

@@ -114,18 +114,22 @@ func TestSharedConformanceDualRunner(t *testing.T) {
 			t.Errorf("Rust suite %s is not conformant: %d failed", suite.File, len(suite.Failed))
 		}
 	}
-	if len(goShared.Suites) != 18 || len(rustShared.Suites) != 18 {
-		t.Errorf("suite inventories: go %d, rust %d; want 18 both sides",
-			len(goShared.Suites), len(rustShared.Suites))
+	// Wave-4 R10 (2026-08-15): the suite/case counts are derived from the
+	// provisioned Feature-Complete Manifest (the single re-vendor sync
+	// point) instead of hardcoded literals.
+	suites, cases := repositoryManifestCounts(t)
+	if len(goShared.Suites) != suites || len(rustShared.Suites) != suites {
+		t.Errorf("suite inventories: go %d, rust %d; want %d both sides (manifest conformance_suite)",
+			len(goShared.Suites), len(rustShared.Suites), suites)
 	}
-	if goReport.Total != 519 {
-		t.Errorf("Go case inventory %d != 519", goReport.Total)
+	if goReport.Total != cases {
+		t.Errorf("Go case inventory %d != manifest cases %d", goReport.Total, cases)
 	}
 	rustTotal := 0
 	for _, suite := range rustShared.Suites {
 		rustTotal += len(suite.Passed) + len(suite.Skipped) + len(suite.Failed)
 	}
-	if rustTotal != 519 {
-		t.Errorf("Rust case inventory %d != 519", rustTotal)
+	if rustTotal != cases {
+		t.Errorf("Rust case inventory %d != manifest cases %d", rustTotal, cases)
 	}
 }

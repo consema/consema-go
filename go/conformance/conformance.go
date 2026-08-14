@@ -199,22 +199,22 @@ type suiteDefinition struct {
 var allSuites = []suiteDefinition{
 	{File: "v1.json", SuiteID: "consema.conformance@1", ExpectedCases: 30, Run: runV1},
 	{File: "toml-v1.json", SuiteID: "consema.toml.conformance@1", ExpectedCases: 18, Run: runTomlV1},
-	{File: "protocol-v1.json", SuiteID: "consema.protocol.conformance@1", ExpectedCases: 32, Run: runProtocolV1},
-	{File: "source-v1.json", SuiteID: "consema.source.conformance@1", ExpectedCases: 28, Run: runSourceV1},
-	{File: "syntax-query-v1.json", SuiteID: "consema.syntax-query.conformance@1", ExpectedCases: 19, Run: runSyntaxQueryV1},
+	{File: "protocol-v1.json", SuiteID: "consema.protocol.conformance@1", SemanticModel: "core.semantic-model@1", ExpectedCases: 32, Run: runProtocolV1},
+	{File: "source-v1.json", SuiteID: "consema.source.conformance@1", SemanticModel: "core.semantic-model@2", ExpectedCases: 28, Run: runSourceV1},
+	{File: "syntax-query-v1.json", SuiteID: "consema.syntax-query.conformance@1", SemanticModel: "core.semantic-model@2", ExpectedCases: 19, Run: runSyntaxQueryV1},
 	{File: "protocol-v2.json", SuiteID: "consema.protocol.conformance@2", SemanticModel: "core.semantic-model@2", ExpectedCases: 11, Run: runProtocolV2},
-	{File: "operations-v1.json", SuiteID: "consema.operations.conformance@1", ExpectedCases: 35, Run: runOperationsV1},
-	{File: "json-family-v2.json", SuiteID: "consema.json-family.conformance@2", ExpectedCases: 33, Run: runJsonFamilyV2},
+	{File: "operations-v1.json", SuiteID: "consema.operations.conformance@1", SemanticModel: "core.semantic-model@3", ExpectedCases: 35, Run: runOperationsV1},
+	{File: "json-family-v2.json", SuiteID: "consema.json-family.conformance@2", SemanticModel: "core.semantic-model@4", ExpectedCases: 33, Run: runJsonFamilyV2},
 	{File: "portable-graph-v1.json", SuiteID: "consema.portable-graph.conformance@1", ExpectedCases: 10, Run: runPortableGraphV1},
 	{File: "semantic-model-v5.json", SuiteID: "consema.semantic-model-v5.conformance@1", SemanticModel: "core.semantic-model@5", ExpectedCases: 22, Run: runSemanticModelV5},
 	{File: "yaml-v1.json", SuiteID: "consema.yaml.conformance@1", ExpectedCases: 31, Run: runYamlV1},
 	{File: "semantic-model-v6.json", SuiteID: "consema.semantic-model-v6.conformance@1", SemanticModel: "core.semantic-model@6", ExpectedCases: 25, Run: runSemanticModelV6},
 	{File: "ini-v1.json", SuiteID: "consema.ini.conformance@1", ExpectedCases: 20, Run: runIniV1},
 	{File: "java-properties-v1.json", SuiteID: "consema.java-properties.conformance@1", ExpectedCases: 25, Run: runJavaPropertiesV1},
-	{File: "xml-1-0-safe-v1.json", SuiteID: "consema.xml-1-0-safe.conformance@1", ExpectedCases: 34, Run: runXml10SafeV1},
-	{File: "plist-v1.json", SuiteID: "consema.plist.conformance@1", ExpectedCases: 49, Run: runPlistV1},
-	{File: "hcl-v1.json", SuiteID: "consema.hcl.conformance@1", ExpectedCases: 57, Run: runHclV1},
-	{File: "cli-v1.json", SuiteID: "consema.cli.conformance@1", ExpectedCases: 40, Run: runCLIV1},
+	{File: "xml-1-0-safe-v1.json", SuiteID: "consema.xml-1-0-safe.conformance@1", SemanticModel: "core.semantic-model@6", ExpectedCases: 34, Run: runXml10SafeV1},
+	{File: "plist-v1.json", SuiteID: "consema.plist.conformance@1", SemanticModel: "core.semantic-model@6", ExpectedCases: 49, Run: runPlistV1},
+	{File: "hcl-v1.json", SuiteID: "consema.hcl.conformance@1", SemanticModel: "core.semantic-model@6", ExpectedCases: 57, Run: runHclV1},
+	{File: "cli-v1.json", SuiteID: "consema.cli.conformance@1", SemanticModel: "core.semantic-model@7", ExpectedCases: 40, Run: runCLIV1},
 }
 
 // caseData is one loaded vector case.
@@ -247,6 +247,14 @@ type suiteData struct {
 // runSuite loads and runs one vector suite with the fixed validations:
 // suite identifier, semantic-model identifier, case-ID uniqueness, case
 // count, capability dispatch, and unknown-case rejection.
+//
+// The semantic-model identifier is validated for every suite whose vector
+// file declares one: the definition table pins the semantic_model field of
+// all 12 declaring vector files (wave-4 R4, 2026-08-15 — the check
+// previously fired only for the 3 suites whose definition declared a
+// SemanticModel), and the comparison is bidirectional, so drift on either
+// side (a stale definition or a changed vector file) fails the suite.
+// Suites without a semantic_model declaration carry none on either side.
 func (r *Runner) runSuite(definition suiteDefinition) *SuiteReport {
 	data, loadError := r.loadSuite(definition)
 	if loadError != "" {
@@ -262,7 +270,8 @@ func (r *Runner) runSuite(definition suiteDefinition) *SuiteReport {
 		ExpectedCases: definition.ExpectedCases,
 	}
 	if data.Suite != definition.SuiteID ||
-		(definition.SemanticModel != "" && data.SemanticModel != definition.SemanticModel) {
+		((data.SemanticModel != "" || definition.SemanticModel != "") &&
+			data.SemanticModel != definition.SemanticModel) {
 		report.Failed = append(report.Failed, CaseFailure{
 			ID:      "suite.schema",
 			Message: "unexpected suite or semantic-model identifier",

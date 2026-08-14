@@ -412,11 +412,27 @@ func TestWindowsCodePages(t *testing.T) {
 
 	// CP936/CP949/CP950 are recognized but their DBCS tables are not yet
 	// published; non-ASCII bytes are rejected like go/protocol rejects
-	// them today.
-	cp936 := WindowsCodePageEncoding(mustPage(t, 936))
-	_, err = NewSourceSnapshotFromRaw([]byte{0x81, 0x40}, NewEncodingRequest(cp936).WithBomPolicy(BomPolicyTreatAsContent), DefaultSourceLimits())
-	if err == nil || err.(*SourceError).Code() != "core.source.invalid-sequence@1" {
-		t.Errorf("cp936 non-ASCII byte = %v", err)
+	// them today. Wave-4 R37 (2026-08-15): this pins the current hard
+	// failure on ALL THREE pages as the registered language fork — the
+	// Rust reference decodes them fully via encoding_rs, so the same
+	// CP936/CP949/CP950 source completes on the Rust side and fails on the
+	// Go side (disclosed in go/README.md "code pages"; the fork is
+	// deliberate, not a silent divergence, and is pinned here so a future
+	// decode implementation must flip this test together with the README
+	// note).
+	for _, number := range []uint16{936, 949, 950} {
+		cp := WindowsCodePageEncoding(mustPage(t, number))
+		// The whole page hard-fails: even a single ASCII byte is rejected
+		// with SourceErrorInvalidSequence (the page is recognized but not
+		// decoded, so no byte — ASCII included — is claimed decodable).
+		_, err = NewSourceSnapshotFromRaw([]byte{'A'}, NewEncodingRequest(cp).WithBomPolicy(BomPolicyTreatAsContent), DefaultSourceLimits())
+		if err == nil || err.(*SourceError).Code() != "core.source.invalid-sequence@1" {
+			t.Errorf("cp%d ASCII byte = %v, want SourceErrorInvalidSequence", number, err)
+		}
+		_, err = NewSourceSnapshotFromRaw([]byte{0x81, 0x40}, NewEncodingRequest(cp).WithBomPolicy(BomPolicyTreatAsContent), DefaultSourceLimits())
+		if err == nil || err.(*SourceError).Code() != "core.source.invalid-sequence@1" {
+			t.Errorf("cp%d DBCS lead byte = %v, want SourceErrorInvalidSequence", number, err)
+		}
 	}
 }
 

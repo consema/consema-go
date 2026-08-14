@@ -3,9 +3,15 @@ package normalized
 // The Go test driver of the cross-language normalized-result differential
 // harness (milestone 0.15.0 G1.5; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.4).
 //
-// TestCaseFileIntegrity always runs and guards the provisioned case set
-// (manifest id, case count, unique ids, schema validity), so `go test
-// ./...` protects the input set even without the orchestrator.
+// TestCaseFileIntegrity runs whenever the provisioned case set is
+// reachable (manifest id, case count, unique ids, schema validity), so
+// `go test ./...` protects the input set when the data is present; on a
+// clean clone without provisioned conformance data it skips with the
+// documented skip in resolveCasesDir (wave-4 R49, 2026-08-15 — the old
+// "always runs" wording was false; the skip is never silent). Third-path
+// note (wave-4 R35): the five family packages (go/json, go/toml,
+// go/yaml, go/properties, go/pilot) hard-read ../../conformance with no
+// skip guard and fail loudly on a clean clone.
 //
 // TestNormalizedDifferential skips without the environment variable
 // (documented skip, never silent) and runs only when
@@ -176,8 +182,11 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the provisioned case set. It always runs,
-// so `go test ./...` guards the input set even without the orchestrator.
+// TestCaseFileIntegrity validates the provisioned case set. It runs with
+// no Rust evidence needed, but only when the case set is reachable — on a
+// clean clone it skips with the documented skip in resolveCasesDir
+// (wave-4 R49, 2026-08-15). When the data is present, `go test ./...`
+// guards the input set even without the orchestrator.
 func TestCaseFileIntegrity(t *testing.T) {
 	loadCaseFile(t)
 }
@@ -365,8 +374,10 @@ func TestEmitGoNormalizedResults(t *testing.T) {
 // TestEmitFormatConsistency proves the Go emitter writes the same format
 // the forward direction reads: the emitted files round-trip through the
 // forward reader (splitEvidenceLines) and compare equal field by field with
-// the computed facts. It always runs, so `go test ./...` guards the
-// reverse-direction file format even without the orchestrator.
+// the computed facts. It runs whenever the case set is reachable (it
+// skips with the documented skip in resolveCasesDir when the data is
+// missing — wave-4 R49, 2026-08-15), so `go test ./...` guards the
+// reverse-direction file format whenever the data is present.
 func TestEmitFormatConsistency(t *testing.T) {
 	cases := loadCaseFile(t)
 	dir := t.TempDir()

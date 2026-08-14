@@ -147,8 +147,9 @@ func TestFifteenKindsRoundTripBothTransports(t *testing.T) {
 	}
 	// The v1.json projection.best-exact-duplicate-mapping case carries an
 	// EntryMapping value through the protocol transports (conformance/
-	// vectors/v1.json:89-93): duplicate keys and arbitrary key values are
-	// preserved exactly.
+	// vectors/v1.json — the case id is the anchor; line numbers may drift
+	// on re-vendor): duplicate keys and arbitrary key values are preserved
+	// exactly.
 	duplicates, err := core.NewEntryMapping(
 		core.EntryMappingEntry{Key: core.String("a"), Value: core.NewInteger(big.NewInt(1))},
 		core.EntryMappingEntry{Key: core.String("a"), Value: core.NewInteger(big.NewInt(2))},

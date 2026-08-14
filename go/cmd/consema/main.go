@@ -29,6 +29,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 
 	"consema.dev/consema/protocol"
@@ -40,8 +41,12 @@ var interruptRequested = make(chan struct{}, 1)
 
 // applyActive reports whether the apply state machine is running; while it
 // is, the signal handler defers the graceful shutdown to the state machine
-// (the pending manifest must be written first, RFC 0015 §9.3 step 3).
-var applyActive = false
+// (the pending manifest must be written first, RFC 0015 §9.3 step 3). The
+// flag is an atomic.Bool — the signal-handling goroutine reads it while
+// the apply state machine writes it (wave-4 2026-08-15, ENTRY 49: a plain
+// bool was a data race; the Rust reference uses an AtomicBool at the same
+// position, consema-rs main.rs).
+var applyActive atomic.Bool
 
 func main() {
 	os.Exit(int(runMain(os.Args[1:], os.Stdout, os.Stderr)))
@@ -133,7 +138,7 @@ func installSignalHandler() {
 			case interruptRequested <- struct{}{}:
 			default:
 			}
-			if applyActive {
+			if applyActive.Load() {
 				// The apply state machine owns the graceful shutdown: the
 				// pending manifest is written first (RFC 0015 §9.3 step 3),
 				// then the exit happens at the interruption code point.

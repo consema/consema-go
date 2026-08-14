@@ -901,31 +901,30 @@ func validateValue(value core.Value, path protocol.ValuePath,
 		Kind: MaterializationFailureUnrepresentable, Path: path, ValueKind: value.Kind()}
 }
 
-// decimalToFloat64 converts one exact decimal to its double value; ok is
-// false when the coefficient or exponent exceeds the exact i64 range (the
-// decimal is then far outside double precision). The conversion
-// intentionally rounds to the nearest double (RFC 0013 §6).
+// decimalToFloat64 converts one exact decimal to its double value,
+// correctly rounded in a single pass (wave-4 R42, 2026-08-15): the
+// decimal spelling is converted with strconv.ParseFloat, never a two-step
+// coefficient-then-power-of-ten rounding, which double-rounds (the old
+// implementation also silently clamped |exponent| > 308 to ±308 and
+// returned ok=true, fabricating a wrong finite double — 1e1000 became
+// 1e308 instead of failing, 1e-1000 became 1e-308 instead of failing).
+// ok is false when the exponent exceeds the exact int64 range, its
+// magnitude exceeds 308, or the value falls outside binary64 range
+// (overflow to ±Inf / underflow to 0) — the conversion fails atomically
+// (RFC 0013 §6: decimal is the spelling of an exact IEEE double).
 func decimalToFloat64(decimal *core.Decimal) (float64, bool) {
 	coefficient := decimal.Coefficient()
 	exponent := decimal.Exponent()
-	if !coefficient.IsInt64() || !exponent.IsInt64() {
+	if !exponent.IsInt64() {
 		return 0, false
 	}
-	coefficientValue := float64(coefficient.Int64())
-	exponentValue := exponent.Int64()
-	value := coefficientValue
-	if exponentValue > 0 {
-		power := exponentValue
-		if power > 308 {
-			power = 308
-		}
-		value *= math.Pow10(int(power))
-	} else if exponentValue < 0 {
-		power := -exponentValue
-		if power > 308 {
-			power = 308
-		}
-		value /= math.Pow10(int(power))
+	exp := exponent.Int64()
+	if exp > 308 || exp < -308 {
+		return 0, false
+	}
+	value, err := strconv.ParseFloat(coefficient.String()+"e"+exponent.String(), 64)
+	if err != nil {
+		return 0, false
 	}
 	return value, true
 }

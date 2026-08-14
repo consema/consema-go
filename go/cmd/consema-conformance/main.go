@@ -20,11 +20,14 @@ import (
 )
 
 // productVersion pins the RFC 0015 §3.3 product_version string of this CLI's
-// envelopes. Version policy (G5.6 decision, mirrored from cmd/consema/
-// version.go:15): the Go CLIs report the product release-train version, and
-// this CLI ships as part of the 1.0.0-rc.1 milestone, so the conformance CLI
-// reports "1.0.0-rc.1" like the main CLI. CI (check-version-consistency)
-// asserts this declaration stays in sync with the README "Version:" line.
+// envelopes. Version policy (G5.6 decision, mirrored from the
+// productVersion declaration of cmd/consema/version.go — the declaration is
+// the anchor; wave-4 R40, 2026-08-15: the old "version.go:15" line-number
+// reference could silently shift as the file's header comments change): the
+// Go CLIs report the product release-train version, and this CLI ships as
+// part of the 1.0.0-rc.1 milestone, so the conformance CLI reports
+// "1.0.0-rc.1" like the main CLI. CI (check-version-consistency) asserts
+// this declaration stays in sync with the README "Version:" line.
 var productVersion = "1.0.0-rc.1"
 
 func main() {
@@ -39,7 +42,11 @@ func run() int {
 // adversarial audit 2026-08-13). Flag syntax errors exit 1 (RFC 0015 §5.1
 // usage class) — the old flag.ExitOnError default exited 2. Per RFC 0015
 // §4.2, usage errors are rejected before command execution and carry no
-// machine envelope; they surface only as the process exit code.
+// machine envelope; they surface only as the process exit code. Extra
+// positional arguments are a usage error too (wave-4 2026-08-15, ENTRY 13:
+// the CLI previously silently ignored them and executed the run — the
+// "usage errors are rejected before command execution" contract holds
+// only if every usage violation is rejected).
 func runWithArgs(args []string) int {
 	flags := flag.NewFlagSet("consema-conformance", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
@@ -49,6 +56,12 @@ func runWithArgs(args []string) int {
 	quiet := flags.Bool("quiet", false, "suppress the human report; emit only the machine envelope")
 	if err := flags.Parse(args); err != nil {
 		// flag already printed the error and usage to stderr.
+		return int(protocol.ExitUsage.ExitCode())
+	}
+	if positional := flags.Args(); len(positional) > 0 {
+		fmt.Fprintf(os.Stderr, "consema-conformance: unexpected positional arguments: %s\n",
+			strings.Join(positional, " "))
+		flags.Usage()
 		return int(protocol.ExitUsage.ExitCode())
 	}
 

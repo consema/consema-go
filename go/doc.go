@@ -57,7 +57,11 @@
 // # Cross-family discipline
 //
 // Cross-family composition (convert) lives in this package only (RFC 0016
-// §3.2 line 108); go/json and go/toml never import this package, and no
+// §3.2 — the convert-dispatch surface is root-package-only, per the
+// section's constraints bullet; wave-4 R40, 2026-08-15: the old "line
+// 108" reference pointed at the package-topology table's graph row and
+// was dropped — the section is the anchor, line numbers may drift);
+// go/json and go/toml never import this package, and no
 // package imports a sibling format package's private internals. The root
 // package itself depends only on the public APIs of go/document,
 // go/json, go/toml, go/core, and go/protocol, all of which are

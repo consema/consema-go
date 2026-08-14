@@ -27,9 +27,12 @@ type QueryLimits struct {
 }
 
 // DefaultQueryLimits returns the frozen defaults (1,000,000 results,
-// 10,000,000 steps).
+// 100,000 steps). Wave-4 R12 (2026-08-15): MaxSteps was 10,000,000 — a
+// divergence from the Rust reference's frozen 100,000
+// (consema-core/src/query.rs DefaultQueryLimits), re-pinned to the
+// reference value; the step accounting behavior itself is unchanged.
 func DefaultQueryLimits() QueryLimits {
-	return QueryLimits{MaxResults: 1_000_000, MaxSteps: 10_000_000}
+	return QueryLimits{MaxResults: 1_000_000, MaxSteps: 100_000}
 }
 
 // PortableMatch is one executed portable-domain match.

@@ -9,18 +9,26 @@ package consema
 // operation registries / 187 error codes" — with no "Rust-only" mandatory
 // behavior.
 //
-// Every expected fact below is transcribed from the Rust published
-// surface (consema-rs/consema/src/lib.rs registry module and the
-// `consema capabilities` CLI payload of
-// consema-rs/consema/src/bin/consema/capabilities.rs for the inventory, and
-// consema-rs/consema-*/src/operation_registry.rs for the per-profile
-// operation id lists), and the Go facts are derived from the registry
-// surface of this package and its families — nothing is re-declared, so
-// a drift on either side fails here (the Rust facade's own drift-guard
-// tests assert the same facts on the Rust side).
+// The five-number inventory is derived from the provisioned Feature-
+// Complete Manifest (digests.capability_set.value; the manifest is the
+// single authority — wave-4 2026-08-15, ENTRY 6: the counts were
+// previously hardcoded literals transcribed from the Rust published
+// surface, which was itself a re-declaration; the test now reads the
+// manifest and skips with a documented skip when it is not provisioned).
+// The per-id lists below remain Rust-transcribed identity pins (the
+// manifest carries only the five-number inventory, not the id lists) and
+// are the no-"Rust-only"-mandatory-behavior gate of roadmap §16.5 — the
+// Go facts are derived from the registry surface of this package and its
+// families, so a drift on either side fails here (the Rust facade's own
+// drift-guard tests assert the same facts on the Rust side).
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"testing"
 
@@ -28,14 +36,56 @@ import (
 	"consema.dev/consema/protocol"
 )
 
+// manifestCapabilityCounts reads the five-number capability inventory
+// from the provisioned Feature-Complete Manifest
+// (digests.capability_set.value: "N families / N profiles / N query
+// domains / N operation registries / N error codes"). The test skips with
+// a documented skip when the manifest is not provisioned (clean clone;
+// CI multi-repo checkouts always provision it).
+func manifestCapabilityCounts(t *testing.T) (families, profiles, domains, registries, codes int) {
+	t.Helper()
+	path := filepath.Join("..", "..", "docs", "fc-manifest-0.13.0.json")
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Skipf("Feature-Complete Manifest %s is not provisioned: run the CI provision step or CONTRIBUTING 'Conformance 数据同步' first", path)
+	}
+	var manifest struct {
+		Digests struct {
+			CapabilitySet struct {
+				Value string `json:"value"`
+			} `json:"capability_set"`
+		} `json:"digests"`
+	}
+	if err := json.Unmarshal(bytes, &manifest); err != nil {
+		t.Fatalf("manifest is not strict JSON: %v", err)
+	}
+	matches := regexp.MustCompile(
+		`^(\d+) families / (\d+) profiles / (\d+) query domains / (\d+) operation registries / (\d+) error codes$`).
+		FindStringSubmatch(manifest.Digests.CapabilitySet.Value)
+	if matches == nil {
+		t.Fatalf("manifest digests.capability_set.value is not the five-number inventory: %q",
+			manifest.Digests.CapabilitySet.Value)
+	}
+	numbers := make([]int, 5)
+	for index := 1; index <= 5; index++ {
+		if _, err := fmt.Sscanf(matches[index], "%d", &numbers[index-1]); err != nil {
+			t.Fatalf("capability_set number %q is not an integer: %v", matches[index], err)
+		}
+	}
+	return numbers[0], numbers[1], numbers[2], numbers[3], numbers[4]
+}
+
 // TestCapabilityParityInventory pins the five-number capability inventory
-// of the Feature-Complete Manifest: 8 families, 16 profiles, 21 query
-// domains, 16 operation registries (one per profile), and 187 error
-// codes (derived from the Go protocol v7 error-code registry).
+// of the Feature-Complete Manifest — the numbers are read from the
+// manifest's digests.capability_set.value (wave-4 2026-08-15, ENTRY 6:
+// previously hardcoded literals): families, profiles, query domains,
+// operation registries (one per profile), and error codes (derived from
+// the Go protocol v7 error-code registry).
 func TestCapabilityParityInventory(t *testing.T) {
+	wantFamilies, wantProfiles, wantDomains, wantRegistries, wantCodes := manifestCapabilityCounts(t)
 	families := Families()
-	if len(families) != 8 {
-		t.Fatalf("families %d != 8 (manifest capability set)", len(families))
+	if len(families) != wantFamilies {
+		t.Fatalf("families %d != %d (manifest capability set)", len(families), wantFamilies)
 	}
 	for index := 1; index < len(families); index++ {
 		if families[index-1].ID() >= families[index].ID() {
@@ -43,8 +93,8 @@ func TestCapabilityParityInventory(t *testing.T) {
 		}
 	}
 	profiles := Profiles()
-	if len(profiles) != 16 {
-		t.Fatalf("profiles %d != 16 (manifest capability set)", len(profiles))
+	if len(profiles) != wantProfiles {
+		t.Fatalf("profiles %d != %d (manifest capability set)", len(profiles), wantProfiles)
 	}
 	for index := 1; index < len(profiles); index++ {
 		if profiles[index-1].Profile().ID() > profiles[index].Profile().ID() {
@@ -52,8 +102,8 @@ func TestCapabilityParityInventory(t *testing.T) {
 		}
 	}
 	domains := QueryDomains()
-	if len(domains) != 21 {
-		t.Fatalf("query domains %d != 21 (manifest capability set)", len(domains))
+	if len(domains) != wantDomains {
+		t.Fatalf("query domains %d != %d (manifest capability set)", len(domains), wantDomains)
 	}
 	for index := 1; index < len(domains); index++ {
 		if domains[index-1].ID() > domains[index].ID() {
@@ -68,12 +118,16 @@ func TestCapabilityParityInventory(t *testing.T) {
 			t.Fatalf("profile %s must resolve an operation registry", entry.Profile().ID())
 		}
 	}
-	// The 187 error codes derive from the Go protocol v7 registry, the
+	if len(profiles) != wantRegistries {
+		t.Fatalf("operation registries %d != %d (manifest capability set)",
+			len(profiles), wantRegistries)
+	}
+	// The error codes derive from the Go protocol v7 registry, the
 	// same semantic-model version the Rust facade enumerates
 	// (ErrorCodeRegistry::v7(); capabilities.rs error_codes()).
 	codes := protocol.NewErrorCodeRegistry(protocol.ErrorRegistryV7).Codes()
-	if len(codes) != 187 {
-		t.Fatalf("error codes %d != 187 (manifest capability set)", len(codes))
+	if len(codes) != wantCodes {
+		t.Fatalf("error codes %d != %d (manifest capability set)", len(codes), wantCodes)
 	}
 	for index := 1; index < len(codes); index++ {
 		if codes[index-1].Code >= codes[index].Code {

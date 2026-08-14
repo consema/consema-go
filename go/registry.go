@@ -562,9 +562,17 @@ func (e *ProfileError) Error() string {
 		e.Profile.ID(), e.Profile.Version())
 }
 
-// Code returns the frozen registered code, mirroring the Rust facade's
-// unknown-profile failure diagnostic (registry.rs parse_document).
-func (e *ProfileError) Code() string { return "core.source.encoding-conflict@1" }
+// Code returns the frozen registered code. Wave-4 ruling R1
+// (2026-08-15): "unknown profile" is not an encoding conflict, so
+// `core.source.encoding-conflict@1` was replaced with
+// `core.materialization.unsupported-profile@1` ("Requested materialization
+// profile is unavailable") — the only frozen v1-v7 registry code whose
+// noun is "profile" and whose semantics is "requested profile is unknown
+// or unimplemented" (registry grep: no core.source.* profile code exists;
+// unsupported-code-page names a code page, not a profile; choice recorded
+// per the wave-4 ruling; the old code mirrored the Rust facade's
+// misclassification, consema-rs consema/src/lib.rs parse_document).
+func (e *ProfileError) Code() string { return "core.materialization.unsupported-profile@1" }
 
 // familyProfile pairs one family id with one profile id.
 func familyProfile(familyID string, profile document.ProfileId) FormatProfile {

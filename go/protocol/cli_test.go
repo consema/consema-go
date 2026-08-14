@@ -13,8 +13,15 @@ import (
 // product_version "0.12.0" — they must NOT be bumped. Envelopes that this
 // file *constructs* (NewCliOutputMessage/NewBatchPlanMessage/
 // NewBatchResultMessage and the batchPlanJSON helper) use the current
-// product version "1.0.0-rc.1" (cmd/consema/version.go), matching what the
-// real CLI emits; the check-version-consistency CI gate pins that constant.
+// product version "1.0.0-rc.1" (the productVersion declaration in
+// cmd/consema/version.go — the declaration is the anchor, line numbers
+// may drift), matching what the real CLI emits. These fixture literals
+// ride the release train: the check-version-consistency CI gate asserts
+// their exact count at the current version (wave-4 R36, 2026-08-15 — the
+// gate previously never touched this file, so a train bump silently left
+// the fixtures stale; this file is package protocol and cannot reference
+// the package-main version constant, so the gate count is the sync
+// point).
 
 // The RFC 0015 §4.4 envelope example, transcribed byte-for-byte from the
 // cli-v1 vector cli.envelope.rfc-canonical-bytes (conformance/vectors/

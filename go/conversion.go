@@ -23,8 +23,15 @@ package consema
 //
 // Baseline families (JSON, TOML, YAML, INI, Java Properties) project
 // plain portable values that convert to every target family under the
-// target's representability rules. The record families (XML, plist, HCL)
-// project versioned internal records (`xml.element-tree@1`,
+// target's representability rules — with one boundary (wave-4 2026-08-15,
+// ENTRY 15: the previous "every target family" claim was too strong): the
+// three record families' canonical materializers consume only their own
+// published record, so a baseline projection targeted at `xml.1.0-safe`,
+// `plist.xml`, or `hcl.native` fails atomically at the materializer
+// (`core.conversion.materialization-failed@1`; the record-only
+// consumption boundary of the target materializer, measured
+// `ConvertJSON({"a":1}) → plist.xml`). The record families (XML, plist,
+// HCL) project versioned internal records (`xml.element-tree@1`,
 // `plist.value-tree@1`, `hcl.body@1`; RFC 0012 §9, RFC 0013 §9, RFC 0014
 // §8.2) that only their owning format family's materializer consumes: the
 // record-consumption gate fails a conversion atomically with the shared

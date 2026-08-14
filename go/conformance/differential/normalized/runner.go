@@ -2801,8 +2801,14 @@ func (v *valueDesc) coreValue() (core.Value, bool) {
 }
 
 // parseDecimalNumber parses one JSON-number spelling ("1.00", "10e-1")
-// into its canonical coefficient × 10^exponent decimal (the conformance
-// runner helper, conformance/v1.go:145).
+// into its canonical coefficient × 10^exponent decimal (the same helper
+// name exists in the conformance runner, go/conformance/v1.go — the
+// function name is the anchor; line numbers may drift; wave-4 R40,
+// 2026-08-15: the old "v1.go:145" reference could silently shift to a
+// different function of the same name with a different signature).
+// NOTE: this normalized-runner variant takes the source spelling string;
+// the conformance-runner variant takes a core.Value — same-name
+// implementations, intentionally kept apart by package boundary.
 func parseDecimalNumber(source string) (core.Decimal, error) {
 	coefficientText := source
 	exponent := big.NewInt(0)

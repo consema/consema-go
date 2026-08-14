@@ -182,7 +182,10 @@ func codesForVersion(version ErrorRegistryVersion) []ErrorCodeDescriptor {
 }
 
 // mergeErrorCodes merges two strictly sorted code lists into one strictly
-// sorted list, rejecting duplicates.
+// sorted list, rejecting duplicates: an equal code keeps the added (vN)
+// record and drops the old (vN-1) one (wave-4 2026-08-15 — the previous
+// implementation appended both on equality, silently producing duplicate
+// codes in the registry).
 func mergeErrorCodes(old, added []ErrorCodeDescriptor) []ErrorCodeDescriptor {
 	merged := make([]ErrorCodeDescriptor, 0, len(old)+len(added))
 	left, right := 0, 0
@@ -190,8 +193,13 @@ func mergeErrorCodes(old, added []ErrorCodeDescriptor) []ErrorCodeDescriptor {
 		if old[left].Code < added[right].Code {
 			merged = append(merged, old[left])
 			left++
-		} else {
+		} else if old[left].Code > added[right].Code {
 			merged = append(merged, added[right])
+			right++
+		} else {
+			// Duplicate: the added record supersedes the old one.
+			merged = append(merged, added[right])
+			left++
 			right++
 		}
 	}

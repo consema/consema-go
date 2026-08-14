@@ -318,14 +318,16 @@ func TestRegistryParseDocumentRoundTripsEveryImplementedProfile(t *testing.T) {
 		}
 	}
 	// Unknown profile ids fail with the typed ProfileError carrying the
-	// frozen code.
+	// frozen code (wave-4 R1, 2026-08-15: the code moved off the
+	// misclassified encoding-conflict to the unsupported-profile code — see
+	// ProfileError.Code's comment for the registry evidence).
 	_, err := ParseDocument(context.Background(), []byte("x"),
 		document.NewProfileId("example.unknown", 1))
 	profileError, ok := err.(*ProfileError)
 	if !ok {
 		t.Fatalf("unknown profile must fail with ProfileError")
 	}
-	if profileError.Code() != "core.source.encoding-conflict@1" {
+	if profileError.Code() != "core.materialization.unsupported-profile@1" {
 		t.Fatalf("unknown profile failure code differs")
 	}
 }

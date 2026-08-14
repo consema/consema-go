@@ -158,11 +158,13 @@ func TestQueryJSONRedactsMatchingKeyValuesAndShowSecretsRecovers(t *testing.T) {
 	// `--show-secrets` is the sole opt-out and restores the plaintext with
 	// zero facts (RFC 0015 §11.4).
 	//
-	// The Go portable domain implements only the bare Input operator
-	// (query_exec.go:188-192), so the match carries the whole document
-	// object; the envelope redaction walks the payload tree and replaces the
-	// password entry inside the match value (the Rust bin runs the same
-	// assertion with ObjectEntry matches in query_cmd.rs).
+	// The Go portable domain implements only the bare Input operator (the
+	// evaluatePortable ExpressionInput branch in go/protocol/query_exec.go
+	// — the operator branch is the anchor, line numbers may drift), so the
+	// match carries the whole document object; the envelope redaction walks
+	// the payload tree and replaces the password entry inside the match
+	// value (the Rust bin runs the same assertion with ObjectEntry matches
+	// in query_cmd.rs).
 	request := queryRequestBytes(t,
 		"7b2270617373776f7264223a2268756e74657232222c22686f7374223a2264622e696e7465726e616c227d",
 		"json.strict")
@@ -220,9 +222,11 @@ func TestQueryHumanReportRedactsMatchingKeyValues(t *testing.T) {
 	// RFC 0015 §11.1: the human report redacts the value of every match
 	// whose key name matches, via redactText; --show-secrets reveals.
 	// The Go portable domain cannot produce ObjectEntry matches end-to-end
-	// (query_exec.go:188-192), so the report is exercised at the unit level
-	// with one synthetic record; the Rust bin runs the same report
-	// end-to-end in query_cmd.rs.
+	// (the portable domain implements only the bare Input operator — the
+	// evaluatePortable ExpressionInput branch in go/protocol/query_exec.go
+	// is the anchor, line numbers may drift), so the report is exercised at
+	// the unit level with one synthetic record; the Rust bin runs the same
+	// report end-to-end in query_cmd.rs.
 	root := protocol.RootValuePath()
 	passwordPath := root.Child(protocol.ValuePathSegment{Kind: "ObjectValue", Key: "password"})
 	hostPath := root.Child(protocol.ValuePathSegment{Kind: "ObjectValue", Key: "host"})

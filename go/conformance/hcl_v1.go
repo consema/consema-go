@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 	"strings"
 
 	"consema.dev/consema/core"
@@ -497,49 +498,39 @@ func assertHclCanonicalValue(document *hcl.Document, expected core.Value) string
 }
 
 // decimalToFloat64 converts one exact canonical decimal spelling to its
-// double value.
+// double value, correctly rounded in a single pass (strconv.ParseFloat —
+// never a two-step coefficient-then-power-of-ten rounding, which
+// double-rounds; wave-4 R42, 2026-08-15). ok is false when the decimal
+// exponent magnitude exceeds 308 or the value cannot be represented in
+// binary64 range (overflow to ±Inf / underflow to 0): the conversion
+// fails atomically instead of clamping (RFC 0013 §6 — decimal is the
+// spelling of an exact IEEE double).
 func decimalToFloat64(text string) (float64, bool) {
-	negative := false
-	magnitude := text
-	if strings.HasPrefix(magnitude, "-") {
-		negative = true
-		magnitude = magnitude[1:]
-	}
-	exponent := big.NewInt(0)
-	digits := magnitude
-	if index := strings.IndexByte(magnitude, '.'); index >= 0 {
-		fraction := magnitude[index+1:]
-		digits = magnitude[:index] + fraction
-		exponent = big.NewInt(-int64(len(fraction)))
-	}
-	coefficient, ok := new(big.Int).SetString(digits, 10)
-	if !ok || !exponent.IsInt64() || !coefficient.IsInt64() {
+	if exponentMagnitudeOutOfRange(text) {
 		return 0, false
 	}
-	value := float64(coefficient.Int64())
-	exp := exponent.Int64()
-	if exp > 0 {
-		value *= mathPow10(exp)
-	} else if exp < 0 {
-		value /= mathPow10(-exp)
-	}
-	if negative {
-		value = -value
+	value, err := strconv.ParseFloat(text, 64)
+	if err != nil {
+		return 0, false
 	}
 	return value, true
 }
 
-func mathPow10(power int64) float64 {
-	result := 1.0
-	base := 10.0
-	for power > 0 {
-		if power&1 == 1 {
-			result *= base
-		}
-		base *= base
-		power >>= 1
+// exponentMagnitudeOutOfRange reports whether the spelling's decimal
+// exponent (after 'e'/'E', when present) has magnitude above 308.
+func exponentMagnitudeOutOfRange(text string) bool {
+	index := strings.IndexAny(text, "eE")
+	if index < 0 {
+		return false
 	}
-	return result
+	exp, err := strconv.ParseInt(text[index+1:], 10, 64)
+	if err != nil {
+		// Unparseable or beyond int64: treat as out of range (the
+		// caller-side canonical spellings are always parseable; a
+		// malformed spelling fails the conversion either way).
+		return true
+	}
+	return exp > 308 || exp < -308
 }
 
 func mathFloat64Bits(value float64) uint64 {
@@ -547,20 +538,25 @@ func mathFloat64Bits(value float64) uint64 {
 }
 
 // decimalValueToFloat64 converts one exact core.Decimal to its double
-// value; the second result is false when the coefficient or exponent
-// exceeds the exact int64 range.
+// value, correctly rounded in a single pass (wave-4 R42, 2026-08-15: the
+// decimal spelling is converted with strconv.ParseFloat, replacing the
+// two-step rounding that double-rounded 1-ULP cases such as 7.038531e-26).
+// ok is false when the exponent exceeds the exact int64 range, its
+// magnitude exceeds 308, or the value falls outside binary64 range — the
+// conversion fails atomically instead of clamping (RFC 0013 §6).
 func decimalValueToFloat64(decimal *core.Decimal) (float64, bool) {
 	coefficient := decimal.Coefficient()
 	exponent := decimal.Exponent()
-	if !coefficient.IsInt64() || !exponent.IsInt64() {
+	if !exponent.IsInt64() {
 		return 0, false
 	}
-	value := float64(coefficient.Int64())
 	exp := exponent.Int64()
-	if exp > 0 {
-		value *= mathPow10(exp)
-	} else if exp < 0 {
-		value /= mathPow10(-exp)
+	if exp > 308 || exp < -308 {
+		return 0, false
+	}
+	value, err := strconv.ParseFloat(coefficient.String()+"e"+exponent.String(), 64)
+	if err != nil {
+		return 0, false
 	}
 	return value, true
 }

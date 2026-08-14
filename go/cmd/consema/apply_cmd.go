@@ -171,9 +171,9 @@ func runApply(parsed *ParsedArgs, stdout, stderr io.Writer) uint8 {
 	}
 	injections := applyInjections{}
 	injections.fromEnv()
-	applyActive = true
+	applyActive.Store(true)
 	outcome, err := runBatch(plan, resultPath, cap, policy, &injections, stderr)
-	applyActive = false
+	applyActive.Store(false)
 	if err != nil {
 		return emitFailure(protocol.CommandApply, parsed, err, nil, stdout, stderr)
 	}

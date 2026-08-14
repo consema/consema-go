@@ -17,6 +17,10 @@ func TestUsageErrorsExitOne(t *testing.T) {
 	}{
 		{"unknown flag", []string{"-definitely-not-a-flag"}},
 		{"missing required flags", nil},
+		// Wave-4 (2026-08-15, ENTRY 13): extra positional arguments are a
+		// usage error — the CLI previously executed the run and silently
+		// ignored them.
+		{"extra positional argument", []string{"-vectors", "v", "-fixtures", "f", "surplus"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -10,10 +10,17 @@ import (
 )
 
 // This file pins the §16.3 hard gate: Go map iteration order must never
-// influence any public result (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §16.3 line
-// 1509; RFC 0016 §4.1 line 125: ordered structures, never maps). Every
-// public fact below is produced repeatedly from identical inputs and must
-// be byte-identical across runs.
+// influence any public result (the roadmap §16.3 hard gate as pinned by
+// the go-implementation-plan risk row R-5 — "Go map 迭代顺序泄漏进公共
+// 结果"; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §2.3 R-5 — and RFC 0016 §4.1 "PortableValue → Go types (frozen)",
+// whose Object row spells the contract: ordered `[]core.Entry`, never
+// `map[string]Value`, because entry order is a language-neutral fact;
+// wave-4 R40, 2026-08-15: the old "§16.3 line 1509" and "§4.1 line 125"
+// bare line-number references pointed at unrelated lines and have been
+// replaced by section anchors — line numbers may drift, sections are the
+// anchor). Every public fact below is produced repeatedly from identical
+// inputs and must be byte-identical across runs.
 
 // determinismSource exercises every public surface: anchors, aliases,
 // duplicates, styles, and profiles.

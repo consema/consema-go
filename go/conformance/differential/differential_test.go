@@ -29,14 +29,25 @@ import (
 // (consema-rs/consema-conformance/examples/emit_parity_bytes.rs) into a
 // directory of `<case-id>.hex` files, then runs this test with
 // CONSEMA_DIFFERENTIAL_RUST_DIR set to that directory. Without the variable
-// the byte-parity test skips (documented skip, never silent) and only the
-// case-file integrity checks run.
+// the byte-parity test skips (documented skip, never silent) and the
+// case-file integrity checks run whenever the case set is reachable (they
+// skip with the documented skip in resolveCasesDir when the data is
+// missing — wave-4 R49, 2026-08-15).
 // ---------------------------------------------------------------------------
 
 // casesDirEnv names the shared differential case directory (the directory
 // that contains cases.json directly — for the byte-parity harness that is
 // conformance/differential of the consema repository).
 const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
+
+// The data-missing skip below is the documented third-path model (wave-4
+// R35/R49, 2026-08-15): go/conformance suite cases fail loudly (never
+// skip) when conformance data is missing; the differential harnesses skip
+// with a documented skip when the case set is unreachable; and the five
+// family packages (go/json, go/toml, go/yaml, go/properties, go/pilot)
+// hard-read ../../conformance with no skip guard — they fail loudly too.
+// The skip here is therefore never silent: it prints the provisioning
+// instructions and the orchestrator rejects a skip.
 
 // resolveCasesDir locates the shared differential case directory: the
 // CONSEMA_DIFFERENTIAL_CASES_DIR environment variable, or — like the Kotlin
@@ -196,9 +207,17 @@ func loadCaseFile(t *testing.T) []fileCase {
 	return file.Cases
 }
 
-// TestCaseFileIntegrity validates the provisioned case set. It always runs
-// (no Rust bytes needed), so `go test ./...` guards the file even without
-// the orchestrator.
+// TestCaseFileIntegrity validates the provisioned case set. It runs with
+// no Rust bytes needed, but only when the case set is reachable: on a
+// clean clone without provisioned conformance data it skips with the
+// documented skip in resolveCasesDir (wave-4 R49, 2026-08-15 — the old
+// "It always runs" comment was false; the skip is never silent). When the
+// data is present, `go test ./...` guards the file even without the
+// orchestrator. Note the third path (wave-4 R35): the five family
+// packages (go/json, go/toml, go/yaml, go/properties, go/pilot) hard-read
+// ../../conformance data with no skip guard, so on a clean clone their
+// tests fail loudly instead of skipping — the "two paths" doc model in
+// the repo READMEs now lists all three.
 func TestCaseFileIntegrity(t *testing.T) {
 	loadCaseFile(t)
 }

@@ -235,3 +235,30 @@ func TestPortableDistinctThroughConcatPipeline(t *testing.T) {
 		t.Fatalf("distinct over two root matches = %+v, want one root-path match", matches)
 	}
 }
+
+// TestDefaultQueryLimitsFrozen pins the frozen default limits (wave-4 R12,
+// 2026-08-15): MaxSteps is 100,000 — the Rust reference's frozen value
+// (consema-core/src/query.rs DefaultQueryLimits) — not the divergent
+// 10,000,000 the Go side previously shipped. The behavior test: the step
+// accounting fails with FailureResourceLimit exactly when the budget is
+// exhausted (a budget below the work performed fails, never a silent
+// unbounded run), and the frozen default accepts the same work.
+func TestDefaultQueryLimitsFrozen(t *testing.T) {
+	limits := DefaultQueryLimits()
+	if limits.MaxResults != 1_000_000 {
+		t.Fatalf("MaxResults = %d, want 1,000,000", limits.MaxResults)
+	}
+	if limits.MaxSteps != 100_000 {
+		t.Fatalf("MaxSteps = %d, want 100,000 (frozen default, wave-4 R12)", limits.MaxSteps)
+	}
+	// The bare Input expression costs exactly one step: a budget of one
+	// succeeds, a budget of zero fails with FailureResourceLimit.
+	oneStep := &portableContext{limits: QueryLimits{MaxResults: 1_000_000, MaxSteps: 1}}
+	if failure := oneStep.step(); failure != nil {
+		t.Fatalf("one step under a budget of 1 must succeed, got %v", failure)
+	}
+	zeroBudget := &portableContext{limits: QueryLimits{MaxResults: 1_000_000, MaxSteps: 0}}
+	if failure := zeroBudget.step(); failure == nil || failure.Kind != FailureResourceLimit {
+		t.Fatalf("step under a budget of 0: failure = %v, want FailureResourceLimit", failure)
+	}
+}

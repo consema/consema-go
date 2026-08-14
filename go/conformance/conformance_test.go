@@ -19,6 +19,20 @@ func repositoryRunner(t *testing.T) *Runner {
 	}
 }
 
+// repositoryManifestCounts reads the conformance_suite record of the
+// repository's provisioned Feature-Complete Manifest (wave-4 R10,
+// 2026-08-15): the suite/case counts are derived from the manifest — the
+// single re-vendor sync point — instead of hardcoded literals that go
+// unnoticed when the inventory legitimately changes.
+func repositoryManifestCounts(t *testing.T) (suites, cases int) {
+	t.Helper()
+	_, suites, cases, err := manifestConformanceSuite(repositoryRunner(t).ManifestPath)
+	if err != nil {
+		t.Fatalf("cannot read the Feature-Complete Manifest: %v", err)
+	}
+	return suites, cases
+}
+
 // TestRunIsConformant pins the milestone gate: every applicable case of the
 // 0.14.0 capability surface passes, the remaining cases are documented
 // skips, every count assertion holds, and the aggregate digest matches the
@@ -32,8 +46,8 @@ func TestRunIsConformant(t *testing.T) {
 		t.Fatalf("aggregate digest mismatch: computed %s, recorded %s (%d suites, %d cases)",
 			report.Digest.Computed, report.Digest.Recorded, report.Digest.Suites, report.Digest.Cases)
 	}
-	if report.Total != 519 {
-		t.Fatalf("case inventory %d != 519", report.Total)
+	if _, cases := repositoryManifestCounts(t); report.Total != cases {
+		t.Fatalf("case inventory %d != manifest conformance_suite cases %d", report.Total, cases)
 	}
 	for _, suite := range report.Suites {
 		if !suite.Conformant() {
@@ -100,20 +114,24 @@ func TestApplicableSuiteCounts(t *testing.T) {
 }
 
 // TestDigestAlgorithmMatchesManifest pins the §4.5 aggregate algorithm
-// against the Feature-Complete Manifest record.
+// against the Feature-Complete Manifest record: the computed aggregate
+// over the repository vectors must equal the manifest's recorded value,
+// and the computed suite/case counts must equal the manifest's
+// conformance_suite record (wave-4 R10, 2026-08-15: the recorded value
+// and the counts come from the manifest — the hardcoded digest literal
+// was a second re-vendor sync point that reddened on every legitimate
+// inventory change).
 func TestDigestAlgorithmMatchesManifest(t *testing.T) {
 	digest, err := repositoryRunner(t).VerifyVectorsDigest()
 	if err != nil {
 		t.Fatal(err)
 	}
-	const recorded = "cfd6e296da5b22b62d37b076d35bf6bbf58b0678ceddb37eea51a8b47200ab6a"
-	if digest.Recorded != recorded {
-		t.Fatalf("manifest record changed: %s", digest.Recorded)
+	if !digest.OK {
+		t.Fatalf("aggregate digest mismatch: computed %s, recorded %s", digest.Computed, digest.Recorded)
 	}
-	if digest.Computed != recorded {
-		t.Fatalf("aggregate digest %s != %s", digest.Computed, recorded)
-	}
-	if digest.Suites != 18 || digest.Cases != 519 {
-		t.Fatalf("inventory %d suites / %d cases != 18 / 519", digest.Suites, digest.Cases)
+	suites, cases := repositoryManifestCounts(t)
+	if digest.Suites != suites || digest.Cases != cases {
+		t.Fatalf("inventory %d suites / %d cases != manifest %d / %d",
+			digest.Suites, digest.Cases, suites, cases)
 	}
 }
