@@ -68,7 +68,7 @@
 #            go/protocol/cli_test.go's constructed-envelope fixture
 #            literals carry the current version at the pinned count
 #            (wave-4 R36: the third grep makes the train bump update the
-#            15 fixture literals too).
+#            13 quoted fixture literals too).
 #   examples: vets and runs the committed go/examples/sdk_chain example (no
 #            conformance data, so no multi-repo checkout or provision step).
 #   check: the alls-green aggregate gate ("check (all gates green)", the
