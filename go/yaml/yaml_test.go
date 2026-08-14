@@ -2,6 +2,7 @@ package yaml
 
 import (
 	"math/big"
+	"strings"
 	"testing"
 
 	"consema.dev/consema/document"
@@ -560,5 +561,33 @@ func TestNestingLimitSurfacesResourceLimit(t *testing.T) {
 	_, failure = Parse([]byte("[one, two]"), Yaml12CoreV1, limits)
 	if failure == nil || failure.Code() != "core.parse.resource-limit@1" {
 		t.Fatalf("node limit: %v", failure)
+	}
+}
+
+// TestNumberMagnitudeLimit pins the frozen cross-language number
+// magnitude bound (maxNumberMagnitudeDigits, coefficient plus exponent)
+// on the plain-scalar number paths: an over-limit lexeme fails with
+// core.parse.resource-limit@1 before any big.Int allocation, and an
+// exactly-at-limit lexeme resolves normally.
+func TestNumberMagnitudeLimit(t *testing.T) {
+	over := "1e" + strings.Repeat("9", maxNumberMagnitudeDigits)
+	_, failure := Parse([]byte(over+"\n"), Yaml12CoreV1, document.DefaultParseLimits())
+	if failure == nil || failure.Code() != "core.parse.resource-limit@1" ||
+		failure.Diagnostics()[0].Arguments["name"] != "number-magnitude-digits" {
+		t.Fatalf("over-limit float failure %v", failure)
+	}
+
+	at := "1e" + strings.Repeat("9", maxNumberMagnitudeDigits-1)
+	doc := mustParse(t, at+"\n", Yaml12CoreV1)
+	scalar := rootScalar(t, doc)
+	if scalar.Kind() != ScalarKindFloat || scalar.Canonical() != at {
+		t.Fatalf("at-limit float: kind %s canonical %q", scalar.Kind(), scalar.Canonical())
+	}
+
+	// The YAML 1.1 sexagesimal-float coefficient shares the bound.
+	canonical, ok, failure := parseSexagesimalFloat("0:0." + strings.Repeat("9", maxNumberMagnitudeDigits+1))
+	if ok || failure == nil || failure.Code() != "core.parse.resource-limit@1" ||
+		failure.Diagnostics()[0].Arguments["name"] != "number-magnitude-digits" {
+		t.Fatalf("sexagesimal over-limit: ok %v failure %v canonical %q", ok, failure, canonical)
 	}
 }

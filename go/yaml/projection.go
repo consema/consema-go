@@ -1058,8 +1058,8 @@ func (c *valueProjectionContext) projectScalar(scalar *nativeScalar, supported b
 		case ".nan":
 			return core.NewBinaryFloat64(0x7ff8000000000000), nil
 		}
-		coefficient, exponent, ok := parseJSONDecimal(scalar.canonical)
-		if !ok {
+		coefficient, exponent, ok, failure := parseJSONDecimal(scalar.canonical)
+		if failure != nil || !ok {
 			return invalid()
 		}
 		return core.NewDecimal(coefficient, exponent), nil
@@ -1120,8 +1120,8 @@ func projectTimestamp(canonical string) (core.Value, bool) {
 	}
 	var fraction core.Decimal
 	if zoneStart > 0 {
-		coefficient, exponent, ok := parseJSONDecimal("0" + tail[:zoneStart])
-		if !ok {
+		coefficient, exponent, ok, failure := parseJSONDecimal("0" + tail[:zoneStart])
+		if failure != nil || !ok {
 			return nil, false
 		}
 		fraction = core.NewDecimal(coefficient, exponent)

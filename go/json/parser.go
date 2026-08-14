@@ -881,7 +881,11 @@ func (p *parserState) parseValue(depth int) (int, *FormationFailure) {
 		return p.allocScalar(item, internalValueKind{tag: internalBoolean, boolean: false})
 	case tokenNumber:
 		p.position++
-		return p.allocScalar(item, parseNumberKind(p.text[item.start:item.end], p.profile))
+		kind, failure := parseNumberKind(p.text[item.start:item.end], p.profile)
+		if failure != nil {
+			return 0, failure
+		}
+		return p.allocScalar(item, kind)
 	case tokenString:
 		p.position++
 		decoded, ok := decodeJSONString(p.text[item.start:item.end], p.profile)
@@ -1202,22 +1206,76 @@ func (p *parserState) syntaxDiagnostic(code string, start, end int) {
 		protocol.CategorySyntax, protocol.SeverityError, start, end))
 }
 
+// maxNumberMagnitudeDigits is the frozen cross-language upper bound on
+// the total digit count (coefficient plus exponent) of one parsed number
+// lexeme (wave-4 default, shared with the Rust reference). The check runs
+// before any big.Int allocation; an over-limit lexeme is a fatal
+// resource-limit failure, never a truncation.
+const maxNumberMagnitudeDigits = 100_000
+
+// magnitudeLimitFailure builds the frozen resource-limit failure for one
+// number lexeme over maxNumberMagnitudeDigits.
+func magnitudeLimitFailure(observed int) *FormationFailure {
+	return &FormationFailure{Kind: FormationFailureResourceLimit,
+		Name: "number-magnitude-digits", Observed: observed, Limit: maxNumberMagnitudeDigits}
+}
+
+// decimalMagnitudeDigits counts the significant decimal digits of one
+// number lexeme (the coefficient digits plus the exponent digits; sign,
+// fraction point, and exponent markers are not digits).
+func decimalMagnitudeDigits(text string) int {
+	digits := 0
+	for index := 0; index < len(text); index++ {
+		if text[index] >= '0' && text[index] <= '9' {
+			digits++
+		}
+	}
+	return digits
+}
+
+// hexMagnitudeDigits counts the significant hex digits of one JSON5 hex
+// lexeme.
+func hexMagnitudeDigits(text string) int {
+	digits := 0
+	for index := 0; index < len(text); index++ {
+		character := text[index]
+		if character >= '0' && character <= '9' ||
+			character >= 'a' && character <= 'f' ||
+			character >= 'A' && character <= 'F' {
+			digits++
+		}
+	}
+	return digits
+}
+
 // parseNumberKind resolves one validated number lexeme into its native
 // category (parser.rs).
-func parseNumberKind(text string, profile JsonProfile) internalValueKind {
+func parseNumberKind(text string, profile JsonProfile) (internalValueKind, *FormationFailure) {
 	if profile.isJSON5() {
 		return parseJSON5Number(text)
 	}
 	if strings.ContainsAny(text, ".eE") {
-		return internalValueKind{tag: internalDecimal, decimal: parseJSONNumberDecimal(text)}
+		decimal, ok := parseJSONNumberDecimal(text)
+		if !ok {
+			return internalValueKind{}, magnitudeLimitFailure(decimalMagnitudeDigits(text))
+		}
+		return internalValueKind{tag: internalDecimal, decimal: decimal}, nil
+	}
+	if digits := decimalMagnitudeDigits(text); digits > maxNumberMagnitudeDigits {
+		return internalValueKind{}, magnitudeLimitFailure(digits)
 	}
 	integer, _ := new(big.Int).SetString(text, 10)
-	return internalValueKind{tag: internalInteger, integer: integer}
+	return internalValueKind{tag: internalInteger, integer: integer}, nil
 }
 
 // parseJSONNumberDecimal converts one validated strict JSON number into
-// its canonical coefficient × 10^exponent decimal.
-func parseJSONNumberDecimal(text string) core.Decimal {
+// its canonical coefficient × 10^exponent decimal. It returns false when
+// the lexeme exceeds maxNumberMagnitudeDigits, checked before any
+// big.Int allocation (parser.rs).
+func parseJSONNumberDecimal(text string) (core.Decimal, bool) {
+	if decimalMagnitudeDigits(text) > maxNumberMagnitudeDigits {
+		return core.Decimal{}, false
+	}
 	unsigned := text
 	if len(unsigned) > 0 && (unsigned[0] == '+' || unsigned[0] == '-') {
 		unsigned = unsigned[1:]
@@ -1240,12 +1298,12 @@ func parseJSONNumberDecimal(text string) core.Decimal {
 	coefficient, _ := new(big.Int).SetString(coefficientText, 10)
 	coefficient.Mul(coefficient, sign)
 	exponent := new(big.Int).Sub(explicitExponent, big.NewInt(int64(fractionDigits)))
-	return core.NewDecimal(coefficient, exponent)
+	return core.NewDecimal(coefficient, exponent), true
 }
 
 // parseJSON5Number resolves one validated JSON5 number lexeme
 // (parser.rs).
-func parseJSON5Number(text string) internalValueKind {
+func parseJSON5Number(text string) (internalValueKind, *FormationFailure) {
 	negative := false
 	unsigned := text
 	if rest, ok := strings.CutPrefix(text, "-"); ok {
@@ -1260,13 +1318,13 @@ func parseJSON5Number(text string) internalValueKind {
 		if negative {
 			bits = 0xfff0_0000_0000_0000
 		}
-		return internalValueKind{tag: internalBinaryFloat64, binary64: core.NewBinaryFloat64(bits)}
+		return internalValueKind{tag: internalBinaryFloat64, binary64: core.NewBinaryFloat64(bits)}, nil
 	case "NaN":
 		bits := uint64(0x7ff8_0000_0000_0000)
 		if negative {
 			bits = 0xfff8_0000_0000_0000
 		}
-		return internalValueKind{tag: internalBinaryFloat64, binary64: core.NewBinaryFloat64(bits)}
+		return internalValueKind{tag: internalBinaryFloat64, binary64: core.NewBinaryFloat64(bits)}, nil
 	}
 	if hex, ok := strings.CutPrefix(unsigned, "0x"); ok {
 		return json5HexInteger(hex, negative)
@@ -1293,21 +1351,31 @@ func parseJSON5Number(text string) internalValueKind {
 		normalized = normalized[:exponentIndex] + "0" + normalized[exponentIndex:]
 	}
 	if strings.ContainsAny(normalized, ".eE") {
-		return internalValueKind{tag: internalDecimal, decimal: parseJSONNumberDecimal(normalized)}
+		decimal, ok := parseJSONNumberDecimal(normalized)
+		if !ok {
+			return internalValueKind{}, magnitudeLimitFailure(decimalMagnitudeDigits(normalized))
+		}
+		return internalValueKind{tag: internalDecimal, decimal: decimal}, nil
+	}
+	if digits := decimalMagnitudeDigits(normalized); digits > maxNumberMagnitudeDigits {
+		return internalValueKind{}, magnitudeLimitFailure(digits)
 	}
 	integer, _ := new(big.Int).SetString(normalized, 10)
-	return internalValueKind{tag: internalInteger, integer: integer}
+	return internalValueKind{tag: internalInteger, integer: integer}, nil
 }
 
 // json5HexInteger converts one validated JSON5 hex magnitude into an
 // Integer.
-func json5HexInteger(hex string, negative bool) internalValueKind {
+func json5HexInteger(hex string, negative bool) (internalValueKind, *FormationFailure) {
+	if digits := hexMagnitudeDigits(hex); digits > maxNumberMagnitudeDigits {
+		return internalValueKind{}, magnitudeLimitFailure(digits)
+	}
 	integer := new(big.Int)
 	integer.SetString(hex, 16)
 	if negative {
 		integer.Neg(integer)
 	}
-	return internalValueKind{tag: internalInteger, integer: integer}
+	return internalValueKind{tag: internalInteger, integer: integer}, nil
 }
 
 // decodedString is one decoded JSON string literal plus the raw line

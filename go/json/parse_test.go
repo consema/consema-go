@@ -421,6 +421,46 @@ func TestParseLimits(t *testing.T) {
 	}
 }
 
+// TestNumberMagnitudeLimit pins the frozen cross-language number
+// magnitude bound (maxNumberMagnitudeDigits, coefficient plus exponent):
+// an over-limit lexeme fails with the number-magnitude-digits
+// resource-limit failure before any big.Int allocation, and an
+// exactly-at-limit lexeme parses normally.
+func TestNumberMagnitudeLimit(t *testing.T) {
+	over := strings.Repeat("9", maxNumberMagnitudeDigits+1)
+	_, failure := Parse(context.Background(), []byte(over), JsonProfileStrictV1,
+		document.DefaultParseLimits())
+	if failure == nil || failure.Kind != FormationFailureResourceLimit ||
+		failure.Name != "number-magnitude-digits" ||
+		failure.Observed != maxNumberMagnitudeDigits+1 || failure.Limit != maxNumberMagnitudeDigits {
+		t.Fatalf("over-limit integer failure %v", failure)
+	}
+
+	at := strings.Repeat("9", maxNumberMagnitudeDigits)
+	doc := parseForTest(t, at, JsonProfileStrictV1)
+	mustForm(t, doc, document.FormationStatusComplete)
+	if integer := doc.Root().AsInteger(); !integer.IsAvailable() ||
+		integer.Value().String() != at {
+		t.Fatalf("at-limit integer %v", integer)
+	}
+
+	// The JSON5 decimal and hex paths share the same bound.
+	_, failure = Parse(context.Background(),
+		[]byte("1e"+strings.Repeat("9", maxNumberMagnitudeDigits)),
+		JsonProfileJson5StandardV1, document.DefaultParseLimits())
+	if failure == nil || failure.Kind != FormationFailureResourceLimit ||
+		failure.Name != "number-magnitude-digits" {
+		t.Fatalf("JSON5 decimal over-limit failure %v", failure)
+	}
+	_, failure = Parse(context.Background(),
+		[]byte("0x"+strings.Repeat("f", maxNumberMagnitudeDigits+1)),
+		JsonProfileJson5StandardV1, document.DefaultParseLimits())
+	if failure == nil || failure.Kind != FormationFailureResourceLimit ||
+		failure.Name != "number-magnitude-digits" {
+		t.Fatalf("JSON5 hex over-limit failure %v", failure)
+	}
+}
+
 func TestCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

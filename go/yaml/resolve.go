@@ -81,7 +81,10 @@ func resolveScalar(decoded string, style YamlScalarStyle, explicit string,
 		}
 		switch tag {
 		case tagNull, tagBool, tagInt, tagFloat:
-			canonical, kind, ok := resolveExplicit(decoded, tag, profile)
+			canonical, kind, ok, failure := resolveExplicit(decoded, tag, profile)
+			if failure != nil {
+				return "", nativeScalar{}, failure
+			}
 			if !ok {
 				return "", nativeScalar{}, newNativeFailure("yaml.scalar.invalid-explicit-tag@1")
 			}
@@ -117,31 +120,34 @@ func resolveScalar(decoded string, style YamlScalarStyle, explicit string,
 
 // resolveExplicit canonicalizes one scalar under an explicit standard tag
 // (consema-yaml native.rs resolve_explicit).
-func resolveExplicit(decoded, tag string, profile YamlProfile) (string, YamlScalarKind, bool) {
+func resolveExplicit(decoded, tag string, profile YamlProfile) (string, YamlScalarKind, bool, *FormationFailure) {
 	switch tag {
 	case tagNull:
 		if _, ok := parseNull(decoded); !ok {
-			return "", 0, false
+			return "", 0, false, nil
 		}
-		return "", ScalarKindNull, true
+		return "", ScalarKindNull, true, nil
 	case tagBool:
 		canonical, ok := parseBool(decoded, profile)
 		if !ok {
-			return "", 0, false
+			return "", 0, false, nil
 		}
-		return canonical, ScalarKindBoolean, true
+		return canonical, ScalarKindBoolean, true, nil
 	case tagInt:
 		canonical, ok := parseInteger(decoded, profile)
 		if !ok {
-			return "", 0, false
+			return "", 0, false, nil
 		}
-		return canonical, ScalarKindInteger, true
+		return canonical, ScalarKindInteger, true, nil
 	default: // tagFloat
-		canonical, ok := parseFloat(decoded, profile)
-		if !ok {
-			return "", 0, false
+		canonical, ok, failure := parseFloat(decoded, profile)
+		if failure != nil {
+			return "", 0, false, failure
 		}
-		return canonical, ScalarKindFloat, true
+		if !ok {
+			return "", 0, false, nil
+		}
+		return canonical, ScalarKindFloat, true, nil
 	}
 }
 
@@ -161,7 +167,9 @@ func resolveImplicit(decoded string, profile YamlProfile) (string, nativeScalar,
 		return tagInt, nativeScalar{decoded: decoded, canonical: canonical,
 			kind: ScalarKindInteger, style: ScalarStylePlain}, nil
 	}
-	if canonical, ok := parseFloat(decoded, profile); ok {
+	if canonical, ok, failure := parseFloat(decoded, profile); failure != nil {
+		return "", nativeScalar{}, failure
+	} else if ok {
 		return tagFloat, nativeScalar{decoded: decoded, canonical: canonical,
 			kind: ScalarKindFloat, style: ScalarStylePlain}, nil
 	}
@@ -251,25 +259,26 @@ func parseInteger(value string, profile YamlProfile) (string, bool) {
 
 // parseFloat canonicalizes one float spelling per profile (native.rs:
 // 803-829). Non-finite values use the frozen spellings; finite values are
-// the exact normalized decimal canonical form.
-func parseFloat(value string, profile YamlProfile) (string, bool) {
+// the exact normalized decimal canonical form. An over-limit number
+// magnitude is a fatal resource-limit failure, never a fallthrough.
+func parseFloat(value string, profile YamlProfile) (string, bool, *FormationFailure) {
 	switch value {
 	case ".inf", ".Inf", ".INF", "+.inf", "+.Inf", "+.INF":
-		return ".inf", true
+		return ".inf", true, nil
 	case "-.inf", "-.Inf", "-.INF":
-		return "-.inf", true
+		return "-.inf", true, nil
 	case ".nan", ".NaN", ".NAN":
-		return ".nan", true
+		return ".nan", true, nil
 	}
 	var cleaned string
 	if profile == Yaml11CompatV1 {
 		valid, ok := validUnderscored(value)
 		if !ok {
-			return "", false
+			return "", false, nil
 		}
 		cleaned = strings.ReplaceAll(valid, "_", "")
 	} else if strings.ContainsRune(value, '_') {
-		return "", false
+		return "", false, nil
 	} else {
 		cleaned = value
 	}
@@ -277,14 +286,17 @@ func parseFloat(value string, profile YamlProfile) (string, bool) {
 		return parseSexagesimalFloat(cleaned)
 	}
 	if !strings.ContainsAny(cleaned, ".eE") {
-		return "", false
+		return "", false, nil
 	}
 	normalized := normalizeDecimalLexeme(cleaned)
-	coefficient, exponent, ok := parseJSONDecimal(normalized)
-	if !ok {
-		return "", false
+	coefficient, exponent, ok, failure := parseJSONDecimal(normalized)
+	if failure != nil {
+		return "", false, failure
 	}
-	return decimalCanonical(coefficient, exponent), true
+	if !ok {
+		return "", false, nil
+	}
+	return decimalCanonical(coefficient, exponent), true, nil
 }
 
 // normalizeDecimalLexeme rewrites leading dots and trailing mantissa dots
@@ -321,10 +333,41 @@ func normalizeDecimalLexeme(value string) string {
 	return text
 }
 
+// maxNumberMagnitudeDigits is the frozen cross-language upper bound on
+// the total digit count (coefficient plus exponent) of one parsed number
+// lexeme (wave-4 default, shared with the Rust reference). The check runs
+// before any big.Int allocation; an over-limit lexeme is a fatal
+// resource-limit failure, never a truncation.
+const maxNumberMagnitudeDigits = 100_000
+
+// numberMagnitudeFailure builds the frozen core.parse.resource-limit@1
+// failure for one number lexeme over maxNumberMagnitudeDigits.
+func numberMagnitudeFailure(observed int) *FormationFailure {
+	return resourceLimitFailure("number-magnitude-digits", observed, maxNumberMagnitudeDigits)
+}
+
+// decimalMagnitudeDigits counts the significant decimal digits of one
+// number lexeme (the coefficient digits plus the exponent digits; sign,
+// fraction point, and exponent markers are not digits).
+func decimalMagnitudeDigits(text string) int {
+	digits := 0
+	for index := 0; index < len(text); index++ {
+		if text[index] >= '0' && text[index] <= '9' {
+			digits++
+		}
+	}
+	return digits
+}
+
 // parseJSONDecimal parses one strict JSON number lexeme into the exact
 // coefficient/exponent form (the consema-core Decimal::parse_json_number
-// contract used by native.rs).
-func parseJSONDecimal(value string) (*big.Int, *big.Int, bool) {
+// contract used by native.rs). It returns a frozen resource-limit failure
+// when the lexeme exceeds maxNumberMagnitudeDigits, checked before any
+// big.Int allocation.
+func parseJSONDecimal(value string) (*big.Int, *big.Int, bool, *FormationFailure) {
+	if digits := decimalMagnitudeDigits(value); digits > maxNumberMagnitudeDigits {
+		return nil, nil, false, numberMagnitudeFailure(digits)
+	}
 	body := value
 	negative := false
 	if strings.HasPrefix(body, "-") {
@@ -334,7 +377,7 @@ func parseJSONDecimal(value string) (*big.Int, *big.Int, bool) {
 		body = body[1:]
 	}
 	if body == "" {
-		return nil, nil, false
+		return nil, nil, false, nil
 	}
 	exponentIndex := len(body)
 	for index, character := range body {
@@ -348,22 +391,22 @@ func parseJSONDecimal(value string) (*big.Int, *big.Int, bool) {
 	if exponentIndex < len(body) {
 		exponentText = body[exponentIndex+1:]
 		if exponentText == "" {
-			return nil, nil, false
+			return nil, nil, false, nil
 		}
 	}
 	pointIndex := strings.IndexByte(mantissa, '.')
 	if pointIndex >= 0 {
 		if strings.IndexByte(mantissa[pointIndex+1:], '.') >= 0 {
-			return nil, nil, false
+			return nil, nil, false, nil
 		}
 	}
 	digits := strings.ReplaceAll(mantissa, ".", "")
 	if digits == "" || !allASCIIHexDigits(digits) {
-		return nil, nil, false
+		return nil, nil, false, nil
 	}
 	coefficient := new(big.Int)
 	if _, ok := coefficient.SetString(digits, 10); !ok {
-		return nil, nil, false
+		return nil, nil, false, nil
 	}
 	if negative {
 		coefficient.Neg(coefficient)
@@ -371,14 +414,14 @@ func parseJSONDecimal(value string) (*big.Int, *big.Int, bool) {
 	exponent := new(big.Int)
 	if exponentText != "" {
 		if _, ok := exponent.SetString(exponentText, 10); !ok {
-			return nil, nil, false
+			return nil, nil, false, nil
 		}
 	}
 	if pointIndex >= 0 {
 		fractionLength := int64(len(mantissa) - pointIndex - 1)
 		exponent.Sub(exponent, big.NewInt(fractionLength))
 	}
-	return coefficient, exponent, true
+	return coefficient, exponent, true, nil
 }
 
 // decimalCanonical is the frozen canonical decimal spelling (native.rs:
@@ -419,62 +462,66 @@ func parseSexagesimalInteger(sign int8, value string) (string, bool) {
 }
 
 // parseSexagesimalFloat canonicalizes one YAML 1.1 base-60 float
-// (native.rs).
-func parseSexagesimalFloat(value string) (string, bool) {
+// (native.rs). The coefficient magnitude bound is enforced before the
+// big.Int allocation.
+func parseSexagesimalFloat(value string) (string, bool, *FormationFailure) {
 	sign, unsigned := splitSign(value)
 	if !signOK(sign) {
-		return "", false
+		return "", false, nil
 	}
 	parts := strings.Split(unsigned, ":")
 	last := parts[len(parts)-1]
 	point := strings.IndexByte(last, '.')
 	if point < 0 {
-		return "", false
+		return "", false, nil
 	}
 	whole := last[:point]
 	fraction := last[point+1:]
 	if fraction == "" || !allASCIIDigits(fraction) {
-		return "", false
+		return "", false, nil
 	}
 	var magnitude []uint8
 	intermediate := parts[:len(parts)-1]
 	for index, part := range intermediate {
 		component, ok := parseU64(part)
 		if !ok {
-			return "", false
+			return "", false, nil
 		}
 		if index > 0 && component > 59 {
-			return "", false
+			return "", false, nil
 		}
 		if index == 0 {
 			var ok bool
 			magnitude, ok = parseBaseMagnitude(part, 10)
 			if !ok {
-				return "", false
+				return "", false, nil
 			}
 		} else {
 			multiplyAdd(&magnitude, 60, uint8(component))
 		}
 	}
 	if len(intermediate) == 0 {
-		return "", false
+		return "", false, nil
 	}
 	wholeValue, ok := parseU8(whole)
 	if !ok || wholeValue > 59 {
-		return "", false
+		return "", false, nil
 	}
 	multiplyAdd(&magnitude, 60, wholeValue)
 	combined := positiveDecimalString(magnitude)
 	coefficientText := combined + fraction
+	if digits := decimalMagnitudeDigits(coefficientText); digits > maxNumberMagnitudeDigits {
+		return "", false, numberMagnitudeFailure(digits)
+	}
 	coefficient := new(big.Int)
 	if _, ok := coefficient.SetString(coefficientText, 10); !ok {
-		return "", false
+		return "", false, nil
 	}
 	if sign < 0 {
 		coefficient.Neg(coefficient)
 	}
 	exponent := big.NewInt(-int64(len(fraction)))
-	return decimalCanonical(coefficient, exponent), true
+	return decimalCanonical(coefficient, exponent), true, nil
 }
 
 // parseTimestamp canonicalizes one YAML 1.1 timestamp (native.rs).
