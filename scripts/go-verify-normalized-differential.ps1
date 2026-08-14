@@ -52,24 +52,34 @@ param(
 #      cross-language reproducer;
 #   2. append the minimal case to cases.json in this directory
 #      (conformance/differential/normalized/cases.json) using the same
-#      schema as the existing entries (kind/format/profile/source/steps);
-#      the integrity guards are automatic and enforced by
-#      TestCaseFileIntegrity on every `go test ./...` run: the manifest id
-#      must stay consema.differential.normalized@1, ids must be unique, and
-#      the case count must stay exactly 108 (normalized_test.go
-#      expectedCaseCount). The case then runs in both directions of this
-#      script forever.
+#      schema as the existing entries (kind/format/profile/source/steps).
+#      The frozen counts are exact-equality guards, NOT automatic:
+#      appending a case REQUIRES bumping the frozen expectedCaseCount in
+#      go/conformance/differential/normalized/normalized_test.go (108
+#      today) and the exact-count guard of this script below (also 108)
+#      in the same change — the guards then keep the new total honest
+#      forever. (Wave-4 2026-08-15, ENTRY 16: the previous text claimed
+#      "append the case … forever" while also demanding the count "stay
+#      exactly 108" with "automatic" integrity guards — appending without
+#      the count bump made TestCaseFileIntegrity fail with no documented
+#      procedure; the count-bump steps are now the documented procedure.)
+#      The case then runs in both directions of this script forever.
 #   3. a language-neutral defect exposed by the finding (a real bug, not a
 #      harness artifact) additionally goes into the regression corpus: the
 #      `regressions` array of conformance/corpora/mutation-v1.json,
 #      following the existing workflow in conformance/corpora/README.md
-#      ("Adding a fuzz finding to the corpus"), which the mutation_corpus
-#      replay test covers. That corpus is read-only here: this script never
-#      writes it.
+#      ("Adding a fuzz finding to the corpus"). NOTE (wave-4 2026-08-15,
+#      ENTRY 3): the mutation_corpus replay test lives in the consema-rs
+#      repository (consema-conformance/tests/mutation_corpus.rs), NOT in
+#      this Go repository — a regression appended here is replayed and
+#      verified by the Rust-side test, so it stays verified in the
+#      six-repo corpus even though no Go test replays it. That corpus is
+#      read-only here: this script never writes it.
 #
-# Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
-# workspace is the consema-rs checkout (<repo root>\consema-rs by default,
-# -RustWorkspace overrides). Windows
+# Requirements: cargo (or $env:CONSEMA_CARGO) and go (or $env:CONSEMA_GO —
+# wave-4 2026-08-15, ENTRY 36: the harness honors the override like the
+# ts/py/kt harnesses); the Rust workspace is the consema-rs checkout
+# (<repo root>\consema-rs by default, -RustWorkspace overrides). Windows
 # PowerShell 5.1 compatible, no third-party dependencies.
 # ---------------------------------------------------------------------------
 
@@ -111,8 +121,11 @@ if (-not (Test-Path (Join-Path $goDir 'go.mod'))) {
     Write-Error "Go module not found: $goDir"
     exit 1
 }
-if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Error 'go is not on PATH'
+# Wave-4 ENTRY 36: the main-language toolchain honors $env:CONSEMA_GO
+# (like the ts/py/kt harnesses honor their overrides); default 'go'.
+$go = if ($env:CONSEMA_GO) { $env:CONSEMA_GO } else { 'go' }
+if (-not (Get-Command $go -ErrorAction SilentlyContinue)) {
+    Write-Error "go is not available ('$go'; set CONSEMA_GO to override)"
     exit 1
 }
 
@@ -196,7 +209,7 @@ try {
     $previousEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & go test -count=1 -v ./conformance/differential/normalized/ 1> $stdoutFile 2> $stderrFile
+        & $go test -count=1 -v ./conformance/differential/normalized/ 1> $stdoutFile 2> $stderrFile
         $testCode = $LASTEXITCODE
     }
     finally {

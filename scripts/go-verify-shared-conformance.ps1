@@ -58,9 +58,10 @@ param(
 # error. The Go runner's RFC 0015 exit class (2 = non-conformant data) is
 # propagated.
 #
-# Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
-# workspace is the consema-rs checkout (<repo root>\consema-rs by default,
-# -RustWorkspace overrides). Windows
+# Requirements: cargo (or $env:CONSEMA_CARGO) and go (or $env:CONSEMA_GO —
+# wave-4 2026-08-15, ENTRY 36: the harness honors the override like the
+# ts/py/kt harnesses); the Rust workspace is the consema-rs checkout
+# (<repo root>\consema-rs by default, -RustWorkspace overrides). Windows
 # PowerShell 5.1 compatible, no third-party dependencies.
 # ---------------------------------------------------------------------------
 
@@ -132,8 +133,11 @@ if (-not (Test-Path $manifestPath)) {
     Write-Error "Feature-Complete Manifest not found: $manifestPath"
     exit 1
 }
-if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Error 'go is not on PATH'
+# Wave-4 ENTRY 36: the main-language toolchain honors $env:CONSEMA_GO
+# (like the ts/py/kt harnesses honor their overrides); default 'go'.
+$go = if ($env:CONSEMA_GO) { $env:CONSEMA_GO } else { 'go' }
+if (-not (Get-Command $go -ErrorAction SilentlyContinue)) {
+    Write-Error "go is not available ('$go'; set CONSEMA_GO to override)"
     exit 1
 }
 
@@ -150,8 +154,11 @@ if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
 # The 2026-08-07 recorded value e3d6578858... was computed on a CRLF working
 # tree (core.autocrlf=true) and has been replaced by the canonical-state
 # value 35bebc8d...; the 2026-08-12 P2-B vector reinforcement (508 -> 519
-# cases) replaced it again with cfd6e296... (fc-manifest-0.13.0.json:39,
-# the aggregate_sha256 value line; G115 line re-verification 2026-08-13). On
+# cases) replaced it again with cfd6e296... (the manifest's
+# digests.conformance_suite.aggregate_sha256 field — the field name is the
+# anchor; wave-4 R40, 2026-08-15: the old "fc-manifest-0.13.0.json:39"
+# line-number reference pointed into a live provisioned file whose line
+# numbers drift on every re-vendor; G115 re-verification 2026-08-13). On
 # a CRLF working tree this step fails as expected — run with
 # `git config core.autocrlf false` (or a clean LF checkout).
 Write-Host "[1/6] verifying the conformance/vectors aggregate digest against the Feature-Complete Manifest..."
@@ -257,7 +264,7 @@ try {
     $previousEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & go run ./cmd/consema-conformance -vectors $vectorsDir -fixtures $fixturesDir -manifest $manifestPath 1> $cliOutFile 2> $cliErrFile
+        & $go run ./cmd/consema-conformance -vectors $vectorsDir -fixtures $fixturesDir -manifest $manifestPath 1> $cliOutFile 2> $cliErrFile
         $goCliCode = $LASTEXITCODE
     }
     finally {
@@ -298,7 +305,7 @@ try {
     $previousEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & go test -count=1 -v ./conformance/ -run '^TestSharedConformanceDualRunner$' 1> $stdoutFile 2> $stderrFile
+        & $go test -count=1 -v ./conformance/ -run '^TestSharedConformanceDualRunner$' 1> $stdoutFile 2> $stderrFile
         $testCode = $LASTEXITCODE
     }
     finally {

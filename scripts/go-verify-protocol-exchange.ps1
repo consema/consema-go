@@ -34,9 +34,10 @@ param(
 #      byte-identical re-encode on both transports, rejection-code
 #      agreement).
 #
-# Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
-# workspace is the consema-rs checkout (<repo root>\consema-rs by default,
-# -RustWorkspace overrides). Windows
+# Requirements: cargo (or $env:CONSEMA_CARGO) and go (or $env:CONSEMA_GO —
+# wave-4 2026-08-15, ENTRY 36: the harness honors the override like the
+# ts/py/kt harnesses); the Rust workspace is the consema-rs checkout
+# (<repo root>\consema-rs by default, -RustWorkspace overrides). Windows
 # PowerShell 5.1 compatible, no third-party dependencies.
 # ---------------------------------------------------------------------------
 
@@ -79,8 +80,11 @@ if (-not (Test-Path (Join-Path $goDir 'go.mod'))) {
     Write-Error "Go module not found: $goDir"
     exit 1
 }
-if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Error 'go is not on PATH'
+# Wave-4 ENTRY 36: the main-language toolchain honors $env:CONSEMA_GO
+# (like the ts/py/kt harnesses honor their overrides); default 'go'.
+$go = if ($env:CONSEMA_GO) { $env:CONSEMA_GO } else { 'go' }
+if (-not (Get-Command $go -ErrorAction SilentlyContinue)) {
+    Write-Error "go is not available ('$go'; set CONSEMA_GO to override)"
     exit 1
 }
 
@@ -162,7 +166,7 @@ try {
     $previousEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & go test -count=1 -v ./conformance/differential/protocol-exchange/ 1> $stdoutFile 2> $stderrFile
+        & $go test -count=1 -v ./conformance/differential/protocol-exchange/ 1> $stdoutFile 2> $stderrFile
         $testCode = $LASTEXITCODE
     }
     finally {
@@ -193,10 +197,50 @@ if ($testCode -ne 0) {
 
 # --- Rust verify over the Go bytes -------------------------------------------
 Write-Host "[4/4] running the Rust verifier over the Go encoder bytes -> $goDirOut"
-& $example --verify $CaseFile $goDirOut
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "emit_protocol_exchange (verify) failed (exit $LASTEXITCODE)"
-    exit $LASTEXITCODE
+# Wave-4 ENTRY 25 (2026-08-15): the reverse leg previously asserted only
+# the exit code and never consumed the verify-mode summary — a Rust verify
+# regression to "zero cases processed, exit 0" or a summary-format change
+# sailed through green. The leg now captures the summary line and asserts
+# its accept/reject split equals the case file's (the same split the
+# forward Go side verified).
+$verifyLog = Join-Path $logDir 'rust-verify.stdout.txt'
+$verifyErr = Join-Path $logDir 'rust-verify.stderr.txt'
+# G131: same EAP relaxation as the other redirected native calls
+# (PS 5.1 NativeCommandError on native-command stderr under EAP=Stop).
+$previousEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $example --verify $CaseFile $goDirOut 1> $verifyLog 2> $verifyErr
+    $verifyCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousEAP
+}
+Get-Content $verifyLog | ForEach-Object { Write-Host $_ }
+if (Test-Path $verifyErr) {
+    Get-Content $verifyErr | ForEach-Object { Write-Host $_ }
+}
+if ($verifyCode -ne 0) {
+    Write-Error "emit_protocol_exchange (verify) failed (exit $verifyCode)"
+    exit $verifyCode
+}
+# Accept cases carry no expected.error_code field (exchange_test.go
+# fileCase.Expected); a missing or empty field means accept.
+$acceptCases = @($cases.cases | Where-Object { -not $_.expected.error_code }).Count
+$rejectCases = $caseCount - $acceptCases
+$verifySummary = [regex]::Match((Get-Content $verifyLog -Raw),
+    'emit_protocol_exchange \(verify\): (\d+) accept cases and (\d+) reject cases verified')
+if (-not $verifySummary.Success) {
+    Write-Error 'cannot find the Rust verify-mode summary line in the verify output'
+    exit 1
+}
+if ($verifySummary.Groups[1].Value -ne $acceptCases -or
+    $verifySummary.Groups[2].Value -ne $rejectCases) {
+    Write-Error ("Rust verify summary mismatch: {0} accept / {1} reject cases verified, " +
+        "want {2} / {3} (the case file split the forward Go side verified)") -f
+        $verifySummary.Groups[1].Value, $verifySummary.Groups[2].Value,
+        $acceptCases, $rejectCases
+    exit 1
 }
 
 $summary = [regex]::Match($output, 'protocol exchange: \d+/\d+ accept cases and \d+/\d+ reject cases verified')

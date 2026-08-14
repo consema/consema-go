@@ -24,9 +24,12 @@ param(
 #      with the Rust byte files and checks the bidirectional direction
 #      (Rust bytes -> Go decode -> Go re-encode).
 #
-# Requirements: cargo (or $env:CONSEMA_CARGO) and go on PATH; the Rust
-# workspace is the consema-rs checkout (<repo root>\consema-rs by default,
-# -RustWorkspace overrides). Windows
+# Requirements: cargo (or $env:CONSEMA_CARGO) and go (or $env:CONSEMA_GO —
+# wave-4 2026-08-15, ENTRY 36: the harness honors the override like the
+# ts/py/kt harnesses honor CONSEMA_NODE/CONSEMA_PYTHON/CONSEMA_JAVA_HOME,
+# so a non-PATH toolchain can be pinned); the Rust workspace is the
+# consema-rs checkout (<repo root>\consema-rs by default, -RustWorkspace
+# overrides). Windows
 # PowerShell 5.1 compatible, no third-party dependencies.
 # ---------------------------------------------------------------------------
 
@@ -69,8 +72,11 @@ if (-not (Test-Path (Join-Path $goDir 'go.mod'))) {
     Write-Error "Go module not found: $goDir"
     exit 1
 }
-if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    Write-Error 'go is not on PATH'
+# Wave-4 ENTRY 36: the main-language toolchain honors $env:CONSEMA_GO
+# (like the ts/py/kt harnesses honor their overrides); default 'go'.
+$go = if ($env:CONSEMA_GO) { $env:CONSEMA_GO } else { 'go' }
+if (-not (Get-Command $go -ErrorAction SilentlyContinue)) {
+    Write-Error "go is not available ('$go'; set CONSEMA_GO to override)"
     exit 1
 }
 
@@ -151,7 +157,7 @@ try {
     $previousEAP = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & go test -count=1 -v ./conformance/differential/ 1> $stdoutFile 2> $stderrFile
+        & $go test -count=1 -v ./conformance/differential/ 1> $stdoutFile 2> $stderrFile
         $testCode = $LASTEXITCODE
     }
     finally {
