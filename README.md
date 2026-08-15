@@ -11,7 +11,8 @@ check-version-consistency gate asserts. -->
 
 Consema 语言中立契约（RFC 0002/0003/0004/0006 契约家族；权威仓
 `docs/rfcs/`）的 **Go 实现**仓库。本仓库是 Consema 六仓
-拆分中的 Go 仓：规范权威（RFC、docs、路线图、跨语言 conformance suites）在
+拆分（2026-08-12 完成，见
+[docs/six-repo-split-2026-08-12.md](https://github.com/consema/consema/blob/main/docs/six-repo-split-2026-08-12.md)）的 Go 仓：规范权威（RFC、docs、路线图、跨语言 conformance suites）在
 [github.com/consema/consema](https://github.com/consema/consema)；本仓承载
 Go 实现与跨语言差分验证工具。
 
@@ -31,9 +32,10 @@ module 路径决策（`go.mod` 移至仓根使 module 保持
 决策与域名均未完成前，该命令不会被 Go proxy 服务；下方 `go get` 路径
 以发布时决策为准（见 [RELEASING.md](RELEASING.md) §1/§2）。当前在
 仓库内运行：下方示例的入库副本在 [`go/examples/quickstart`](go/examples/quickstart)
-（独立 `package main` 目录；CI examples job 编译运行它，与下方代码人工
-同步），执行 `cd go && go run ./examples/quickstart`（一个 JSON 文档走完
-parse → query → edit → render 四条链）：
+（独立 `package main` 目录；CI examples job 编译运行它，并与下方代码栅栏
+**逐字节比对**——R6，波 4 裁决 2026-08-15：旧机制「人工同步、不比对栅栏
+文本」已证漂移并废弃），执行 `cd go && go run ./examples/quickstart`（一个
+JSON 文档走完 parse → query → edit → render 四条链）：
 
 ```go
 package main
@@ -114,16 +116,19 @@ func main() {
 
 - `go/`：Go 模块（`go.mod`，module `consema.dev/consema`，go 1.26，RFC 0020
   §9.2 冻结）。完整文档见 [go/README.md](go/README.md)（全部里程碑
-  0.14.0-0.19.0 G0.1-G5.6 已交付——G5.4 三平台验证中 macOS 腿 pending，
+  0.14.0-0.19.0 G0.1-G5.7 已交付——G5.4 三平台验证中 macOS 腿 pending，
   见 go/README「Three-platform verification」，G028 口径：core / graph /
-  protocol / document + 八格式家族 + CLI）。
+  protocol / document + 八格式家族 + CLI + 0.19.0 G5.7 real-repository
+  pilot（go/pilot））。
 - `scripts/`：跨语言差分验证脚本（byte parity / normalized differential /
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
   conformance 数据来自规范仓 checkout。
 - `.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
   旧文 6 个 job 漏 govulncheck）——go-matrix（1.26.0 声明最小版本 /
-  1.26.5 矩阵钉定两版本 gofmt/vet/build/test/race，与 go.mod 声明的
+  1.26.5 矩阵钉定两版本 gofmt/vet/build/test/race 与 `-tags release`
+  build/test 共 7 腿——R13，波 4 裁决 2026-08-15：`-tags release` 腿编译
+  并测试 release 变体注入缝，与 go.mod 声明的
   `go 1.26` 最小版本真实对齐，RFC 0020 §9.2；R19，波 4 裁决
   2026-08-15：'当前稳定'腿按 RFC 0020 §9.2 从未满足，go.dev 当前
   stable 已是 1.26.6，矩阵升级 post-1.0.0）、coverage（≥60% 语句覆盖）、
@@ -164,7 +169,7 @@ provision 的内容。
 - **与 encoding/json、gopkg.in/yaml.v3 等的关系？** 互不包装：Consema 是语言中立契约（RFC 0002/0003/0004/0006 契约家族；权威仓 `docs/rfcs/`）的独立 Go 实现，go.mod 零第三方依赖、纯标准库；JSON/YAML 等格式在 Consema 内是"格式内容处理面"（无损文档、查询、投影、原子编辑、跨格式转换），不是类型编解码。
 - **性能如何？** 解析/渲染基准基线见 [go/README.md](go/README.md) 的 Benchmark 表（如 json parse 108 µs/op、render 1.45 µs/op）；Rust 侧权威基线见规范仓 `https://github.com/consema/consema/blob/main/docs/BENCHMARKS-0.13.0.md`。
 - **零依赖吗？** 是——`go.mod` 零 `require`，只使用标准库（math/big、hash/fnv、crypto/sha256、unicode/utf8 等）。
-- **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护、五仓共享；CI 多仓 checkout 跑 conformance runner 与四个 Go-Rust 差分门禁（byte parity / normalized differential / protocol exchange / shared conformance；G029，对抗审计 2026-08-14：旧文只列三个 harness，漏 shared-conformance）。
+- **跨语言一致性如何保证？** 18 套语言无关 conformance suite 共 519/519 cases（聚合 digest `cfd6e296…`）由规范仓维护，四个 runner 钉定/复算（Rust vendored DIGEST / Go VerifyVectorsDigest / Python AGGREGATE_SHA256 / Kotlin ci-kotlin.yml 字面量；TS 不钉定聚合 digest——其断言仅在 provisioned manifest 存在时执行，而 ts CI 刻意不 provision——wave-5 P2 如实披露）；CI 多仓 checkout 跑 conformance runner 与四个 Go-Rust 差分门禁（byte parity / normalized differential / protocol exchange / shared conformance；G029，对抗审计 2026-08-14：旧文只列三个 harness，漏 shared-conformance）。
 - **兼容承诺？** 语义化版本（release train，模块版本来自 tag）；`check-version-consistency` 门禁断言 README 版本行存在；`go-matrix` 门禁在声明的最小 Go 版本（1.26，RFC 0020 §9.2 冻结）与矩阵钉定的 1.26.5 上真实验证（R19，波 4 裁决 2026-08-15：'当前稳定'腿从未满足——go.dev 当前 stable 已是 1.26.6，矩阵升级 post-1.0.0）；兼容与支持政策见 RFC 0020。
 - **如何贡献？** 见本仓 [CONTRIBUTING.md](CONTRIBUTING.md)（规范仓为权威版）；conformance 向量/夹具/oracle/差分数据权威在规范仓——向量变更是五仓同步事件，必须先回规范仓提交再同步五个语言仓。
 - **"默认拒绝信息损失"是什么意思？** 投影/转换/编辑中的任何 loss（如 YAML 共享结构展开、Properties 重复键折叠、数值舍入）必须显式授权；未授权时操作原子失败（`ConversionResult.Failed`；fidelity 三档：Exact / Transformed / Lossy）。

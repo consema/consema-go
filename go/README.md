@@ -3,7 +3,10 @@ The Go implementation of the language-neutral Consema contracts
 (RFC 0002/0003/0004/0006 contract family; authority repo `docs/rfcs/`;
 [`docs/go-implementation-plan.md`](https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md)).
 All milestones 0.14.0-0.19.0
-(G0.1-G5.6) are delivered — with the G5.4 three-platform caveat: Windows is
+(G0.1-G5.7) are delivered — including the 0.19.0 G5.7 real-repository
+pilot (go/pilot, roadmap §22.7/§23.2-§23.3; wave-5 P2: the previous
+enumeration stopped at G5.6 although the pilot was already delivered and
+CI-executed) — with the G5.4 three-platform caveat: Windows is
 the measured platform, Linux runs in CI, and the macOS leg is pending (no
 CI job, no measured record; see "Three-platform verification" below)
 (G028, adversarial audit 2026-08-14: the unqualified "all delivered"
@@ -473,7 +476,7 @@ eight format families and the CLI (per-milestone delivery records below).
     directions (`core.conversion.*@1` failure codes; cross-family
     convert lives in the root package only).
 The RFC 0016 §4.1 mapping (the language-neutral fifteen-kind contract,
-配置内容统一处理标准与 Rust 参考实现.md §10): Object → `*core.Object`
+[配置内容统一处理标准与 Rust 参考实现.md](https://github.com/consema/consema/blob/main/配置内容统一处理标准与%20Rust%20参考实现.md) §10): Object → `*core.Object`
 (ordered `[]Entry`, never a Go map), Array →`*core.Array`, String →`core.String`, Integer →`core.Integer`, Decimal →`core.Decimal`,
 BinaryFloat32 →`core.BinaryFloat32` (exact IEEE-754 binary32 bits),
 BinaryFloat64 →`core.BinaryFloat64`, Bytes →`core.Bytes` (octet sequence),
@@ -609,15 +612,20 @@ go vet ./...
 go test -count=1 ./...
 go test -race -count=1 ./...
 go mod tidy
-gofmt -l .
+out="$(gofmt -l .)" && test -z "$out"
 ```
 The enforced quality gates (all run by the ci-go.yml go-matrix job) are
-`go build`, `go vet`, `go test -count=1`, `go test -race`, and
-`gofmt -l` — all expected to be clean. `go mod tidy` is a **local hygiene
-check only**: no workflow or script executes it, so a go.mod/go.sum drift
-stays green in CI (G028, adversarial audit 2026-08-14: the old "all quality
-gates" wording implied CI enforcement of `go mod tidy`, which nothing
-executes).
+`go build`, `go vet`, `go test -count=1`, `go test -race -shuffle=on`,
+`gofmt -l` (gate form `out="$(gofmt -l .)" && test -z "$out"` — wave-5 P2:
+bare `gofmt -l .` only lists files and exits 0, so it never fails; the
+command list above uses the gate form), `go build -tags release`, and
+`go test -tags release -count=1` — 7 legs (R13, wave-4 ruling
+2026-08-15: the `-tags release` legs compile and test the release
+variant's injection-seam-out build), all expected to be clean. `go mod
+tidy` is a **local hygiene check only**: no workflow or script executes
+it, so a go.mod/go.sum drift stays green in CI (G028, adversarial audit
+2026-08-14: the old "all quality gates" wording implied CI enforcement of
+`go mod tidy`, which nothing executes).
 
 **Provision prerequisite (clean clone, mandatory; G065, adversarial audit
 2026-08-13 — this section previously omitted it):** conformance data is
@@ -811,6 +819,18 @@ exercise through their parse-closure assertions:
    length-guarded and the resume position now strictly advances, with the
    skipped byte covered by gap assembly (RFC 0013 §8.2). Regression seeds
    under `plist/testdata/fuzz/FuzzParseXML/`.
+
+Additionally, the `core` fuzz target's corpus entry
+`core/testdata/fuzz/FuzzPVCEEncodeDecode/9056ebe1543ee74a` pins a
+FuzzPVCEEncodeDecode round-trip failure (decode(encode(x)) != x or
+re-encode instability) found while fuzzing during the 0.19.0 G5.4
+clean-run work — the seed generates a LocalDateTime with a fractional-
+second Decimal. The fix landed with the pin (mother-repo commit 937b330,
+2026-08-10) and the entry runs as a regression seed on every
+`go test ./core/` — the four-defects list above enumerates only the
+family-parser defects of the same clean run, not this PVCE codec pin
+(wave-5 P2: the entry previously had no documentation anywhere in the
+repository).
 ## Security matrix (0.19.0 G5.4)
 `go/conformance/security_matrix_test.go` extends the 0.16.0 limits matrix
 (`limits_matrix_test.go`) to the recovery-capable families and mirrors the
@@ -935,7 +955,10 @@ G078 对抗审计 2026-08-14：改引母仓完整 URL——该 SHA 在本仓 git
 later flipped the 2 documented
 skips to executed, and the 2026-08-12 P2-B vector reinforcement grew the
 inventory to **519/519 cases with zero skips** (18 suites, aggregate digest
-`cfd6e296…` — the same count the Rust/TS/Python/Kotlin runners pin);
+`cfd6e296…` — the same count the Rust/Go/Python/Kotlin runners pin;
+wave-5 P2: TS is not among the pinners — its aggregate-digest assertion
+runs only when a manifest is provisioned, and ts CI deliberately does not
+provision one, so the digest is never asserted there);
 cross-language normalized-result differential **108/108**; byte parity
 **68/68**.
 ## Three-platform verification (0.19.0 G5.4; status: Windows measured + Linux CI, macOS pending)

@@ -44,12 +44,18 @@ vanity import meta）且模块路径/仓库布局就绪——域名就绪前
      也不允许 divergent 分支上的 tag 发布）且落在 24 小时 recency
      window 内（对齐 consema-rs release.yml 的同一 G71 守卫——tag 提交
      早于 main HEAD 超过 24 小时的陈旧 tag 拒绝发布；R7 波 4 裁决
-     2026-08-15）→ 校验 tag↔版本一致（tag 去掉 `v` 前缀必须等于仓根
-     `README.md` 的 `Version:` 行，不一致即 exit 1 中止）→ 在 tag 上
-     重跑完整门禁（gofmt + vet + build + test + race，含 conformance
-     数据与 `-tags release` 编译腿——R13，波 4 裁决 2026-08-15：
-     G114 声称的 release 变体注入缝编译掉行为由此被 CI 实测，不再只
-     依赖 goreleaser P2 的未接线构建指令；与 ci-go.yml 同款）；
+     2026-08-15）→ 校验 tag↔版本一致并重跑完整版本一致性断言集
+     （tag 去掉 `v` 前缀必须等于仓根 `README.md` 的 `Version:` 行，
+     且两个 CLI productVersion 钉与 cli_test.go 的 fixture 字面量计数
+     必须一致——wave-5 P2：此前发布路径只校验 tag↔README 行，CLI 钉
+     与 fixture 计数从不重跑，不一致即 exit 1 中止）→ 在 tag 上
+     重跑完整门禁（gofmt + vet + build + test + race 与 `-tags release`
+     build/test 共 7 腿，含 conformance 数据——R13，波 4 裁决
+     2026-08-15：G114 声称的 release 变体注入缝编译掉（编译面）由此被
+     CI 实测，不再只依赖 goreleaser P2 的未接线构建指令；wave-5 P2
+     注记：该腿验证编译面——release 变体的行为断言（注入缝 e2e 测试）
+     只在无 tag 构建上执行，发布路径不重跑行为断言；与 ci-go.yml
+     同款）；
    - `differential` job（windows-latest，G106）：在 tag 上重跑四个跨语言
      差分 harness（byte parity / normalized / protocol exchange / shared
      conformance -StrictSkips，与 ci-go.yml go-differential 同款）；

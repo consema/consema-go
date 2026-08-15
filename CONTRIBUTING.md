@@ -60,11 +60,14 @@ conformance 套件用例（go/conformance，固定仓库相对路径）在干净
 
 `.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
 旧文 6 个 job 漏 govulncheck）——go-matrix（gofmt / vet / build / test /
-race）、coverage、go-differential（Go-Rust 差分门禁，windows-latest 多仓
-checkout）、govulncheck、check-version-consistency、examples、check
-（聚合门禁）。push 到 main 或
-PR 均触发；PR 另受 pr-labels.yml 的 kind 标签门禁约束（标签见规范仓
-.github/LABELS.md）。
+race / `-tags release` build / `-tags release` test，共 7 腿——R13，波 4
+裁决 2026-08-15）、coverage、go-differential（Go-Rust 差分门禁，
+windows-latest 多仓 checkout）、govulncheck、check-version-consistency、
+examples、check（聚合门禁）。push 到 main 或
+PR 均触发；PR 另受 pr-labels.yml 的 kind 标签检查约束（wave-5 P2 披露：
+该检查不在分支保护必选 status checks 之列——唯一必选 context 是
+`check (all gates green)`——无 kind 标签的 PR 检查显示红色但不阻断合并
+按钮；标签见规范仓 .github/LABELS.md）。
 
 ## 发布与安全
 
