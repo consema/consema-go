@@ -14,7 +14,12 @@ package consema
 // single authority — wave-4 2026-08-15, ENTRY 6: the counts were
 // previously hardcoded literals transcribed from the Rust published
 // surface, which was itself a re-declaration; the test now reads the
-// manifest and skips with a documented skip when it is not provisioned).
+// manifest and skips with a documented skip when it is not provisioned
+// — and, when it is provisioned, must run:
+// TestCapabilityParityManifestProvisionedRuns pins the execution
+// contract (wave-5 H4 2026-08-15: the gate path previously resolved one
+// level above the repo root, so the gate skipped unconditionally — a
+// dead gate, now fixed and tripwired)).
 // The per-id lists below remain Rust-transcribed identity pins (the
 // manifest carries only the five-number inventory, not the id lists) and
 // are the no-"Rust-only"-mandatory-behavior gate of roadmap §16.5 — the
@@ -29,6 +34,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"testing"
 
@@ -36,18 +42,27 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// manifestCapabilityCounts reads the five-number capability inventory
-// from the provisioned Feature-Complete Manifest
+// manifestCapabilityCountsPath is the single authority for the
+// Feature-Complete Manifest location the capability-parity gate reads:
+// repo-root `docs/`, one level up from this package directory (the same
+// repoRoot convention as the conformance tests in go/conformance; the CI
+// provision step copies the manifest to
+// $GITHUB_WORKSPACE/docs/fc-manifest-0.13.0.json). A path drift that
+// read nothing would turn the roadmap §16.5 hard gate into an
+// unconditional skip — a dead gate — so
+// TestCapabilityParityManifestProvisionedRuns pins this path.
+func manifestCapabilityCountsPath() string {
+	return filepath.Join("..", "docs", "fc-manifest-0.13.0.json")
+}
+
+// readManifestCapabilityCounts parses the five-number capability
+// inventory from one Feature-Complete Manifest file
 // (digests.capability_set.value: "N families / N profiles / N query
-// domains / N operation registries / N error codes"). The test skips with
-// a documented skip when the manifest is not provisioned (clean clone;
-// CI multi-repo checkouts always provision it).
-func manifestCapabilityCounts(t *testing.T) (families, profiles, domains, registries, codes int) {
-	t.Helper()
-	path := filepath.Join("..", "..", "docs", "fc-manifest-0.13.0.json")
+// domains / N operation registries / N error codes").
+func readManifestCapabilityCounts(path string) (families, profiles, domains, registries, codes int, err error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		t.Skipf("Feature-Complete Manifest %s is not provisioned: run the CI provision step or CONTRIBUTING 'Conformance 数据同步' first", path)
+		return 0, 0, 0, 0, 0, err
 	}
 	var manifest struct {
 		Digests struct {
@@ -57,22 +72,39 @@ func manifestCapabilityCounts(t *testing.T) (families, profiles, domains, regist
 		} `json:"digests"`
 	}
 	if err := json.Unmarshal(bytes, &manifest); err != nil {
-		t.Fatalf("manifest is not strict JSON: %v", err)
+		return 0, 0, 0, 0, 0, fmt.Errorf("manifest is not strict JSON: %w", err)
 	}
 	matches := regexp.MustCompile(
 		`^(\d+) families / (\d+) profiles / (\d+) query domains / (\d+) operation registries / (\d+) error codes$`).
 		FindStringSubmatch(manifest.Digests.CapabilitySet.Value)
 	if matches == nil {
-		t.Fatalf("manifest digests.capability_set.value is not the five-number inventory: %q",
+		return 0, 0, 0, 0, 0, fmt.Errorf("manifest digests.capability_set.value is not the five-number inventory: %q",
 			manifest.Digests.CapabilitySet.Value)
 	}
 	numbers := make([]int, 5)
 	for index := 1; index <= 5; index++ {
 		if _, err := fmt.Sscanf(matches[index], "%d", &numbers[index-1]); err != nil {
-			t.Fatalf("capability_set number %q is not an integer: %v", matches[index], err)
+			return 0, 0, 0, 0, 0, fmt.Errorf("capability_set number %q is not an integer: %w", matches[index], err)
 		}
 	}
-	return numbers[0], numbers[1], numbers[2], numbers[3], numbers[4]
+	return numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], nil
+}
+
+// manifestCapabilityCounts reads the five-number capability inventory
+// from the provisioned Feature-Complete Manifest at
+// manifestCapabilityCountsPath
+// (digests.capability_set.value: "N families / N profiles / N query
+// domains / N operation registries / N error codes"). The test skips with
+// a documented skip when the manifest is not provisioned (clean clone;
+// CI multi-repo checkouts always provision it).
+func manifestCapabilityCounts(t *testing.T) (families, profiles, domains, registries, codes int) {
+	t.Helper()
+	path := manifestCapabilityCountsPath()
+	families, profiles, domains, registries, codes, err := readManifestCapabilityCounts(path)
+	if err != nil {
+		t.Skipf("Feature-Complete Manifest %s is not provisioned: run the CI provision step or CONTRIBUTING 'Conformance 数据同步' first", path)
+	}
+	return families, profiles, domains, registries, codes
 }
 
 // TestCapabilityParityInventory pins the five-number capability inventory
@@ -133,6 +165,42 @@ func TestCapabilityParityInventory(t *testing.T) {
 		if codes[index-1].Code >= codes[index].Code {
 			t.Fatalf("error codes not strictly sorted")
 		}
+	}
+}
+
+// TestCapabilityParityManifestProvisionedRuns pins the execution
+// contract of the roadmap §16.5 hard gate: whenever the
+// Feature-Complete Manifest is provisioned at the repo-root docs path
+// (the CI provision step's destination), the inventory gate must read it
+// and run — the gate must never silently skip in a provisioned checkout.
+// Wave-5 H4 (2026-08-15): the gate path was one level too deep ("../.."
+// from the root package), so the read never resolved and every run
+// skipped unconditionally — a dead gate. The canonical provisioned
+// location is resolved from this source file (runtime.Caller — cwd
+// independent), so a path drift in the gate cannot turn this assertion
+// into a skip; it fails instead.
+func TestCapabilityParityManifestProvisionedRuns(t *testing.T) {
+	_, source, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatalf("runtime.Caller failed to resolve the test source path")
+	}
+	repoRoot := filepath.Dir(filepath.Dir(source))
+	canonical := filepath.Join(repoRoot, "docs", "fc-manifest-0.13.0.json")
+	canonicalInfo, err := os.Stat(canonical)
+	if err != nil {
+		t.Skipf("Feature-Complete Manifest %s is not provisioned in this checkout (clean clone; CI multi-repo checkouts always provision it)", canonical)
+	}
+	// Provisioned: the gate must read exactly this manifest.
+	// manifestCapabilityCountsPath is the single path authority — a drift
+	// that makes the gate read nothing (or read a different file) fails
+	// here instead of silently dead-gating roadmap §16.5.
+	gateInfo, err := os.Stat(manifestCapabilityCountsPath())
+	if err != nil || !os.SameFile(canonicalInfo, gateInfo) {
+		t.Fatalf("parity gate must read the provisioned manifest %s, but its path %s does not resolve to it (%v)",
+			canonical, manifestCapabilityCountsPath(), err)
+	}
+	if _, _, _, _, _, err := readManifestCapabilityCounts(manifestCapabilityCountsPath()); err != nil {
+		t.Fatalf("parity gate must parse the provisioned manifest %s: %v", manifestCapabilityCountsPath(), err)
 	}
 }
 

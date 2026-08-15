@@ -914,9 +914,13 @@ operation registries / 187 error codes**, with no "Rust-only" mandatory
 behavior. Pinned by `go/capability_parity_test.go` —the five-number
 inventory is read from the provisioned Feature-Complete Manifest
 (`digests.capability_set.value`; the test skips with a documented skip
-when the manifest is not provisioned — wave-4 2026-08-15, ENTRY 6: the
-counts were previously hardcoded literals, which was itself a
-re-declaration), and the per-id lists are transcribed identity pins of
+when the manifest is not provisioned, and
+`TestCapabilityParityManifestProvisionedRuns` fails rather than skips
+whenever it is provisioned — wave-5 H4 2026-08-15: the gate path
+previously resolved one level above the repo root, so the gate skipped
+unconditionally; wave-4 2026-08-15, ENTRY 6: the counts were previously
+hardcoded literals, which was itself a re-declaration), and the per-id
+lists are transcribed identity pins of
 the Rust published surface (facade registry, `consema capabilities`
 payload, per-crate operation registries) compared against Go facts
 derived from this module's registry surface; drift on either side fails
