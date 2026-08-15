@@ -58,8 +58,8 @@ conformance 套件用例（go/conformance，固定仓库相对路径）在干净
 
 ## CI 门禁
 
-`.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
-旧文 6 个 job 漏 govulncheck）——go-matrix（gofmt / vet / build / test /
+`.github/workflows/ci-go.yml`（job 数以最近 CI run 为准；G064，对抗审计
+2026-08-14：旧文漏 govulncheck）——go-matrix（gofmt / vet / build / test /
 race / `-tags release` build / `-tags release` test，共 7 腿——R13，波 4
 裁决 2026-08-15）、coverage、go-differential（Go-Rust 差分门禁，
 windows-latest 多仓 checkout）、govulncheck、check-version-consistency、

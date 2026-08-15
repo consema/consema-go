@@ -124,8 +124,8 @@ func main() {
   protocol exchange / shared conformance）。脚本构建 consema-rs 的 Rust
   emitter 并对拍 Go 实现；Rust 侧来自 consema-rs 仓 checkout（CI 多仓模式），
   conformance 数据来自规范仓 checkout。
-- `.github/workflows/ci-go.yml`：7 个 job（G064，对抗审计 2026-08-14：
-  旧文 6 个 job 漏 govulncheck）——go-matrix（1.26.0 声明最小版本 /
+- `.github/workflows/ci-go.yml`：CI 门禁（job 数以最近 CI run 为准，
+  GitHub Actions；G064 对抗审计 2026-08-14 归正旧文漏 govulncheck）——go-matrix（1.26.0 声明最小版本 /
   1.26.5 矩阵钉定两版本 gofmt/vet/build/test/race 与 `-tags release`
   build/test 共 7 腿——R13，波 4 裁决 2026-08-15：`-tags release` 腿编译
   并测试 release 变体注入缝，与 go.mod 声明的
