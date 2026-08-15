@@ -750,7 +750,7 @@ go test -fuzz='^FuzzParseXML$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParseBinary$' -fuzztime=30s ./plist/
 go test -fuzz='^FuzzParse$' -fuzztime=30s ./hcl/
 ```
-**Release-candidate fuzz clean-run (0.19.0 G5.4; roadmap §22.4「release-candidate fuzz clean-run」——G050，对抗审计 2026-08-14：改引节锚，行号删除).** The fuzz evidence is a release-candidate prerequisite (rc-candidate checklist item), not a standing release.yml step: no workflow in this repository runs fuzz (wave-4 R27, 2026-08-15 — the roadmap §21.2 / RFC 0020 §9.2 "fuzz in the release gates" wording in the spec repository is superseded by this claim).
+**Release-candidate fuzz clean-run (0.19.0 G5.4; roadmap §22.4「release-candidate fuzz clean-run」——G050，对抗审计 2026-08-14：改引节锚，行号删除).** The fuzz evidence is a release-candidate prerequisite (rc-candidate checklist item — rc-1.0.0-candidate.md §22.4/§4.1 口径), not a standing release.yml step: no workflow in this repository runs fuzz (2026-08-15 实测核对：.github/workflows 六份 workflow 均无 fuzz 调用). Wave-4 R27（母仓 5e0abad/e29e621/70e8884，2026-08-15）只记载 fuzz 驱动暂停与 C-2 遗留（驱动 2026-08-13 11:19 起未重启，账本冻结于 122,478 行 / 780.529 CPU-hours，toml/protocol-decode/plist/xml 四单位低于 72h 门槛如实遗留），不含任何 supersede 裁决；母仓路线图 §21.2「go vet、static analysis、race detector 和 fuzz 进入发布门禁」与 RFC 0020 §9.2（fuzz per §21.2）原文仍有效——本段 rc-candidate 检查单口径与母仓措辞的关系待母仓后续修订裁决，引用以母仓为准。
 Measured 2026-08-10 (go 1.26.5, Windows 11): every target ran 30s of
 fuzzing with no panic, no hang, and no limit bypass:
 | Target | execs in 30s | result |
