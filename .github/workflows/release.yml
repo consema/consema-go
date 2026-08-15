@@ -181,7 +181,10 @@ jobs:
       # R13 (wave-4 ruling, 2026-08-15): the -tags release legs compile and
       # test the release-tagged variant (apply_injections_release.go) on
       # the exact tag — same legs as ci-go.yml go-matrix, so G114's
-      # injection-seam-compiled-out claim is verified on the release path.
+      # injection-seam-compiled-out claim is verified on the release path
+      # (compile face — wave-5 P2: the behavior face, the seam env vars
+      # being unread in the release binary, is exercised by the injection
+      # e2e tests on the dev build; the release path asserts the compile).
       - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
         run: |
           cd go

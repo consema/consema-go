@@ -178,7 +178,10 @@ jobs:
       # CONSEMA_APPLY_INTERRUPT_AFTER / CONSEMA_APPLY_WRITE_FAILURE
       # injection seams was previously backed by nothing (no workflow ever
       # built with -tags release); the release.yml verify chain runs the
-      # same legs.
+      # same legs. Wave-5 P2: this verifies the compile face — the seam
+      # env vars being unread in the release binary is exercised by the
+      # injection e2e tests on the dev build (no behavior assertion runs
+      # on the -tags release build).
       - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
         run: |
           cd go
