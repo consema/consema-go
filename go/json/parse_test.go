@@ -529,6 +529,18 @@ func TestJSON5ReferenceCorpus(t *testing.T) {
 	if corpus.Suite != "consema.json5.reference-corpus@1" {
 		t.Fatalf("corpus suite %q", corpus.Suite)
 	}
+	// Wave-5 P2: exact count guards — the corpus file is synced from the
+	// spec repository, and without them a case that was added or removed
+	// (while every remaining case still parses as expected) would change
+	// neither this test nor any gate; the "fixed gate" claim in
+	// SECURITY.md (43 valid / 39 invalid) is fixed only if the counts are
+	// asserted.
+	if len(corpus.Valid) != 43 {
+		t.Fatalf("corpus valid cases %d != 43", len(corpus.Valid))
+	}
+	if len(corpus.Invalid) != 39 {
+		t.Fatalf("corpus invalid cases %d != 39", len(corpus.Invalid))
+	}
 	for _, test := range corpus.Valid {
 		doc, failure := Parse(context.Background(), []byte(test.Source),
 			JsonProfileJson5StandardV1, document.DefaultParseLimits())

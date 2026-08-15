@@ -34,6 +34,32 @@ func latin1PatchBase(text string) *SourceSnapshot {
 	return base
 }
 
+// TestEncodingFactsNullOptionalFieldsRoundTrip pins the wave-5 P2 codec
+// symmetry fix: the encoder writes Null for an absent profile_default /
+// selected, and the decoder must accept that Null back (the kt and ts
+// decoders handle the same fields as optional). Before the fix the Go
+// codec's own encode could not be decoded (parseSourceEncodingValue
+// rejected the Null).
+func TestEncodingFactsNullOptionalFieldsRoundTrip(t *testing.T) {
+	facts := EncodingFacts{
+		BomPolicy: "DetectUnicode",
+	}
+	value, err := encodingFactsValue(&facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := parseEncodingFactsValue(value, "test")
+	if err != nil {
+		t.Fatalf("decode of the codec's own encode failed: %v", err)
+	}
+	if decoded.ProfileDefault != nil || decoded.Selected != nil {
+		t.Fatalf("absent facts did not round-trip as nil: %#v", decoded)
+	}
+	if decoded.BomPolicy != "DetectUnicode" {
+		t.Fatalf("bom_policy %q", decoded.BomPolicy)
+	}
+}
+
 // TestSourcePatchApplyErrorCodesAreRegistered pins every failure branch of
 // the SourcePatchApplyError surface: the branch must produce the registered
 // code the Rust document layer maps the same failure class to

@@ -2,8 +2,9 @@
 # 一致", §16.2, §16.6; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
 # §4.4; the §14.12 "differential" gate plan). Seven jobs:
 #
-#   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race,
-#            §21.2 "最低版本 CI 验证"), a 2-version matrix
+#   go-matrix: the Go minimum-version gates (gofmt/vet/build/test/race +
+#            the -tags release build/test legs — 7 legs, R13 wave-4
+#            2026-08-15; §21.2 "最低版本 CI 验证"), a 2-version matrix
 #            ('1.26.0' declared minimum + '1.26.5' matrix-pinned — R19,
 #            wave-4 2026-08-15: go.dev's current stable is 1.26.6, so the
 #            RFC 0020 §9.2 "current stable" leg was never satisfied; the
@@ -68,7 +69,8 @@
 #            go/protocol/cli_test.go's constructed-envelope fixture
 #            literals carry the current version at the pinned count
 #            (wave-4 R36: the third grep makes the train bump update the
-#            13 quoted fixture literals too).
+#            11 quoted fixture literals too — wave-5 P2: the
+#            SemVer-acceptance example list is excluded from the count).
 #   examples: vets and runs the committed go/examples/sdk_chain example (no
 #            conformance data, so no multi-repo checkout or provision step).
 #   check: the alls-green aggregate gate ("check (all gates green)", the
@@ -98,7 +100,7 @@ permissions:
 
 jobs:
   go-matrix:
-    name: Go ${{ matrix.go }} gates (gofmt + vet + build + test + race)
+    name: Go ${{ matrix.go }} gates (gofmt + vet + build + test + race + tags-release build/test)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -113,17 +115,18 @@ jobs:
       # is ref-pinned — the provisioned conformance data must be
       # reproducible, not whatever live HEAD happens to carry when the job
       # runs. The pin is ccc9943 (wave-4 R5 re-anchored 2026-08-15, F2):
-      # the mother-repo HEAD after the wave-3/wave-4 manifest+conformance
-      # fixes (incl. the plist-macos-v1 skip truthing W3-02 and b8bf4cb's
-      # R40 field-anchor evidence rework, which moved the manifest digest
-      # 3fdf9a77 → 5cb4ab51); same cfd6e296 aggregate digest; fc-manifest
-      # sha256 5cb4ab51… asserted after every provision (R5). All four
-      # language repos pin it.
+      # ccc9943 was the mother-repo HEAD at the F2 re-anchor moment (the
+      # pin is the SHA, not live HEAD — wave-5 P2), after the wave-3/wave-4
+      # manifest+conformance fixes (incl. the plist-macos-v1 skip truthing
+      # W3-02 and b8bf4cb's R40 field-anchor evidence rework, which moved
+      # the manifest digest 3fdf9a77 → 5cb4ab51); same cfd6e296 aggregate
+      # digest; fc-manifest sha256 5cb4ab51… asserted after every provision
+      # (R5). All four language repos pin it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored to mother-repo HEAD (fc-manifest sha256 5cb4ab51 asserted)
+          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -177,7 +180,28 @@ jobs:
       # built with -tags release); the release.yml verify chain runs the
       # same legs.
       - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
-        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./... && go build -tags release ./... && go test -tags release -count=1 ./...
+        run: |
+          cd go
+          out="$(gofmt -l .)" && test -z "$out"
+          go vet ./...
+          go build ./...
+          # Wave-5 P2 documented-skip upper bound: without the CONSEMA_*
+          # golden env vars exactly 6 documented skips are expected (the
+          # four differential golden legs — TestDifferentialByteParity /
+          # TestNormalizedDifferential / TestEmitGoNormalizedResults /
+          # TestProtocolExchange — plus TestSharedConformanceDualRunner and
+          # TestPilotRustComparison); a new silent skip must redden the
+          # gate (previously no skip-count assertion existed).
+          test_output="$(go test -v -count=1 ./... 2>&1)"
+          echo "$test_output"
+          skip_count="$(grep -c '^--- SKIP:' <<<"$test_output" || true)"
+          if [[ "$skip_count" -gt 6 ]]; then
+            echo "::error::$skip_count documented skips exceed the known upper bound of 6 (the CONSEMA_* golden-env legs + shared conformance + pilot) — a new silent skip would otherwise pass the gate"
+            exit 1
+          fi
+          go test -race -shuffle=on ./...
+          go build -tags release ./...
+          go test -tags release -count=1 ./...
 
   # Coverage gate (gate plan §4 M3 standing toolchain; roadmap §18.3
   # "Coverage 不替代语义证明"): go test measures the whole module with the
@@ -201,7 +225,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored to mother-repo HEAD (fc-manifest sha256 5cb4ab51 asserted)
+          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -283,14 +307,20 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored to mother-repo HEAD (fc-manifest sha256 5cb4ab51 asserted)
+          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
           path: consema-repo
       # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
       # pinned to 1.97.1 — the version this harness was locally verified
       # with (钉定本机实测版本), so the differential goldens are
       # bit-reproducible (位级可复现) and independent of the runner's
       # current stable; the emitter sources come from the ref-pinned
-      # consema-rs checkout above.
+      # consema-rs checkout above. Wave-5 P2 disclosure: the dtolnay
+      # action's commit SHA pins the action code only — the
+      # `toolchain: 1.97.1` bytes are resolved by rustup at run time from
+      # static.rust-lang.org with no in-repo checksum, so an upstream
+      # toolchain build replacement would change the harness behavior
+      # without a repo-side check (bit-reproducibility holds for the pinned
+      # version tag, not for upstream byte stability).
       - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # 1.97.1
         with:
           toolchain: 1.97.1
@@ -375,7 +405,13 @@ jobs:
   # 2026-08-15: the residual "cannot express" wording removed). `go run
   # golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...` downloads the pinned
   # scanner (G136 pin; the module-scoped download does not modify go.mod or
-  # go.sum) and audits ./... against the live Go vulnerability database. The
+  # go.sum) and audits ./... against the live Go vulnerability database.
+  # Wave-5 P2 disclosure: v1.6.0 is a module version-tag pin resolved
+  # through the Go module proxy and the checksum database (GOSUMDB) at run
+  # time — not an in-repo byte/checksum pin like the other toolchain
+  # downloads in this organization; the checksum database is the Go
+  # ecosystem's standard supply-chain mechanism for module downloads
+  # (disclosed strength difference). The
   # job is unconditional (no `if:`) so it can never be skipped — a skipped
   # job in the aggregate would fail the alls-green gate (the ts allowed-skips
   # disposition: unconditional jobs need no skip allowance).
@@ -424,7 +460,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="$(sed -n 's/^Version: *//p' README.md | sed 's/[（(].*//' | head -n 1)"
+          # Wave-5 P2: the Version line is anchored to the release-train
+          # declaration (the "随 release train" marker), so a
+          # "Version:"-looking line inserted earlier in the README (e.g. a
+          # badge section) cannot silently hijack the anchor (the previous
+          # sed+head first-match chain had no semantic anchor).
+          version="$(grep -m1 '^Version: .*随 release train' README.md | sed 's/^Version: *//; s/[（(].*//')"
           if [[ -z "$version" ]]; then
             echo "::error::README.md does not declare a release-train Version line"
             exit 1
@@ -446,11 +487,17 @@ jobs:
           echo 'main CLI product_version present'
           # Wave-4 R36 (2026-08-15): the third pin — go/protocol/cli_test.go
           # constructs CLI envelopes/plan/result fixtures at the current
-          # version (13 quoted literals today); the count must stay exact,
-          # so a train bump forces every fixture literal to move together
-          # (a partial bump leaves the count at the old version and fails).
-          expected_fixture_literals=13
-          actual_fixture_literals="$(grep -oF "\"$version\"" go/protocol/cli_test.go | wc -l)"
+          # version; the count must stay exact, so a train bump forces
+          # every fixture literal to move together (a partial bump leaves
+          # the count at the old version and fails).
+          # Wave-5 P2: the count covers only constructed-envelope fixture
+          # literals (11 today). The SemVer-acceptance example list
+          # (`range []string{` in TestCLIEnvelopeAcceptsPrerelease-
+          # ProductVersions) is not a fixture and must not ride the train
+          # (it deliberately lists the current version next to historical
+          # ones); comment text carries no version literal anymore.
+          expected_fixture_literals=11
+          actual_fixture_literals="$(grep -vE 'range \[\]string\{' go/protocol/cli_test.go | grep -oF "\"$version\"" | wc -l)"
           if [[ "$actual_fixture_literals" -ne "$expected_fixture_literals" ]]; then
             echo "::error::go/protocol/cli_test.go must carry exactly $expected_fixture_literals quoted fixture literals of \"$version\" (found $actual_fixture_literals) — the constructed-envelope fixtures ride the train (wave-4 R36)"
             exit 1
@@ -494,33 +541,67 @@ jobs:
       # structurally by the split), so the comparison covers the imports
       # and the code body — the "粘贴版与入库版必须保持一致" claim is
       # enforced, not asserted.
+      # Wave-5 P2: the match is anchored to the quick-start section (a
+      # ```go fence inserted earlier in the README must not silently
+      # hijack the comparison), and the bodies are compared exactly — no
+      # Trim() — so leading/trailing blank-line drift fails the gate; only
+      # the file's mandatory final newline is normalized away on both
+      # sides.
       - name: README quick-start fence must match go/examples/quickstart/main.go
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $readme = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'README.md') -Raw
-          $m = [regex]::Match($readme, '(?s)```go\r?\n(.*?)\r?\n```')
-          if (-not $m.Success) {
-            throw 'README.md quick-start fence (```go ... ```) not found'
+          $quickStartIndex = $readme.IndexOf('## 快速开始')
+          if ($quickStartIndex -lt 0) {
+            throw 'README.md quick-start section heading (## 快速开始) not found'
           }
-          $fence = ($m.Groups[1].Value -replace "`r", '').Trim()
+          $m = [regex]::Match($readme.Substring($quickStartIndex), '(?s)```go\r?\n(.*?)\r?\n```')
+          if (-not $m.Success) {
+            throw 'README.md quick-start fence (```go ... ```) not found in the quick-start section'
+          }
+          $fence = ($m.Groups[1].Value -replace "`r", '')
           $fenceParts = $fence -split '(?m)^package main\r?\n', 2
           if ($fenceParts.Count -ne 2) {
             throw 'README quick-start fence must start with a package main line'
           }
-          $fence = $fenceParts[1].Trim()
+          $fence = $fenceParts[1]
           $file = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'go/examples/quickstart/main.go') -Raw
           $normalized = ($file -replace "`r", '') -split '(?m)^package main\r?\n', 2
           if ($normalized.Count -ne 2) {
             throw 'go/examples/quickstart/main.go must declare package main'
           }
-          $body = $normalized[1].Trim()
+          $body = $normalized[1]
+          $fence = [regex]::Replace($fence, '\r?\n$', '')
+          $body = [regex]::Replace($body, '\r?\n$', '')
           if ($fence -ne $body) {
-            throw 'README quick-start fence must equal go/examples/quickstart/main.go (after the package main line; header comment excluded)'
+            throw 'README quick-start fence must equal go/examples/quickstart/main.go (after the package main line; header comment excluded; no leading/trailing whitespace drift allowed)'
           }
           Write-Output 'README quick-start fence matches go/examples/quickstart/main.go'
-      - name: go vet ./examples/... && go run ./examples/sdk_chain ./examples/quickstart (must exit 0)
-        run: cd go && go vet ./examples/... && go run ./examples/sdk_chain && go run ./examples/quickstart
+      # Wave-5 P2: the examples assert their runtime output, not only the
+      # exit code — an exit-code-only gate stays green when a chain
+      # silently truncates (G37 class: an early return before the final
+      # print still exits 0).
+      - name: go vet ./examples/... && run sdk_chain + quickstart with output assertions
+        run: |
+          cd go
+          go vet ./examples/...
+          sdk_output="$(go run ./examples/sdk_chain 2>&1)"
+          echo "$sdk_output"
+          grep -q 'convert to toml.canonical-document:' <<<"$sdk_output" || {
+            echo "::error::sdk_chain did not reach the TOML conversion print — the chain truncated early"
+            exit 1
+          }
+          grep -q '"a" = 42' <<<"$sdk_output" || {
+            echo "::error::sdk_chain TOML output is missing the edited entry — the chain truncated early"
+            exit 1
+          }
+          quickstart_output="$(go run ./examples/quickstart 2>&1)"
+          echo "$quickstart_output"
+          grep -q '{"a":1,"b":{"c":42}}' <<<"$quickstart_output" || {
+            echo "::error::quickstart did not print the final rendered JSON — the chain truncated early"
+            exit 1
+          }
 
   # Alls-green aggregate gate (tokio/pydantic pattern): `check (all gates
   # green)` is the SINGLE required check for branch protection on this

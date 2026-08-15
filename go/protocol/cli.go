@@ -1648,15 +1648,22 @@ func sourceEncodingValue(encoding *SourceEncoding) core.Value {
 // parseEncodingFactsValue strictly decodes the source-patch@2 encoding
 // facts record (protocol/src/source.rs). The structural facts are
 // validated; the semantic reconciliation belongs to the document milestone.
+// profile_default and selected are optional: the encoder writes Null when
+// the corresponding fact is absent, so the decoder must accept Null back
+// (round-trip symmetry — wave-5 P2; the kt/ts decoders handle both fields
+// the same way).
 func parseEncodingFactsValue(value core.Value, path string) (*EncodingFacts, error) {
 	fields, err := exactFields(value, []string{"profile_default", "bom_policy", "bom",
 		"declaration", "caller_override", "selected"}, path)
 	if err != nil {
 		return nil, err
 	}
-	profileDefault, err := parseSourceEncodingValue(fields[0], path+".profile_default")
-	if err != nil {
-		return nil, err
+	var profileDefault *SourceEncoding
+	if _, isNull := fields[0].(core.Null); !isNull {
+		profileDefault, err = parseSourceEncodingValue(fields[0], path+".profile_default")
+		if err != nil {
+			return nil, err
+		}
 	}
 	bomPolicy, err := stringOf(fields[1], path+".bom_policy")
 	if err != nil {
@@ -1684,9 +1691,12 @@ func parseEncodingFactsValue(value core.Value, path string) (*EncodingFacts, err
 			return nil, err
 		}
 	}
-	selected, err := parseSourceEncodingValue(fields[5], path+".selected")
-	if err != nil {
-		return nil, err
+	var selected *SourceEncoding
+	if _, isNull := fields[5].(core.Null); !isNull {
+		selected, err = parseSourceEncodingValue(fields[5], path+".selected")
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &EncodingFacts{
 		ProfileDefault: profileDefault,

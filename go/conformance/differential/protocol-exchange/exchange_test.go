@@ -54,9 +54,12 @@ import (
 // resolveCasesDir when the data is missing — wave-4 R49, 2026-08-15).
 // ---------------------------------------------------------------------------
 
-// casesDirEnv names the shared differential case directory (the directory
-// that contains cases.json directly — here that is
-// conformance/differential/protocol-exchange of the consema repository).
+// casesDirEnv names the shared differential case directory ROOT (the
+// conformance/differential root; this harness joins its own
+// "protocol-exchange" subdirectory in loadCaseJSON — wave-5 P2: the
+// previous docstring said the env names the directory that "contains
+// cases.json directly", which contradicted resolveCasesDir's root
+// semantics and loadCaseJSON's join).
 const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
 
 // resolveCasesDir locates the shared differential case directory: the
@@ -178,7 +181,10 @@ type fileCase struct {
 }
 
 // loadCaseFile parses and validates the provisioned case set: manifest id,
-// case count lower bound, unique ids, known records, per-record positive and
+// exact case count (the guard is precise equality with expectedCaseCount —
+// wave-5 P2: the comment previously said "lower bound", which
+// misdescribed the guard; G066 fixed the byte-parity sibling's same
+// wording), unique ids, known records, per-record positive and
 // negative coverage, canonical transport JSON, and registered expected
 // codes.
 func loadCaseFile(t *testing.T) []fileCase {

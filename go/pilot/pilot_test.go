@@ -6,7 +6,12 @@
 // the family packages, go/document, go/protocol, go/core). It performs no
 // internal-API calls and no cross-language imports: every operation here
 // is a real consumer program's operation. The whole workflow is
-// reproducible with `go test -count=1 -v ./pilot/`.
+// reproducible with `go test -count=1 -v ./pilot/` once the conformance
+// data is provisioned (wave-5 P2: this package is one of the five
+// no-skip-guard family packages of the wave-4 R35 three-path model — it
+// hard-reads ../../conformance with no skip guard, so on an unprovisioned
+// clean clone the documented command fails loudly instead of skipping;
+// provision per CONTRIBUTING.md "Conformance 数据同步").
 //
 // The corpus is the pinned `conformance/fixtures/` real-world and family
 // fixtures (the same corpus the 0.13.0 Rust pilot used); the pilot project

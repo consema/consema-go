@@ -21,9 +21,12 @@ func repositoryRunner(t *testing.T) *Runner {
 
 // repositoryManifestCounts reads the conformance_suite record of the
 // repository's provisioned Feature-Complete Manifest (wave-4 R10,
-// 2026-08-15): the suite/case counts are derived from the manifest — the
-// single re-vendor sync point — instead of hardcoded literals that go
-// unnoticed when the inventory legitimately changes.
+// 2026-08-15): the aggregate digest and the total suite/case counts come
+// from the manifest — the single re-vendor sync point for the digest and
+// the totals — instead of hardcoded literals that go unnoticed when the
+// inventory legitimately changes. Wave-5 P2 note: the per-suite counts
+// remain frozen in-runner pins (conformance/README.md rule 4; the
+// manifest carries only the aggregate totals, not per-suite counts).
 func repositoryManifestCounts(t *testing.T) (suites, cases int) {
 	t.Helper()
 	_, suites, cases, err := manifestConformanceSuite(repositoryRunner(t).ManifestPath)
@@ -69,35 +72,24 @@ func TestRunIsConformant(t *testing.T) {
 }
 
 // TestApplicableSuiteCounts pins the per-suite applicable surface of the
-// current milestone: all 18 suites execute with zero documented skips
-// (0.14.0-0.19.0 milestones G0.1-G5.6 delivered; the 0.15.0-era per-face
-// flip notes of the old header are closed — G054, adversarial audit
-// 2026-08-13; https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
-// §4.2).
+// current milestone: all 18 suites execute their full frozen case count
+// with zero documented skips and zero failures (0.14.0-0.19.0 milestones
+// G0.1-G5.7 delivered; the 0.15.0-era per-face flip notes of the old
+// header are closed — G054, adversarial audit 2026-08-13;
+// https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md
+// §4.2). Wave-5 P2: the expected triples are derived from the in-runner
+// definition table (allSuites — the frozen rule-4 per-suite pins) instead
+// of a duplicated literal map, so a legitimate vector re-vendor (case
+// added, manifest updated, ExpectedCases bumped) does not redden this
+// test — the duplicated literal list was a second re-vendor sync point.
 func TestApplicableSuiteCounts(t *testing.T) {
 	report, err := repositoryRunner(t).Run()
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := map[string][3]int{
-		"consema.conformance@1":                   {30, 0, 0},
-		"consema.toml.conformance@1":              {18, 0, 0},
-		"consema.protocol.conformance@1":          {32, 0, 0},
-		"consema.source.conformance@1":            {28, 0, 0},
-		"consema.syntax-query.conformance@1":      {19, 0, 0},
-		"consema.protocol.conformance@2":          {11, 0, 0},
-		"consema.operations.conformance@1":        {35, 0, 0},
-		"consema.json-family.conformance@2":       {33, 0, 0},
-		"consema.portable-graph.conformance@1":    {10, 0, 0},
-		"consema.semantic-model-v5.conformance@1": {22, 0, 0},
-		"consema.yaml.conformance@1":              {31, 0, 0},
-		"consema.semantic-model-v6.conformance@1": {25, 0, 0},
-		"consema.ini.conformance@1":               {20, 0, 0},
-		"consema.java-properties.conformance@1":   {25, 0, 0},
-		"consema.xml-1-0-safe.conformance@1":      {34, 0, 0},
-		"consema.plist.conformance@1":             {49, 0, 0},
-		"consema.hcl.conformance@1":               {57, 0, 0},
-		"consema.cli.conformance@1":               {40, 0, 0},
+	expected := make(map[string][3]int, len(allSuites))
+	for _, definition := range allSuites {
+		expected[definition.SuiteID] = [3]int{definition.ExpectedCases, 0, 0}
 	}
 	for _, suite := range report.Suites {
 		expectedCounts, ok := expected[suite.Suite]

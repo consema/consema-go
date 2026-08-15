@@ -15,12 +15,17 @@ import (
 	"consema.dev/consema/protocol"
 )
 
-// This file drives all 25 published cases of the shared
+// This file drives all published cases of the shared
 // `consema.java-properties.conformance@1` vector suite through the public
 // package API (https://github.com/consema/consema/blob/main/docs/go-implementation-plan.md §4.2; the conformance runner
 // in go/conformance/java_properties_v1.go executes the same facts through
 // the same API). The vector file is the authority; no expectation literal
-// lives here.
+// lives here (wave-5 P2: the previous `len(suite.Cases) != 25` count pin
+// was removed — the case count of java-properties-v1.json is pinned by the
+// conformance runner's rule-4 per-suite count and its aggregate digest is
+// verified against the Feature-Complete Manifest, and an unknown case id
+// still fails in runPropertiesVectorCase below, so a legitimate vector
+// re-vendor no longer requires editing this file).
 
 // vectorRoot resolves the repository conformance directory from the
 // package test working directory.
@@ -49,9 +54,6 @@ func loadPropertiesVector(t *testing.T) map[string]map[string]interface{} {
 	}
 	if err := decodeVectorJSON(raw, &suite); err != nil {
 		t.Fatal(err)
-	}
-	if len(suite.Cases) != 25 {
-		t.Fatalf("case count %d != 25", len(suite.Cases))
 	}
 	cases := make(map[string]map[string]interface{}, len(suite.Cases))
 	for _, vector := range suite.Cases {

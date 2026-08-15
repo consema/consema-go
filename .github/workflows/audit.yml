@@ -17,7 +17,12 @@
 # at latest" is self-contradictory; the pin follows the repo's toolchain
 # locking discipline; the module-scoped download does not modify go.mod or
 # go.sum) and audits the packages under ./... against the Go vulnerability
-# database. The database itself is fetched at run time (non-deterministic by
+# database. Wave-5 P2 disclosure: v1.6.0 is a module version-tag pin
+# resolved through the Go module proxy and the checksum database (GOSUMDB)
+# at run time — not an in-repo byte/checksum pin like the other toolchain
+# downloads in this organization (mdbook/kotlinc/junit etc.); the checksum
+# database is the Go ecosystem's standard supply-chain mechanism for module
+# downloads (disclosed strength difference). The database itself is fetched at run time (non-deterministic by
 # design — a new advisory can fail the job at any point). Any finding fails
 # this job (failures are red); the same govulncheck job is defined inside
 # ci-go.yml (the rs standing shape — a needs entry must name a job in the

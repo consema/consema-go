@@ -8,7 +8,8 @@
 # consema.dev/consema` is not proxy-served (G108, adversarial audit
 # 2026-08-13; module consema.dev/consema, module docs from go/README.md).
 # This workflow therefore (1) re-runs the gate suite on the exact tag
-# (gofmt + vet + build + test + race, with the conformance data provisioned
+# (gofmt + vet + build + test + race + the -tags release build/test legs —
+# 7 legs, R13 wave-4 2026-08-15 — with the conformance data provisioned
 # from the consema spec repository exactly like ci-go.yml), (2) runs the
 # four cross-language differential harnesses on the tag (G106: release-path
 # parity gate, mirroring ci-go.yml's go-differential job) and (3) creates a
@@ -32,7 +33,7 @@ permissions:
 
 jobs:
   verify:
-    name: go gates on tag (gofmt + vet + build + test + race)
+    name: go gates on tag (gofmt + vet + build + test + race + tags-release build/test)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -43,15 +44,16 @@ jobs:
       # G070/G080; re-anchored 2026-08-15 F2): the spec-repository
       # checkout is pinned to the commit that carries the cfd6e296 vector
       # inventory, so the release-time provision and the go-module pinned
-      # digest always agree. The pin is ccc9943 (wave-4 R5, re-anchored
-      # to mother-repo HEAD after b8bf4cb's R40 field-anchor evidence
-      # rework; same cfd6e296 aggregate digest; fc-manifest sha256
-      # 5cb4ab51… asserted after provision) and all four language repos
-      # pin it.
+      # digest always agree. The pin is ccc9943 (wave-4 R5, F2
+      # re-anchored — ccc9943 was the mother-repo HEAD at the re-anchor
+      # moment; the pin is the SHA, not live HEAD — wave-5 P2; after
+      # b8bf4cb's R40 field-anchor evidence rework; same cfd6e296
+      # aggregate digest; fc-manifest sha256 5cb4ab51… asserted after
+      # provision) and all four language repos pin it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored to mother-repo HEAD (fc-manifest sha256 5cb4ab51 asserted)
+          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
           path: consema-repo
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
@@ -131,11 +133,18 @@ jobs:
             exit 1
           fi
           echo "tag $GITHUB_REF_NAME points at a commit on origin/main (peeled $tag_commit, within the 24 h recency window)"
-      - name: verify tag matches manifest version (README Version line)
+      - name: verify tag matches the version pins (README Version line + CLI pins + fixture literals)
         shell: bash
         run: |
           set -euo pipefail
-          manifest="$(sed -n 's/^Version: *//p' README.md | sed 's/[（(].*//' | head -n 1)"
+          # Wave-5 P2: the release guard re-runs the full
+          # check-version-consistency assertion set (the ci-go.yml job's
+          # three pins), not only the tag↔README line — a tag whose README
+          # was bumped but whose CLI productVersion pins or cli_test.go
+          # fixture literals were not must not publish. The Version line is
+          # anchored to the release-train declaration (the "随 release
+          # train" marker), same as ci-go.yml.
+          manifest="$(grep -m1 '^Version: .*随 release train' README.md | sed 's/^Version: *//; s/[（(].*//')"
           tag="${GITHUB_REF_NAME#v}"
           if [[ -z "$manifest" ]]; then
             echo "::error::could not read Version from README.md"
@@ -146,6 +155,21 @@ jobs:
             exit 1
           fi
           echo "tag $GITHUB_REF_NAME matches README Version $manifest"
+          grep -qF "productVersion = \"$manifest\"" go/cmd/consema-conformance/main.go || {
+            echo "::error::go/cmd/consema-conformance/main.go does not pin productVersion = \"$manifest\" (must match the README Version line)"
+            exit 1
+          }
+          grep -qF "productVersion = \"$manifest\"" go/cmd/consema/version.go || {
+            echo "::error::go/cmd/consema/version.go does not pin productVersion = \"$manifest\" (must match the README Version line)"
+            exit 1
+          }
+          expected_fixture_literals=11
+          actual_fixture_literals="$(grep -vE 'range \[\]string\{' go/protocol/cli_test.go | grep -oF "\"$manifest\"" | wc -l)"
+          if [[ "$actual_fixture_literals" -ne "$expected_fixture_literals" ]]; then
+            echo "::error::go/protocol/cli_test.go must carry exactly $expected_fixture_literals quoted fixture literals of \"$manifest\" (found $actual_fixture_literals) — the constructed-envelope fixtures ride the train (wave-4 R36)"
+            exit 1
+          fi
+          echo "CLI productVersion pins and cli_test.go fixture literals match the tag version"
       # G064 (adversarial audit, 2026-08-13): the assignment inside the &&
       # chain carries gofmt's exit status (the old `test -z "$(gofmt -l .)"`
       # swallowed it).
@@ -159,7 +183,35 @@ jobs:
       # the exact tag — same legs as ci-go.yml go-matrix, so G114's
       # injection-seam-compiled-out claim is verified on the release path.
       - name: gofmt gate (real failure semantics) && go vet && go build && go test -count=1 && go test -race -shuffle=on && go build -tags release && go test -tags release -count=1
-        run: cd go && out="$(gofmt -l .)" && test -z "$out" && go vet ./... && go build ./... && go test -count=1 ./... && go test -race -shuffle=on ./... && go build -tags release ./... && go test -tags release -count=1 ./...
+        run: |
+          cd go
+          out="$(gofmt -l .)" && test -z "$out"
+          go vet ./...
+          go build ./...
+          # Wave-5 P2 zero-test lower bound + documented-skip upper bound:
+          # `go test ./...` exits 0 even when a package has no test files
+          # ("no test files"), so a vanished test tree must not pass the
+          # release gate; and without the CONSEMA_* golden env vars exactly
+          # 6 documented skips are expected (the four differential golden
+          # legs — TestDifferentialByteParity / TestNormalizedDifferential
+          # / TestEmitGoNormalizedResults / TestProtocolExchange — plus
+          # TestSharedConformanceDualRunner and TestPilotRustComparison).
+          # A new silent skip must redden the release path.
+          test_output="$(go test -v -count=1 ./... 2>&1)"
+          echo "$test_output"
+          tested_packages="$(grep -c '^ok ' <<<"$test_output" || true)"
+          if [[ "$tested_packages" -lt 1 ]]; then
+            echo "::error::no test packages ran — the test tree vanished; go test exits 0 on 'no test files'"
+            exit 1
+          fi
+          skip_count="$(grep -c '^--- SKIP:' <<<"$test_output" || true)"
+          if [[ "$skip_count" -gt 6 ]]; then
+            echo "::error::$skip_count documented skips exceed the known upper bound of 6 (the CONSEMA_* golden-env legs + shared conformance + pilot) — a new silent skip would otherwise pass the release gate"
+            exit 1
+          fi
+          go test -race -shuffle=on ./...
+          go build -tags release ./...
+          go test -tags release -count=1 ./...
 
   # G106 (adversarial audit, 2026-08-13): the release path previously ran
   # only the Go-side gates — the four cross-language differential harnesses
@@ -192,13 +244,20 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored to mother-repo HEAD (fc-manifest sha256 5cb4ab51 asserted)
+          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
           path: consema-repo
       # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
       # pinned to 1.97.1 — the version this harness was locally verified
       # with (钉定本机实测版本), so the differential goldens are
       # bit-reproducible (位级可复现) and independent of the runner's
-      # current stable; same pin as ci-go.yml. No rust-cache (R10/W3-31,
+      # current stable; same pin as ci-go.yml. Wave-5 P2 disclosure: the
+      # dtolnay action's commit SHA pins the action code only — the
+      # `toolchain: 1.97.1` bytes are resolved by rustup at run time from
+      # static.rust-lang.org with no in-repo checksum, so an upstream
+      # toolchain build replacement would change the release-path parity
+      # behavior without a repo-side check (bit-reproducibility holds for
+      # the pinned version tag, not for upstream byte stability). No
+      # rust-cache (R10/W3-31,
       # adversarial audit 2026-08-14): this tag-triggered publishing
       # workflow disables caches on the verify path (zizmor
       # cache-poisoning), so the differential path carries the same threat

@@ -4,8 +4,12 @@
 // it (go run ./examples/quickstart must exit 0), which keeps the documented
 // example honest (G053, adversarial audit 2026-08-13: the documented
 // example previously reused the error interface for Commit's *EditFailure
-// and panicked on the typed-nil trap). Keep this file in sync with the
-// README snippet by hand.
+// and panicked on the typed-nil trap). Sync with the README fence is
+// enforced, not manual: the CI examples job compares this file's code body
+// against the README quick-start fence byte-for-byte (wave-4 R6,
+// 2026-08-15 — the old "manual sync, never compares the fence" mechanism
+// was ruled drifted and replaced; this header comment sits above the
+// package line and is excluded from the comparison).
 package main
 
 import (

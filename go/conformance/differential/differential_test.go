@@ -204,6 +204,23 @@ func loadCaseFile(t *testing.T) []fileCase {
 			t.Fatalf("case set does not cover kind %q (kinds metadata)", kind)
 		}
 	}
+	// Wave-5 P2: the coverage check is bidirectional — a kind the case
+	// file introduces that is not in the frozen fifteen-kind vocabulary
+	// fails too (the previous check only asserted the declared kinds all
+	// appear; an unknown 16th kind in the file passed as long as the
+	// count stayed 68).
+	for kind := range kinds {
+		known := false
+		for _, name := range allKindNames {
+			if kind == name {
+				known = true
+				break
+			}
+		}
+		if !known {
+			t.Fatalf("case set declares unknown kind %q (frozen fifteen-kind vocabulary of RFC 0016 §4.1)", kind)
+		}
+	}
 	return file.Cases
 }
 

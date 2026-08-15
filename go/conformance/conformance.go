@@ -148,8 +148,15 @@ func (r *RunReport) Conformant() bool {
 	return true
 }
 
-// frozenCaseTotal is the 519-case total of the frozen 18-suite inventory
-// (the sum of the per-suite ExpectedCases pins in allSuites).
+// frozenCaseTotal is the total of the frozen 18-suite inventory (the sum
+// of the per-suite ExpectedCases pins in allSuites — 519 today). Wave-5
+// P2 note (wave-4 R10): the per-suite counts are frozen in-runner pins
+// (conformance/README.md rule 4 — every suite asserts its case count; the
+// manifest carries only the aggregate totals, not per-suite counts); the
+// aggregate digest and the total suite/case counts are the values verified
+// against the provisioned Feature-Complete Manifest (the single re-vendor
+// sync point for the digest/totals — see manifestConformanceSuite and the
+// TestRunIsConformant/TestDigestAlgorithmMatchesManifest cross-checks).
 var frozenCaseTotal = func() int {
 	total := 0
 	for _, definition := range allSuites {

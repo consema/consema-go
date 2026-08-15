@@ -39,9 +39,11 @@ import (
 	"testing"
 )
 
-// casesDirEnv names the shared differential case directory (the directory
-// that contains cases.json directly — here that is
-// conformance/differential/normalized of the consema repository).
+// casesDirEnv names the shared differential case directory ROOT (the
+// conformance/differential root; this harness joins its own "normalized"
+// subdirectory in loadCaseJSON — wave-5 P2: the previous docstring said
+// the env names the directory that "contains cases.json directly", which
+// contradicted resolveCasesDir's root semantics and loadCaseJSON's join).
 const casesDirEnv = "CONSEMA_DIFFERENTIAL_CASES_DIR"
 
 // resolveCasesDir locates the shared differential case directory: the
