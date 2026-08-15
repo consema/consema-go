@@ -134,7 +134,10 @@ func resolveExplicit(decoded, tag string, profile YamlProfile) (string, YamlScal
 		}
 		return canonical, ScalarKindBoolean, true, nil
 	case tagInt:
-		canonical, ok := parseInteger(decoded, profile)
+		canonical, ok, failure := parseInteger(decoded, profile)
+		if failure != nil {
+			return "", 0, false, failure
+		}
 		if !ok {
 			return "", 0, false, nil
 		}
@@ -163,7 +166,9 @@ func resolveImplicit(decoded string, profile YamlProfile) (string, nativeScalar,
 		return tagBool, nativeScalar{decoded: decoded, canonical: canonical,
 			kind: ScalarKindBoolean, style: ScalarStylePlain}, nil
 	}
-	if canonical, ok := parseInteger(decoded, profile); ok {
+	if canonical, ok, failure := parseInteger(decoded, profile); failure != nil {
+		return "", nativeScalar{}, failure
+	} else if ok {
 		return tagInt, nativeScalar{decoded: decoded, canonical: canonical,
 			kind: ScalarKindInteger, style: ScalarStylePlain}, nil
 	}
@@ -213,21 +218,23 @@ func parseBool(value string, profile YamlProfile) (string, bool) {
 }
 
 // parseInteger canonicalizes one integer spelling per profile (native.rs:
-// 768-801). The canonical value is the exact base-10 decimal string.
-func parseInteger(value string, profile YamlProfile) (string, bool) {
+// 768-801). The canonical value is the exact base-10 decimal string. An
+// over-limit number magnitude is a fatal resource-limit failure, never a
+// fallthrough.
+func parseInteger(value string, profile YamlProfile) (string, bool, *FormationFailure) {
 	sign, unsigned := splitSign(value)
 	if !signOK(sign) {
-		return "", false
+		return "", false, nil
 	}
 	var cleaned string
 	if profile == Yaml11CompatV1 {
 		valid, ok := validUnderscored(unsigned)
 		if !ok {
-			return "", false
+			return "", false, nil
 		}
 		cleaned = strings.ReplaceAll(valid, "_", "")
 	} else if strings.ContainsRune(unsigned, '_') {
-		return "", false
+		return "", false, nil
 	} else {
 		cleaned = unsigned
 	}
@@ -238,7 +245,7 @@ func parseInteger(value string, profile YamlProfile) (string, bool) {
 		base, digits = 2, cleaned[2:]
 	case strings.HasPrefix(cleaned, "0o"):
 		if profile == Yaml11CompatV1 {
-			return "", false
+			return "", false, nil
 		}
 		base, digits = 8, cleaned[2:]
 	case strings.HasPrefix(cleaned, "0x"):
@@ -250,11 +257,35 @@ func parseInteger(value string, profile YamlProfile) (string, bool) {
 	default:
 		base, digits = 10, cleaned
 	}
+	if count := integerMagnitudeDigits(digits, base); count > maxNumberMagnitudeDigits {
+		return "", false, numberMagnitudeFailure(count)
+	}
 	magnitude, ok := parseBaseMagnitude(digits, base)
 	if !ok {
-		return "", false
+		return "", false, nil
 	}
-	return signedDecimalString(sign, magnitude), true
+	return signedDecimalString(sign, magnitude), true, nil
+}
+
+// integerMagnitudeDigits counts the significant digit characters of one
+// integer magnitude lexeme in the given base (hex digits for base 16,
+// decimal digits otherwise).
+func integerMagnitudeDigits(text string, base int64) int {
+	digits := 0
+	for index := 0; index < len(text); index++ {
+		character := text[index]
+		switch {
+		case base == 16:
+			if character >= '0' && character <= '9' ||
+				character >= 'a' && character <= 'f' ||
+				character >= 'A' && character <= 'F' {
+				digits++
+			}
+		case character >= '0' && character <= '9':
+			digits++
+		}
+	}
+	return digits
 }
 
 // parseFloat canonicalizes one float spelling per profile (native.rs:
@@ -435,30 +466,34 @@ func decimalCanonical(coefficient, exponent *big.Int) string {
 }
 
 // parseSexagesimalInteger canonicalizes one YAML 1.1 base-60 integer
-// (native.rs).
-func parseSexagesimalInteger(sign int8, value string) (string, bool) {
+// (native.rs). The magnitude digit bound is enforced before the
+// parseBaseMagnitude allocation.
+func parseSexagesimalInteger(sign int8, value string) (string, bool, *FormationFailure) {
 	parts := strings.Split(value, ":")
 	first := parts[0]
 	if first == "" || !allASCIIDigits(first) {
-		return "", false
+		return "", false, nil
+	}
+	if count := decimalMagnitudeDigits(value); count > maxNumberMagnitudeDigits {
+		return "", false, numberMagnitudeFailure(count)
 	}
 	magnitude, ok := parseBaseMagnitude(first, 10)
 	if !ok {
-		return "", false
+		return "", false, nil
 	}
 	count := 0
 	for _, part := range parts[1:] {
 		component, ok := parseU8(part)
 		if !ok || component > 59 || part == "" || len(part) > 2 {
-			return "", false
+			return "", false, nil
 		}
 		multiplyAdd(&magnitude, 60, component)
 		count++
 	}
 	if count == 0 {
-		return "", false
+		return "", false, nil
 	}
-	return signedDecimalString(sign, magnitude), true
+	return signedDecimalString(sign, magnitude), true, nil
 }
 
 // parseSexagesimalFloat canonicalizes one YAML 1.1 base-60 float

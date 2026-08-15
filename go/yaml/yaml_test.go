@@ -591,3 +591,41 @@ func TestNumberMagnitudeLimit(t *testing.T) {
 		t.Fatalf("sexagesimal over-limit: ok %v failure %v canonical %q", ok, failure, canonical)
 	}
 }
+
+// TestIntegerMagnitudeLimit pins the frozen number magnitude bound
+// (maxNumberMagnitudeDigits) on the integer and YAML 1.1 sexagesimal
+// integer paths: an over-limit lexeme fails with
+// core.parse.resource-limit@1 before any big.Int allocation, and an
+// exactly-at-limit lexeme resolves normally.
+func TestIntegerMagnitudeLimit(t *testing.T) {
+	over := strings.Repeat("9", maxNumberMagnitudeDigits+1)
+	_, failure := Parse([]byte(over+"\n"), Yaml12CoreV1, document.DefaultParseLimits())
+	if failure == nil || failure.Code() != "core.parse.resource-limit@1" ||
+		failure.Diagnostics()[0].Arguments["name"] != "number-magnitude-digits" {
+		t.Fatalf("over-limit integer failure %v", failure)
+	}
+
+	// The YAML 1.1 sexagesimal integer shares the bound.
+	canonical, ok, failure := parseSexagesimalInteger(1,
+		strings.Repeat("9", maxNumberMagnitudeDigits)+":9")
+	if ok || failure == nil || failure.Code() != "core.parse.resource-limit@1" ||
+		failure.Diagnostics()[0].Arguments["name"] != "number-magnitude-digits" {
+		t.Fatalf("sexagesimal over-limit: ok %v failure %v canonical %q", ok, failure, canonical)
+	}
+
+	at := strings.Repeat("9", maxNumberMagnitudeDigits)
+	doc := mustParse(t, at+"\n", Yaml12CoreV1)
+	scalar := rootScalar(t, doc)
+	if scalar.Kind() != ScalarKindInteger || scalar.Canonical() != at {
+		t.Fatalf("at-limit integer: kind %s canonical %q", scalar.Kind(), scalar.Canonical())
+	}
+
+	leading, _ := new(big.Int).SetString(strings.Repeat("9", maxNumberMagnitudeDigits-2), 10)
+	expected := new(big.Int).Mul(leading, big.NewInt(60*60))
+	expected.Add(expected, big.NewInt(9*60+9))
+	atSexagesimal, ok, failure := parseSexagesimalInteger(1,
+		strings.Repeat("9", maxNumberMagnitudeDigits-2)+":9:9")
+	if !ok || failure != nil || atSexagesimal != expected.String() {
+		t.Fatalf("at-limit sexagesimal: ok %v failure %v canonical %q", ok, failure, atSexagesimal)
+	}
+}
