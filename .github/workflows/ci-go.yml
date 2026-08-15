@@ -114,19 +114,21 @@ jobs:
       # G070 (adversarial audit, 2026-08-14): the spec-repository checkout
       # is ref-pinned — the provisioned conformance data must be
       # reproducible, not whatever live HEAD happens to carry when the job
-      # runs. The pin is ccc9943 (wave-4 R5 re-anchored 2026-08-15, F2):
-      # ccc9943 was the mother-repo HEAD at the F2 re-anchor moment (the
-      # pin is the SHA, not live HEAD — wave-5 P2), after the wave-3/wave-4
-      # manifest+conformance fixes (incl. the plist-macos-v1 skip truthing
-      # W3-02 and b8bf4cb's R40 field-anchor evidence rework, which moved
-      # the manifest digest 3fdf9a77 → 5cb4ab51); same cfd6e296 aggregate
-      # digest; fc-manifest sha256 5cb4ab51… asserted after every provision
-      # (R5). All four language repos pin it.
+      # runs. The pin is db821cd (wave-5 close re-pin, 2026-08-15):
+      # db821cd was the mother-repo HEAD at the wave-5 close (the
+      # pin is the SHA, not live HEAD — wave-5 P2), after the
+      # wave-3/wave-4/wave-5 manifest+conformance fixes (incl. the
+      # plist-macos-v1 skip truthing W3-02 and b8bf4cb's R40 field-anchor
+      # evidence rework, which moved the manifest digest 3fdf9a77 →
+      # 5cb4ab51, and the wave-5 vendored-copy reality note, which moved
+      # it to af27d599); same cfd6e296 aggregate digest; fc-manifest
+      # sha256 af27d599… asserted after every provision (R5). All four
+      # language repos pin it.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
+          ref: db821cdf463d0542fa166d61d7e28cec46812bbc # wave-5 close re-pin (db821cd = mother-repo HEAD at the wave-5 close carrying fc-manifest sha256 af27d599; the pin is the SHA, not live HEAD); fc-manifest sha256 af27d599 asserted
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -149,9 +151,9 @@ jobs:
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
           # Wave-4 R5 manifest sha256 assertion (unified provision pin
-          # ccc9943): the pinned checkout must carry exactly the digest
+          # db821cd, wave-5 close re-pin): the pinned checkout must carry exactly the digest
           # recorded at the pin — silent manifest drift fails the job.
-          $expectedDigest = '5cb4ab518cc3b3e1754a07f21953693b4b9ec113443d44c6ed8a6d4fa8faa6f8'
+          $expectedDigest = 'af27d599f5c4903d1757c89940911e250a392c7777568907d1c7049cf9977004'
           $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
           if ($actualDigest -ne $expectedDigest) {
             throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
@@ -228,7 +230,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
+          ref: db821cdf463d0542fa166d61d7e28cec46812bbc # wave-5 close re-pin (db821cd = mother-repo HEAD at the wave-5 close carrying fc-manifest sha256 af27d599; the pin is the SHA, not live HEAD); fc-manifest sha256 af27d599 asserted
           path: consema-repo
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
@@ -251,9 +253,9 @@ jobs:
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
           # Wave-4 R5 manifest sha256 assertion (unified provision pin
-          # ccc9943): the pinned checkout must carry exactly the digest
+          # db821cd, wave-5 close re-pin): the pinned checkout must carry exactly the digest
           # recorded at the pin — silent manifest drift fails the job.
-          $expectedDigest = '5cb4ab518cc3b3e1754a07f21953693b4b9ec113443d44c6ed8a6d4fa8faa6f8'
+          $expectedDigest = 'af27d599f5c4903d1757c89940911e250a392c7777568907d1c7049cf9977004'
           $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
           if ($actualDigest -ne $expectedDigest) {
             throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
@@ -297,8 +299,8 @@ jobs:
           persist-credentials: false
       # G070 (adversarial audit, 2026-08-14): ref-pinned checkouts — the
       # Rust emitter workspace (same pin as the py/ts/kt repos) and the
-      # spec repository (ccc9943, the wave-4 R5 unified provision pin
-      # re-anchored by F2, see go-matrix) must be reproducible, not
+      # spec repository (db821cd, the wave-5 close unified provision pin,
+      # see go-matrix) must be reproducible, not
       # whatever live HEAD carries.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -310,7 +312,7 @@ jobs:
         with:
           persist-credentials: false
           repository: consema/consema
-          ref: ccc99430a6e3003bc1b0830d81cbad245323f0a4 # wave-4 R5 unified provision pin, F2 re-anchored 2026-08-15 02:19 (ccc9943 was the mother-repo HEAD at that moment; the pin is the SHA, not live HEAD — wave-5 P2; fc-manifest sha256 5cb4ab51 asserted)
+          ref: db821cdf463d0542fa166d61d7e28cec46812bbc # wave-5 close re-pin (db821cd = mother-repo HEAD at the wave-5 close carrying fc-manifest sha256 af27d599; the pin is the SHA, not live HEAD); fc-manifest sha256 af27d599 asserted
           path: consema-repo
       # G070 (adversarial audit, 2026-08-14): the Rust emitter toolchain is
       # pinned to 1.97.1 — the version this harness was locally verified
@@ -351,9 +353,9 @@ jobs:
           }
           Copy-Item -LiteralPath $manifest -Destination (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json') -Force
           # Wave-4 R5 manifest sha256 assertion (unified provision pin
-          # ccc9943): the pinned checkout must carry exactly the digest
+          # db821cd, wave-5 close re-pin): the pinned checkout must carry exactly the digest
           # recorded at the pin — silent manifest drift fails the job.
-          $expectedDigest = '5cb4ab518cc3b3e1754a07f21953693b4b9ec113443d44c6ed8a6d4fa8faa6f8'
+          $expectedDigest = 'af27d599f5c4903d1757c89940911e250a392c7777568907d1c7049cf9977004'
           $actualDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'docs\fc-manifest-0.13.0.json')).Hash.ToLowerInvariant()
           if ($actualDigest -ne $expectedDigest) {
             throw "fc-manifest sha256 mismatch after provision: expected $expectedDigest, got $actualDigest"
