@@ -62,7 +62,11 @@ param(
 # wave-4 2026-08-15, ENTRY 36: the harness honors the override like the
 # ts/py/kt harnesses); the Rust workspace is the consema-rs checkout
 # (<repo root>\consema-rs by default, -RustWorkspace overrides). Windows
-# PowerShell 5.1 compatible, no third-party dependencies.
+# PowerShell 5.1 compatible and Windows-host-only (wave-5 P2 disclosure):
+# the default Rust emitter binary path and the default data/manifest paths below
+# use Windows separators and the .exe form, so the harness fails at binary lookup
+# on a POSIX pwsh7 host even when all listed prerequisites are met; no third-party
+# dependencies.
 # ---------------------------------------------------------------------------
 
 $ErrorActionPreference = 'Stop'
